@@ -18,7 +18,7 @@ authorizeToOhdsiPlAtlas <- function(keyringName = "ohda") {
 }
 
 #' @export
-authorizedToJnjAtlas <- function(keyringName = "ohda") {
+authorizeToJnjAtlas <- function(keyringName = "ohda") {
   baseUrl <- Sys.getenv("baseUrl")
   ROhdsiWebApi::authorizeWebApi(
     baseUrl = baseUrl,
