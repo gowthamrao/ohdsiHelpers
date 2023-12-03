@@ -201,7 +201,7 @@ executeConceptCovariateCharacterizationInParallel <-
                    recursive = TRUE)
         
         featureExtractionOutput <-
-          OhdsiHelpers::executeConceptCovariateCharacterization(
+          executeConceptCovariateCharacterization(
             connectionDetails = connectionDetails,
             cdmDatabaseSchema = x$cdmDatabaseSchemaFinal,
             targetCohortDatabaseSchema = x$cohortDatabaseSchemaFinal,

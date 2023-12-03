@@ -157,7 +157,7 @@ executePheValuatorInParallel <- function(cdmSources,
                                            3,
                                          tempEmulationSchema = getOption("sqlRenderTempEmulationSchema")) {
   pheValuatorAnalysisList <-
-    OhdsiHelpers::getPheValuatorAnalysisList(
+    getPheValuatorAnalysisList(
       xSensCohortId = xSensCohortId,
       xSpecCohortId = xSpecCohortId,
       daysFromxSpec = daysFromxSpec,
