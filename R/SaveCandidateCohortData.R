@@ -1,5 +1,5 @@
 #' @export
-#' 
+#'
 saveCandidateCohortData <- function(connectionDetails,
                                     cohortDatabaseSchema,
                                     cohortTable,
@@ -16,8 +16,12 @@ saveCandidateCohortData <- function(connectionDetails,
       candidate_cohort_ids = candidateCohortId,
       snakeCaseToCamelCase = TRUE
     ) %>% dplyr::tibble()
-  
-  saveRDS(object = candidateCohortData,
-          file = file.path(resultsFolder,
-                           "candidateCohortData.rds"))
+
+  saveRDS(
+    object = candidateCohortData,
+    file = file.path(
+      resultsFolder,
+      "candidateCohortData.rds"
+    )
+  )
 }

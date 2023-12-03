@@ -10,13 +10,15 @@ listEligibleFiles <- function(path,
       recursive = TRUE
     )
   ) |>
-    dplyr::mutate(searchName = name,
-                  folderName = basename(gsub(
-                    pattern = paste0("/", name, ".RDS"),
-                    x = fullName,
-                    replacement = ""
-                  )))
-  
+    dplyr::mutate(
+      searchName = name,
+      folderName = basename(gsub(
+        pattern = paste0("/", name, ".RDS"),
+        x = fullName,
+        replacement = ""
+      ))
+    )
+
   listOfFiles <- listOfFiles |>
     dplyr::filter(stringr::str_detect(
       string = tolower(.data$fullName),

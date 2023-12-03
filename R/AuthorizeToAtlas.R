@@ -1,15 +1,17 @@
-
-
 authorizeToOhdsiPlAtlas <- function(keyringName = "ohda") {
   baseUrl <- "https://atlas-phenotype.ohdsi.org/WebAPI"
   return(
     ROhdsiWebApi::authorizeWebApi(
       baseUrl = baseUrl,
       authMethod = "db",
-      webApiUsername = keyring::key_get(service = "ohdsiAtlasPhenotypeUser",
-                                        keyring = keyringName),
-      webApiPassword = keyring::key_get(service = "ohdsiAtlasPhenotypePassword",
-                                        keyring = keyringName)
+      webApiUsername = keyring::key_get(
+        service = "ohdsiAtlasPhenotypeUser",
+        keyring = keyringName
+      ),
+      webApiPassword = keyring::key_get(
+        service = "ohdsiAtlasPhenotypePassword",
+        keyring = keyringName
+      )
     )
   )
 }

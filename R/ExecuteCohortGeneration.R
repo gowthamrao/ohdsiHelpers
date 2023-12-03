@@ -27,8 +27,8 @@
 #' @param outputFolder                        Name of local folder to place results; make sure to use
 #'                                            forward slashes (/). Do not use a folder on a network
 #'                                            drive since this greatly impacts performance.
-#' @param createCohortTableIncremental         When set to TRUE, this function will check to see if the 
-#'                                            cohortTableNames exists in the cohortDatabaseSchema and if 
+#' @param createCohortTableIncremental         When set to TRUE, this function will check to see if the
+#'                                            cohortTableNames exists in the cohortDatabaseSchema and if
 #'                                            they exist, it will skip creating the tables.
 #' @param generateCohortIncremental           Create only cohorts that haven't been created before?
 #' @param incrementalFolder                   Name of local folder to hold the logs for incremental
@@ -56,7 +56,7 @@ executeCohortGeneration <- function(connectionDetails,
   if (!file.exists(outputFolder)) {
     dir.create(outputFolder, recursive = TRUE)
   }
-  
+
   ParallelLogger::addDefaultFileLogger(file.path(outputFolder, "log.txt"))
   ParallelLogger::addDefaultErrorReportLogger(file.path(outputFolder, "errorReportR.txt"))
   on.exit(ParallelLogger::unregisterLogger("DEFAULT_FILE_LOGGER", silent = TRUE))
@@ -64,9 +64,9 @@ executeCohortGeneration <- function(connectionDetails,
     ParallelLogger::unregisterLogger("DEFAULT_ERRORREPORT_LOGGER", silent = TRUE),
     add = TRUE
   )
-  
+
   ParallelLogger::logInfo("Creating cohorts")
-  
+
   # Next create the tables on the database
   CohortGenerator::createCohortTables(
     connectionDetails = connectionDetails,
@@ -74,12 +74,12 @@ executeCohortGeneration <- function(connectionDetails,
     cohortDatabaseSchema = cohortDatabaseSchema,
     incremental = createCohortTableIncremental
   )
-  
+
   if (!is.null(cohortIds)) {
     cohortDefinitionSet <- cohortDefinitionSet |>
       dplyr::filter(cohortId %in% c(cohortIds))
   }
-  
+
   # Generate the cohort set
   CohortGenerator::generateCohortSet(
     connectionDetails = connectionDetails,
@@ -122,12 +122,16 @@ executeCohortGeneration <- function(connectionDetails,
   )
   readr::write_excel_csv(
     x = cohortCount |>
-      dplyr::select(cohortId,
-                    cohortEntries,
-                    cohortSubjects) |>
+      dplyr::select(
+        cohortId,
+        cohortEntries,
+        cohortSubjects
+      ) |>
       dplyr::arrange(cohortId),
-    file = file.path(outputFolder,
-                     'cohortCount.csv'),
+    file = file.path(
+      outputFolder,
+      "cohortCount.csv"
+    ),
     na = "",
     append = FALSE,
     progress = FALSE
@@ -141,9 +145,13 @@ executeCohortGeneration <- function(connectionDetails,
   output$cohortSummaryStatsTable <- cohortStatsTables$cohortSummaryStatsTable
   output$cohortSummaryStatsTable <- cohortStatsTables$cohortSummaryStatsTable
 
-  saveRDS(object = output,
-          file = file.path(outputFolder,
-                           "CohortGenerator.RDS"))
+  saveRDS(
+    object = output,
+    file = file.path(
+      outputFolder,
+      "CohortGenerator.RDS"
+    )
+  )
   return(output)
 }
 
@@ -164,20 +172,22 @@ executeCohortGenerationInParallel <- function(cdmSources,
   cdmSources <- cdmSources |>
     dplyr::filter(database %in% c(databaseIds)) |>
     dplyr::filter(sequence == !!sequence)
-  
+
   x <- list()
   for (i in 1:nrow(cdmSources)) {
-    x[[i]] <- cdmSources[i,]
+    x[[i]] <- cdmSources[i, ]
   }
-  
+
   # use Parallel Logger to run in parallel
   cluster <-
-    ParallelLogger::makeCluster(numberOfThreads = min(as.integer(trunc(
-      parallel::detectCores() /
-        2
-    )),
-    length(x)))
-  
+    ParallelLogger::makeCluster(numberOfThreads = min(
+      as.integer(trunc(
+        parallel::detectCores() /
+          2
+      )),
+      length(x)
+    ))
+
   ## file logger
   loggerName <-
     paste0(
@@ -185,13 +195,13 @@ executeCohortGenerationInParallel <- function(cdmSources,
       stringr::str_replace_all(
         string = Sys.time(),
         pattern = ":|-|EDT| ",
-        replacement = ''
+        replacement = ""
       )
     )
   loggerTrace <-
     ParallelLogger::addDefaultFileLogger(fileName = file.path(outputFolder, paste0(loggerName, ".txt")))
-  
-  
+
+
   executeCohortGenerationX <- function(x,
                                        cohortDefinitionSet,
                                        cohortIds,
@@ -207,7 +217,7 @@ executeCohortGenerationInParallel <- function(cdmSources,
       server = x$serverFinal,
       port = x$port
     )
-    
+
     executeCohortGeneration(
       connectionDetails = connectionDetails,
       cohortDefinitionSet = cohortDefinitionSet,
@@ -223,7 +233,7 @@ executeCohortGenerationInParallel <- function(cdmSources,
       generateCohortIncremental = generateCohortIncremental
     )
   }
-  
+
   ParallelLogger::clusterApply(
     cluster = cluster,
     x = x,
@@ -236,7 +246,7 @@ executeCohortGenerationInParallel <- function(cdmSources,
     generateCohortIncremental = generateCohortIncremental,
     fun = executeCohortGenerationX
   )
-  
+
   ParallelLogger::stopCluster(cluster = cluster)
   ParallelLogger::clearLoggers()
 }

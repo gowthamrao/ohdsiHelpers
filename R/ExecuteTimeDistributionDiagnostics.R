@@ -14,8 +14,8 @@
 #' # See the License for the specific language governing permissions and
 #' # limitations under the License.
 #' #
-#' 
-#' 
+#'
+#'
 #' #' @export
 #' executeTimeDistributionDiagnostics <-
 #'   function(connectionDetails = NULL,
@@ -37,7 +37,7 @@
 #' 		AND c.cohort_start_date >= op.observation_period_start_date
 #' 		AND c.cohort_end_date <= op.observation_period_end_date
 #' 	WHERE cohort_definition_id IN (@cohort_ids);
-#' 
+#'
 #' DROP TABLE IF EXISTS #summary_stats;
 #' SELECT cohort_definition_id,
 #' 	AVG(in_cohort) AS in_cohort_mean,
@@ -52,7 +52,7 @@
 #' INTO #summary_stats
 #' FROM #date_difference
 #' GROUP BY cohort_definition_id;
-#' 
+#'
 #' DROP TABLE IF EXISTS #distribution_before;
 #' SELECT cohort_definition_id,
 #' 	PERCENTILE_CONT(0.01) WITHIN
@@ -90,7 +90,7 @@
 #' INTO #distribution_before
 #' FROM #date_difference
 #' GROUP BY cohort_definition_id;
-#' 
+#'
 #' DROP TABLE #distribution_during;
 #' SELECT cohort_definition_id,
 #' 	PERCENTILE_CONT(0.01) WITHIN
@@ -128,7 +128,7 @@
 #' INTO #distribution_during
 #' FROM #date_difference AS dd
 #' GROUP BY cohort_definition_id;
-#' 
+#'
 #' DROP TABLE IF EXISTS #distribution_after;
 #' SELECT cohort_definition_id,
 #' 	PERCENTILE_CONT(0.01) WITHIN
@@ -166,7 +166,7 @@
 #' INTO #distribution_after
 #' FROM #date_difference
 #' GROUP BY cohort_definition_id;
-#' 
+#'
 #' DROP TABLE IF EXISTS #final_results;
 #' SELECT a.cohort_definition_id,
 #' 	in_cohort_mean,
@@ -208,13 +208,13 @@
 #' LEFT JOIN #distribution_during c ON a.cohort_definition_id = c.cohort_definition_id
 #' LEFT JOIN #distribution_after d ON a.cohort_definition_id = d.cohort_definition_id
 #' ORDER BY a.cohort_definition_id;
-#' 
+#'
 #' DROP TABLE IF EXISTS #date_difference;
 #' DROP TABLE IF EXISTS #summary_stats;
 #' DROP TABLE IF EXISTS #distribution_before;
 #' DROP TABLE IF EXISTS #distribution_during;
 #' DROP TABLE IF EXISTS #distribution_after;
-#' 
+#'
 #' "
 #'     sqlRendered <- SqlRender::render(
 #'       sql = sql,
@@ -223,7 +223,7 @@
 #'       cdm_database_schema = cdmDatabaseSchema,
 #'       cohort_ids = cohortIds
 #'     )
-#'     
+#'
 #'     # Set up connection to server ----------------------------------------------------
 #'     if (is.null(connection)) {
 #'       if (!is.null(connectionDetails)) {
@@ -233,25 +233,25 @@
 #'         stop("No connection or connectionDetails provided.")
 #'       }
 #'     }
-#'     
+#'
 #'     browser()
 #'     DatabaseConnector::executeSql(connection = connection,
 #'                                   sql = sqlRendered)
-#'     
+#'
 #'     result <- DatabaseConnector::querySql(
 #'       connection = connection,
 #'       sql = "select * FROM #final_result;",
 #'       snakeCaseToCamelCase = TRUE
 #'     )
-#'     
+#'
 #'     DatabaseConnector::executeSql(connection = connection,
 #'                                   sql = "DROP TABLE IF EXISTS #final_result;")
-#'     
+#'
 #'     return(result)
-#'     
+#'
 #'   }
-#' 
-#' 
+#'
+#'
 #' #' @export
 #' executeTimeDistributionDiagnosticsInParallel <-
 #'   function(cdmSources,
@@ -265,12 +265,12 @@
 #'     cdmSources <- cdmSources |>
 #'       dplyr::filter(database %in% c(databaseIds)) |>
 #'       dplyr::filter(sequence == !!sequence)
-#'     
+#'
 #'     x <- list()
 #'     for (i in 1:nrow(cdmSources)) {
 #'       x[[i]] <- cdmSources[i,]
 #'     }
-#'     
+#'
 #'     # use Parallel Logger to run in parallel
 #'     cluster <-
 #'       ParallelLogger::makeCluster(numberOfThreads = min(as.integer(trunc(
@@ -278,7 +278,7 @@
 #'           2
 #'       )),
 #'       length(x)))
-#'     
+#'
 #'     ## file logger
 #'     loggerName <-
 #'       paste0(
@@ -291,8 +291,8 @@
 #'       )
 #'     loggerTrace <-
 #'       ParallelLogger::addDefaultFileLogger(fileName = file.path(outputFolder, paste0(loggerName, ".txt")))
-#'     
-#'     
+#'
+#'
 #'     executeTimeDistributionDiagnosticsX <- function(x,
 #'                                                     cohortIds,
 #'                                                     outputFolder,
@@ -306,7 +306,7 @@
 #'       )
 #'       outputFolder <-
 #'         file.path(outputFolder, x$sourceKey)
-#'       
+#'
 #'       executeTimeDistributionDiagnostics(
 #'         connectionDetails = connectionDetails,
 #'         cohortIds = cohortIds,
@@ -315,7 +315,7 @@
 #'         cohortDatabaseSchema = x$cohortDatabaseSchemaFinal
 #'       )
 #'     }
-#'     
+#'
 #'     ParallelLogger::clusterApply(
 #'       cluster = cluster,
 #'       x = x,
@@ -325,8 +325,8 @@
 #'       fun = executeTimeDistributionDiagnosticsX,
 #'       stopOnError = FALSE
 #'     )
-#'     
+#'
 #'     ParallelLogger::stopCluster(cluster = cluster)
-#'     
+#'
 #'     ParallelLogger::clearLoggers()
 #'   }

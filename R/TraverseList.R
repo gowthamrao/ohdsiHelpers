@@ -7,19 +7,19 @@ traverseList <-
            seperator = "/") {
     for (i in seq_along(lst)) {
       extractedName <- names(lst)[i]
-      
+
       if (is.null(extractedName)) {
         name <- paste0("[[", i, "]]")
       } else {
         name <- extractedName
       }
-      
+
       if (seperator == "$" && is.null(extractedName)) {
         newPath <- paste0(currentPath, name)
       } else {
         newPath <- paste0(currentPath, seperator, name)
       }
-      
+
       if (is.list(lst[[i]])) {
         paths <-
           traverseList(
@@ -29,9 +29,11 @@ traverseList <-
             seperator = seperator
           )
       }
-      
-      newPath <- removeFirstCharacter(inputString = newPath,
-                                 charToRemove = seperator)
+
+      newPath <- removeFirstCharacter(
+        inputString = newPath,
+        charToRemove = seperator
+      )
       paths <- c(paths, newPath)
     }
     return(paths)

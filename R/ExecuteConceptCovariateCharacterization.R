@@ -49,7 +49,7 @@ executeConceptCovariateCharacterization <-
     if (!file.exists(outputFolder)) {
       dir.create(outputFolder, recursive = TRUE)
     }
-    
+
     metaData <- dplyr::tibble(
       startDate = Sys.Date() |> as.character(),
       startTime = Sys.time() |> as.character(),
@@ -57,7 +57,7 @@ executeConceptCovariateCharacterization <-
       notes = NA,
       minCellCount = !!minCellCount
     )
-    
+
     if (!is.null(databaseId)) {
       metaData <- metaData |>
         dplyr::mutate(databaseId = !!databaseId)
@@ -66,8 +66,8 @@ executeConceptCovariateCharacterization <-
       metaData <- metaData |>
         dplyr::mutate(notes = !!notes)
     }
-    
-    
+
+
     ParallelLogger::addDefaultFileLogger(file.path(outputFolder, "log.txt"))
     ParallelLogger::addDefaultErrorReportLogger(file.path(outputFolder, "errorReportR.txt"))
     on.exit(ParallelLogger::unregisterLogger("DEFAULT_FILE_LOGGER", silent = TRUE))
@@ -75,10 +75,10 @@ executeConceptCovariateCharacterization <-
       ParallelLogger::unregisterLogger("DEFAULT_ERRORREPORT_LOGGER", silent = TRUE),
       add = TRUE
     )
-    
+
     connection <-
       DatabaseConnector::connect(connectionDetails = connectionDetails)
-    
+
     ParallelLogger::logInfo(" - Beginning Feature Extraction")
     featureExtractionOutput <-
       CohortDiagnostics:::getCohortCharacteristics(
@@ -90,21 +90,21 @@ executeConceptCovariateCharacterization <-
         covariateSettings = temporalCovariateSettings,
         exportFolder = outputFolder
       )
-    
+
     featureExtractionOutputFinal <- c()
     for (i in (1:length(names(featureExtractionOutput)))) {
       name <- names(featureExtractionOutput)[[i]]
       featureExtractionOutputFinal[[name]] <-
         featureExtractionOutput[[name]] |>
         dplyr::collect()
-      if (name == 'covariates') {
+      if (name == "covariates") {
         featureExtractionOutputFinal[[name]] <-
           featureExtractionOutputFinal[[name]] |>
           dplyr::collect() |>
           dplyr::filter(sumValue > minCellCount) |>
           dplyr::filter(mean >= minCharacterizationMean)
       }
-      if (name == 'covariatesContinuous') {
+      if (name == "covariatesContinuous") {
         featureExtractionOutputFinal[[name]] <-
           featureExtractionOutputFinal[[name]] |>
           dplyr::collect() |>
@@ -112,12 +112,14 @@ executeConceptCovariateCharacterization <-
           dplyr::filter(mean >= minCharacterizationMean)
       }
     }
-    
-    saveRDS(object = featureExtractionOutputFinal,
-            file = file.path(outputFolder, "FeatureExtraction.RDS"))
-    
+
+    saveRDS(
+      object = featureExtractionOutputFinal,
+      file = file.path(outputFolder, "FeatureExtraction.RDS")
+    )
+
     DatabaseConnector::disconnect(connection = connection)
-    
+
     return(featureExtractionOutputFinal)
   }
 
@@ -132,7 +134,7 @@ executeConceptCovariateCharacterizationInParallel <-
            passwordService = "OHDSI_PASSWORD",
            databaseIds = getListOfDatabaseIds(),
            temporalCovariateSettings = CohortDiagnostics::getDefaultCovariateSettings(),
-           sequence =  1,
+           sequence = 1,
            maxCores = parallel::detectCores() /
              3,
            minCellCount = 5,
@@ -144,21 +146,25 @@ executeConceptCovariateCharacterizationInParallel <-
     cdmSources <- cdmSources |>
       dplyr::filter(database %in% c(databaseIds)) |>
       dplyr::filter(sequence == !!sequence)
-    
+
     x <- list()
     for (i in 1:nrow(cdmSources)) {
-      x[[i]] <- cdmSources[i,]
+      x[[i]] <- cdmSources[i, ]
     }
-    
+
     # use Parallel Logger to run in parallel
     cluster <-
-      ParallelLogger::makeCluster(numberOfThreads = min(as.integer(trunc(
-        parallel::detectCores() /
-          2
-      )),
-      nrow(cdmSources)),
-      maxCores)
-    
+      ParallelLogger::makeCluster(
+        numberOfThreads = min(
+          as.integer(trunc(
+            parallel::detectCores() /
+              2
+          )),
+          nrow(cdmSources)
+        ),
+        maxCores
+      )
+
     ## file logger
     loggerName <-
       paste0(
@@ -166,12 +172,12 @@ executeConceptCovariateCharacterizationInParallel <-
         stringr::str_replace_all(
           string = Sys.time(),
           pattern = ":|-|EDT| ",
-          replacement = ''
+          replacement = ""
         )
       )
     loggerTrace <-
       ParallelLogger::addDefaultFileLogger(fileName = file.path(outputFolder, paste0(loggerName, ".txt")))
-    
+
     executeCohortCovariateCharacterizationX <-
       function(x,
                targetCohortIds,
@@ -192,14 +198,16 @@ executeConceptCovariateCharacterizationInParallel <-
           server = x$serverFinal,
           port = x$port
         )
-        
+
         conceptCovariateCharacterizationOutputFolder <-
           file.path(outputFolder, x$sourceKey)
-        
-        dir.create(path = conceptCovariateCharacterizationOutputFolder,
-                   showWarnings = FALSE,
-                   recursive = TRUE)
-        
+
+        dir.create(
+          path = conceptCovariateCharacterizationOutputFolder,
+          showWarnings = FALSE,
+          recursive = TRUE
+        )
+
         featureExtractionOutput <-
           executeConceptCovariateCharacterization(
             connectionDetails = connectionDetails,
@@ -216,7 +224,7 @@ executeConceptCovariateCharacterizationInParallel <-
           )
         rm("featureExtractionOutput")
       }
-    
+
     ParallelLogger::clusterApply(
       cluster = cluster,
       x = x,
@@ -233,6 +241,6 @@ executeConceptCovariateCharacterizationInParallel <-
       minCellCount = minCellCount,
       minCharacterizationMean = minCharacterizationMean
     )
-    
+
     ParallelLogger::stopCluster(cluster = cluster)
   }

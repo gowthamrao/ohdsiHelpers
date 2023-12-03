@@ -9,8 +9,7 @@ getClinicalDescriptonFromChatGpt <- function(condition,
                                                " using model ",
                                                model,
                                                ". Please use caution."
-                                             )
-) {
+                                             )) {
   prompt <-
     paste0(
       "Please compose a detailed report on the condition: '",
@@ -42,14 +41,16 @@ getClinicalDescriptonFromChatGpt <- function(condition,
 ##References: [Include at least 10 references that were used in creating this report, ensuring they are indexed on PubMed and compatible with a reference manager.]
   "
     )
-  
-  output <-  queryChatGpt(prompt = prompt,
-                          apiKey = apiKey,
-                          model = model)
-  
+
+  output <- queryChatGpt(
+    prompt = prompt,
+    apiKey = apiKey,
+    model = model
+  )
+
   if (length(disclaimer) > 0) {
     output <- paste0(output, "\n\n", disclaimer)
   }
-  
+
   return(output)
 }

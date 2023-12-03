@@ -1,6 +1,6 @@
 #' @export
 parsePhenotypeLibraryDescription <- function(cohortDefinition) {
-  librarian <-     stringr::str_replace(
+  librarian <- stringr::str_replace(
     string = cohortDefinition$createdBy$name,
     pattern = "na\\\\",
     replacement = ""
@@ -13,31 +13,33 @@ parsePhenotypeLibraryDescription <- function(cohortDefinition) {
   ) |>
     stringr::str_squish() |>
     stringr::str_trim()
-  
+
   if (length(cohortDefinition$modifiedBy) > 1) {
     lastModifiedBy <-
       cohortDefinition$modifiedBy$name
   }
-  
+
   output <- dplyr::tibble(
     librarian = librarian,
     cohortName = cohortName,
     cohortNameFormatted = cohortNameFormatted,
     lastModifiedBy = lastModifiedBy
   )
-  
-  if (all(!is.na(cohortDefinition$description),
-          nchar(cohortDefinition$description) > 5)) {
+
+  if (all(
+    !is.na(cohortDefinition$description),
+    nchar(cohortDefinition$description) > 5
+  )) {
     textInDescription <-
       cohortDefinition$description |>
       stringr::str_replace_all(pattern = ";", replacement = "") |>
       stringr::str_split(pattern = "\n")
     strings <- textInDescription[[1]]
     textInDescription <- NULL
-    
+
     strings <-
       stringr::str_split(string = strings, pattern = stringr::fixed(":"))
-    
+
     if (all(
       !is.na(cohortDefinition$description[[1]]),
       stringr::str_detect(
@@ -57,17 +59,19 @@ parsePhenotypeLibraryDescription <- function(cohortDefinition) {
           )
         }
       }
-      
+
       stringValues <- dplyr::bind_rows(stringValues)
-      
+
       if (nrow(stringValues) > 0) {
         data <- stringValues |>
           tidyr::pivot_wider()
         stringValues <- NULL
-        
+
         output <- output |>
-          dplyr::select(setdiff(x = colnames(output),
-                                y = colnames(data))) |>
+          dplyr::select(setdiff(
+            x = colnames(output),
+            y = colnames(data)
+          )) |>
           tidyr::crossing(data)
       }
     }

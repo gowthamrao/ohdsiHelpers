@@ -36,7 +36,7 @@ modifyCollapseSettings <- function(cohortDefinition,
                                    eraPad) {
   cohortDefinition$CollapseSettings$CollapseType <-
     "ERA"
-  cohortDefinition$CollapseSettings$EraPad  <-
+  cohortDefinition$CollapseSettings$EraPad <-
     eraPad
   return(cohortDefinition)
 }
@@ -127,7 +127,7 @@ getInitialEventRestrictionAdditionalCriteriaLimit <- function(cohortDefinition) 
   if (hasInitialEventRestrictionAdditionalCriteria(cohortDefinition = cohortDefinition)) {
     limitValue <- cohortDefinition$QualifiedLimit |> as.character()
   } else {
-    limitValue <- 'All'
+    limitValue <- "All"
   }
   return(limitValue)
 }
@@ -147,7 +147,7 @@ getInitialEventLimit <- function(cohortDefinition) {
 #' @export
 hasInitialEventRestrictionAdditionalCriteria <- function(cohortDefinition) {
   # this is the second or additional criteria that are part of entry event criteria
-  checkIfObjectExistsInNestedList(nestedList = cohortDefinition, object = 'AdditionalCriteria')
+  checkIfObjectExistsInNestedList(nestedList = cohortDefinition, object = "AdditionalCriteria")
 }
 
 #' @export
@@ -186,18 +186,22 @@ getWhereAnObjectExistsInNestedList <- function(nestedList,
       namedItems <- c(namedItems, names(nestedList)[[i]])
     }
   }
-  
+
   namedItemsDf <- dplyr::tibble()
-  
+
   if (length(namedItems) > 0) {
     namedItemsDf <-
       dplyr::tibble(namedItems = namedItems |> unique() |> sort()) |>
       dplyr::mutate(value = 1) |>
-      dplyr::mutate(newName = paste0("criteriaLocation",
-                                     object,
-                                     namedItems)) |>
-      dplyr::select(newName,
-                    value) |>
+      dplyr::mutate(newName = paste0(
+        "criteriaLocation",
+        object,
+        namedItems
+      )) |>
+      dplyr::select(
+        newName,
+        value
+      ) |>
       tidyr::pivot_wider(
         names_from  = "newName",
         values_from = "value",
@@ -223,9 +227,11 @@ getContinuousPriorObservationPeriodRequirement <-
 #' @export
 areCohortEventsRestrictedByVisit <-
   function(cohortDefinition) {
-    if (!'VisitOccurrence' %in% getDomainsInEntryEvents(cohortDefinition = cohortDefinition)) {
-      checkIfObjectExistsInNestedList(nestedList = cohortDefinition,
-                                      object = 'VisitOccurrence')
+    if (!"VisitOccurrence" %in% getDomainsInEntryEvents(cohortDefinition = cohortDefinition)) {
+      checkIfObjectExistsInNestedList(
+        nestedList = cohortDefinition,
+        object = "VisitOccurrence"
+      )
     } else {
       FALSE
     }
@@ -235,30 +241,30 @@ areCohortEventsRestrictedByVisit <-
 stringPresentInCohortDefinitionText <-
   function(cohortDefinition,
            textToSearch) {
-    cohortDefinition |> 
-      RJSONIO::toJSON(digits = 23) |> 
-      tolower()  |> 
-      stringr::str_trim() |> 
-      stringr::str_squish() |> 
-      stringr::str_detect(pattern = textToSearch |> 
-                            tolower() |> 
-                            stringr::str_trim() |> 
-                            stringr::str_squish())
+    cohortDefinition |>
+      RJSONIO::toJSON(digits = 23) |>
+      tolower() |>
+      stringr::str_trim() |>
+      stringr::str_squish() |>
+      stringr::str_detect(pattern = textToSearch |>
+        tolower() |>
+        stringr::str_trim() |>
+        stringr::str_squish())
   }
 
 #' @export
 getDomainsInEntryEvents <- function(cohortDefinition) {
   cohortEntryEvents <-
     getNumberOfCohortEntryEvents(cohortDefinition = cohortDefinition)
-  
+
   domains <- c()
   for (i in (1:cohortEntryEvents)) {
     domains[i] <-
       names(cohortDefinition$PrimaryCriteria$CriteriaList[[i]])
   }
-  
+
   uniqueDomains <- unique(domains) |> sort()
-  
+
   output <- c()
   output$uniqueDomains <- uniqueDomains
   output$numberOfUniqueDomains <- length(uniqueDomains)
@@ -266,7 +272,7 @@ getDomainsInEntryEvents <- function(cohortDefinition) {
     dplyr::tibble(uniqueDomains) |>
     dplyr::mutate(value = 1) |>
     tidyr::pivot_wider(
-      names_from  = "uniqueDomains",
+      names_from = "uniqueDomains",
       names_prefix = "domain",
       values_from = "value",
       values_fill = 0
@@ -284,16 +290,16 @@ parseCohortDefinitionSpecifications <- function(cohortDefinition) {
   cohortExit <- readCohortExit(cohortDefinition = cohortDefinition)
   numberOfInclusionRules <-
     getNumberOfInclusionRules(cohortDefinition = cohortDefinition)
-  
+
   initialEventLimit <-
     getInitialEventLimit(cohortDefinition = cohortDefinition)
-  
+
   initialEventRestrictionAdditionalCriteria <- hasInitialEventRestrictionAdditionalCriteria(cohortDefinition = cohortDefinition)
   # qualifying limit is part of entry event criteria. Its the second limit if initialEventRestrictionAdditionalCriteria Exits
   # this is the restrict initial events part of entry event criteria
   initialEventRestrictionAdditionalCriteriaLimit <-
     getInitialEventRestrictionAdditionalCriteriaLimit(cohortDefinition = cohortDefinition)
-  
+
   numberOfCohortEntryEvents <-
     getNumberOfCohortEntryEvents(cohortDefinition = cohortDefinition)
   domainsInEntryEventCriteria <-
@@ -312,28 +318,34 @@ parseCohortDefinitionSpecifications <- function(cohortDefinition) {
   domainsInEntryEvents <-
     paste0(domainsInEntryEventCriteria$uniqueDomains, collapse = ", ")
   useOfObservationPeriodInclusionRule <-
-    checkIfObjectExistsInNestedList(nestedList = cohortDefinition,
-                                    object = 'ObservationPeriod') |> as.integer()
+    checkIfObjectExistsInNestedList(
+      nestedList = cohortDefinition,
+      object = "ObservationPeriod"
+    ) |> as.integer()
   restrictedByVisit <-
     areCohortEventsRestrictedByVisit(cohortDefinition = cohortDefinition) |> as.integer()
-  
+
   hasWashoutInText <-
-    stringPresentInCohortDefinitionText(cohortDefinition = cohortDefinition,
-                                        textToSearch = "washout") |> as.integer()
-  
+    stringPresentInCohortDefinitionText(
+      cohortDefinition = cohortDefinition,
+      textToSearch = "washout"
+    ) |> as.integer()
+
   inclusionRuleQualifyingEventLimit <- getInclusionRuleQualifyingEventLimit(cohortDefinition = cohortDefinition)
-  
+
   report <- dplyr::tibble(
     censorWindowStartDate =
       (if (length(censorWindow$censorWindowStartDate) > 0) {
         censorWindow$censorWindowStartDate
-      } else
-        NA),
+      } else {
+        NA
+      }),
     censorWindowEndDate =
       (if (length(censorWindow$censorWindowEndDateDate) > 0) {
         censorWindow$censorWindowEndDateDate
-      } else
-        NA),
+      } else {
+        NA
+      }),
     collapseSettingsType = collapseSettings$collapseType,
     collapseEraPad = collapseSettings$eraPad,
     exitStrategy = cohortExit$exitStrategy,
@@ -360,39 +372,41 @@ parseCohortDefinitionSpecifications <- function(cohortDefinition) {
     restrictedByVisit = restrictedByVisit,
     hasWashoutInText = hasWashoutInText
   )
-  
+
   if (nrow(domainsInEntryEventCriteria$domains) > 0) {
     report <- report |>
       tidyr::crossing(domainsInEntryEventCriteria$domains)
   }
-  
+
   sourceDomains <-
     c(
-      'ProcedureSourceConcept',
-      'ConditionSourceConcept',
-      'ObservationSourceConcept',
-      'VisitSourceConcept',
-      'DrugSourceConcept',
-      'DeviceSourceConcept',
-      'DeathSourceConcept',
-      'MeasurementSourceConcept'
+      "ProcedureSourceConcept",
+      "ConditionSourceConcept",
+      "ObservationSourceConcept",
+      "VisitSourceConcept",
+      "DrugSourceConcept",
+      "DeviceSourceConcept",
+      "DeathSourceConcept",
+      "MeasurementSourceConcept"
     )
-  demographics <- c('Age',
-                    'Gender')
-  typeConcepts <- c('VisitType')
+  demographics <- c(
+    "Age",
+    "Gender"
+  )
+  typeConcepts <- c("VisitType")
   measureMent <-
     c(
-      'ValueAsConcept',
-      'Operator',
-      'ValueAsNumber',
-      'Op',
-      'RangeLow',
-      'RangeHigh',
-      'RangeLowRatio',
-      'RangeHighRatio'
+      "ValueAsConcept",
+      "Operator",
+      "ValueAsNumber",
+      "Op",
+      "RangeLow",
+      "RangeHigh",
+      "RangeLowRatio",
+      "RangeHighRatio"
     )
-  other <- c('PlaceOfServiceCS', 'ProviderSpecialty', 'First')
-  
+  other <- c("PlaceOfServiceCS", "ProviderSpecialty", "First")
+
   combined <-
     c(sourceDomains, demographics, typeConcepts, other) |> unique()
   for (i in (1:length(combined))) {
@@ -403,26 +417,28 @@ parseCohortDefinitionSpecifications <- function(cohortDefinition) {
         tidyr::crossing(whereExists)
     }
   }
-  
+
   report <- report |>
-    dplyr::mutate(eventCohort =
-                    dplyr::if_else(
-                      condition = (
-                        initialEventLimit == 'All' &
-                          initialEventRestrictionAdditionalCriteriaLimit == 'All' &
-                          inclusionRuleQualifyingEventLimit == 'All'
-                      ),
-                      true = 1,
-                      false = 0
-                    ))
-  
+    dplyr::mutate(
+      eventCohort =
+        dplyr::if_else(
+          condition = (
+            initialEventLimit == "All" &
+              initialEventRestrictionAdditionalCriteriaLimit == "All" &
+              inclusionRuleQualifyingEventLimit == "All"
+          ),
+          true = 1,
+          false = 0
+        )
+    )
+
   return(report)
 }
 
 #' @export
 parsePhenotypeLibraryDescription <- function(cohortDefinition) {
   output <- dplyr::tibble()
-  librarian <-     stringr::str_replace(
+  librarian <- stringr::str_replace(
     string = cohortDefinition$createdBy$name,
     pattern = "na\\\\",
     replacement = ""
@@ -435,12 +451,12 @@ parsePhenotypeLibraryDescription <- function(cohortDefinition) {
   ) |>
     stringr::str_squish() |>
     stringr::str_trim()
-  
+
   if (length(cohortDefinition$modifiedBy) > 1) {
     lastModifiedBy <-
       cohortDefinition$modifiedBy$name
   }
-  
+
   output <- output |>
     dplyr::mutate(
       librarian = librarian,
@@ -448,19 +464,21 @@ parsePhenotypeLibraryDescription <- function(cohortDefinition) {
       cohortNameLong = cohortNameFormatted,
       lastModifiedBy = lastModifiedBy
     )
-  
-  if (all(!is.na(cohortDefinition$description),
-          nchar(cohortDefinition$description) > 5)) {
+
+  if (all(
+    !is.na(cohortDefinition$description),
+    nchar(cohortDefinition$description) > 5
+  )) {
     textInDescription <-
       cohortDefinition$description |>
       stringr::str_replace_all(pattern = ";", replacement = "") |>
       stringr::str_split(pattern = "\n")
     strings <- textInDescription[[1]]
     textInDescription <- NULL
-    
+
     strings <-
       stringr::str_split(string = strings, pattern = stringr::fixed(":"))
-    
+
     if (all(
       !is.na(cohortDefinition$description[[1]]),
       stringr::str_detect(
@@ -480,14 +498,14 @@ parsePhenotypeLibraryDescription <- function(cohortDefinition) {
           )
         }
       }
-      
+
       stringValues <- dplyr::bind_rows(stringValues)
-      
+
       if (nrow(stringValues) > 0) {
         data <- stringValues |>
           tidyr::pivot_wider()
         stringValues <- NULL
-        
+
         output <- output |>
           tidyr::crossing(data)
       }
@@ -503,22 +521,22 @@ parsePhenotypeLibraryDescription <- function(cohortDefinition) {
 getOrcidDetails <- function(orcidId) {
   # Create the URL for the API request
   url <- paste0("https://pub.orcid.org/v3.0/", orcidId)
-  
+
   # Make the API request
   res <-
-    httr::GET(url, httr::add_headers('Accept' = 'application/json'))
-  
+    httr::GET(url, httr::add_headers("Accept" = "application/json"))
+
   # Parse the JSON response
   parsedRes <- RJSONIO::fromJSON(httr::content(res, "text"))
-  
+
   details <- c()
   # Extract the name
   details$givenName <-
-    paste0(as.character(parsedRes$person$name$`given-names`),"")
+    paste0(as.character(parsedRes$person$name$`given-names`), "")
   details$familyName <-
-    paste0(as.character(parsedRes$person$name$`family-name`),"")
-  details$email <- paste0(parsedRes$person$emails$email |> as.character(),"")
-  
+    paste0(as.character(parsedRes$person$name$`family-name`), "")
+  details$email <- paste0(parsedRes$person$emails$email |> as.character(), "")
+
   return(details)
 }
 
@@ -535,16 +553,16 @@ getOrcidFromPhenotypeLog <-
           replacement = ","
         )
       ) |>
-      tidyr::separate_rows(contributorOrcIds, sep = ",") |>   # Split by comma
-      dplyr::mutate(contributorOrcIds = stringr::str_trim(contributorOrcIds, side = "both")) |>   # Trim whitespace
-      dplyr::filter(contributorOrcIds != "") |>  # Remove empty strings
-      dplyr::filter(contributorOrcIds != "''") |>  # Remove empty strings
-      dplyr::filter(contributorOrcIds != "'") |>  # Remove empty strings
-      dplyr::mutate(contributorOrcIds = stringr::str_replace_all(contributorOrcIds, "'", "")) |>  # Remove quotations
-      dplyr::distinct(contributorOrcIds) |>  # Get unique ORCIDs
+      tidyr::separate_rows(contributorOrcIds, sep = ",") |> # Split by comma
+      dplyr::mutate(contributorOrcIds = stringr::str_trim(contributorOrcIds, side = "both")) |> # Trim whitespace
+      dplyr::filter(contributorOrcIds != "") |> # Remove empty strings
+      dplyr::filter(contributorOrcIds != "''") |> # Remove empty strings
+      dplyr::filter(contributorOrcIds != "'") |> # Remove empty strings
+      dplyr::mutate(contributorOrcIds = stringr::str_replace_all(contributorOrcIds, "'", "")) |> # Remove quotations
+      dplyr::distinct(contributorOrcIds) |> # Get unique ORCIDs
       dplyr::arrange(contributorOrcIds) |>
       dplyr::pull(contributorOrcIds)
-    
+
     orcidLog <- c()
     for (i in (1:length(uniqueOrcIds))) {
       orcIdDetails <- NULL
@@ -557,7 +575,7 @@ getOrcidFromPhenotypeLog <-
       )
     }
     orcidLog <- dplyr::bind_rows(orcidLog)
-    
+
     orcidLogWithContributions <- c()
     for (i in (1:nrow(orcidLog))) {
       numberOfCohorts <- log |>
@@ -570,10 +588,12 @@ getOrcidFromPhenotypeLog <-
         dplyr::pull(cohortId) |>
         unique() |>
         length()
-      
+
       numberOfCohortsAccepted <- log |>
-        dplyr::filter(stringr::str_detect(string = tolower(status),
-                                          pattern = "accepted")) |>
+        dplyr::filter(stringr::str_detect(
+          string = tolower(status),
+          pattern = "accepted"
+        )) |>
         dplyr::filter(
           stringr::str_detect(
             string = .data$contributorOrcIds,
@@ -583,8 +603,8 @@ getOrcidFromPhenotypeLog <-
         dplyr::pull(cohortId) |>
         unique() |>
         length()
-      
-      orcidLogWithContributions[[i]] <- orcidLog[i,] |> 
+
+      orcidLogWithContributions[[i]] <- orcidLog[i, ] |>
         dplyr::mutate(
           contributions = numberOfCohorts,
           accepted = numberOfCohortsAccepted
@@ -601,9 +621,10 @@ fetchGitHubRepoReleaseInfo <- function(repoOwner, repoName) {
   # Fetch release data from GitHub API
   releaseData <-
     gh::gh("GET /repos/:owner/:repo/releases",
-           owner = repoOwner,
-           repo = repoName)
-  
+      owner = repoOwner,
+      repo = repoName
+    )
+
   # Initialize empty data frame
   repoInfo <- dplyr::tibble(
     tag = character(0),
@@ -611,30 +632,32 @@ fetchGitHubRepoReleaseInfo <- function(repoOwner, repoName) {
     releaseDate = character(0),
     stringsAsFactors = FALSE
   )
-  
+
   # Loop through each release
   for (i in 1:length(releaseData)) {
     tag <- releaseData[[i]]$tag_name
     version <-
       ifelse(is.null(releaseData[[i]]$name), NA, releaseData[[i]]$name)
     releaseDate <- releaseData[[i]]$created_at |> as.Date()
-    
+
     # Append to data frame
     repoInfo <-
-      rbind(repoInfo,
-            dplyr::tibble(
-              tag = tag,
-              version = version,
-              releaseDate = releaseDate
-            ))
+      rbind(
+        repoInfo,
+        dplyr::tibble(
+          tag = tag,
+          version = version,
+          releaseDate = releaseDate
+        )
+      )
   }
-  
+
   return(repoInfo)
 }
 
 # Function to plot smoothed trend curve
 #' @export
-plotSmoothedTrendCurve <- function(data, 
+plotSmoothedTrendCurve <- function(data,
                                    dateColumn = "createdDate",
                                    smoothingMethod = "loess",
                                    showStandardError = FALSE,
@@ -642,12 +665,11 @@ plotSmoothedTrendCurve <- function(data,
                                    plotTitle = "Smoothed Trend Curve of Cohort Records Over Time",
                                    xAxisLabel = "Created Date",
                                    yAxisLabel = "Volume") {
-  
   # Aggregate data by dateColumn to find the volume for each date
   aggregatedData <- data %>%
     group_by(.data[[dateColumn]]) %>%
     summarise(volume = n())
-  
+
   # Create the ggplot
   plot <- ggplot(aggregatedData, aes(x = .data[[dateColumn]], y = volume)) +
     geom_point() +
@@ -657,12 +679,9 @@ plotSmoothedTrendCurve <- function(data,
       x = xAxisLabel,
       y = yAxisLabel
     )
-  
+
   # Save the plot as a PNG
   ggsave(outputFilename, plot)
-  
+
   return(paste("Plot saved as '", outputFilename, "'", sep = ""))
 }
-
-
-

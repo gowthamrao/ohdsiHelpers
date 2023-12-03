@@ -38,7 +38,7 @@ getDefaultCovariateSettings <- function() {
       -365, # long term prior
       -180, # medium term prior
       -30, # short term prior
-      
+
       # components displayed in temporal characterization
       -365, # one year prior to -31
       -30, # 30 day prior not including day 0
@@ -52,7 +52,7 @@ getDefaultCovariateSettings <- function() {
       0, # long term prior
       0, # medium term prior
       0, # short term prior
-      
+
       # components displayed in temporal characterization
       -31, # one year prior to -31
       -1, # 30 day prior not including day 0
@@ -93,29 +93,29 @@ executeCohortDiagnosticsInParallel <-
            temporalCovariateSettings = getDefaultCovariateSettings(),
            useSubsetCohortsAsFeatures = FALSE,
            minCellCount = 5) {
-  
-    
     cdmSources <- cdmSources |>
       dplyr::filter(database %in% c(databaseIds)) |>
       dplyr::filter(sequence == !!sequence)
-    
+
     if (nrow(cdmSources) == 0) {
       stop("no matching cdm sources.")
     }
-    
+
     x <- list()
     for (i in 1:nrow(cdmSources)) {
-      x[[i]] <- cdmSources[i,]
+      x[[i]] <- cdmSources[i, ]
     }
-    
+
     # use Parallel Logger to run in parallel
     cluster <-
-      ParallelLogger::makeCluster(numberOfThreads = min(as.integer(trunc(
-        parallel::detectCores() /
-          2
-      )),
-      length(x)))
-    
+      ParallelLogger::makeCluster(numberOfThreads = min(
+        as.integer(trunc(
+          parallel::detectCores() /
+            2
+        )),
+        length(x)
+      ))
+
     ## file logger
     loggerName <-
       paste0(
@@ -123,13 +123,13 @@ executeCohortDiagnosticsInParallel <-
         stringr::str_replace_all(
           string = Sys.time(),
           pattern = ":|-|EDT| ",
-          replacement = ''
+          replacement = ""
         )
       )
     loggerTrace <-
       ParallelLogger::addDefaultFileLogger(fileName = file.path(outputFolder, paste0(loggerName, ".txt")))
-    
-    
+
+
     executeCohortDiagnosticsX <- function(x,
                                           cohortDefinitionSet,
                                           cohortIds,
@@ -151,7 +151,6 @@ executeCohortDiagnosticsInParallel <-
                                           featureCohortTableName,
                                           featureCohortDefinitionSet,
                                           minCellCount) {
-      
       connectionDetails <- DatabaseConnector::createConnectionDetails(
         dbms = x$dbms,
         user = keyring::key_get(userService),
@@ -161,31 +160,33 @@ executeCohortDiagnosticsInParallel <-
       )
       outputFolder <-
         file.path(outputFolder, x$sourceKey)
-      
+
       featureExtractionSettingsCohortDiagnostics <- temporalCovariateSettings
-      
+
       finalFeatureCohortDefinitionSet <- featureCohortDefinitionSet
-      
+
       if (is.null(cohortTableNames)) {
         if (usePhenotypeLibrarySettings) {
-          cohortTableName <- paste0(stringr::str_squish("pl_"),
-                                    stringr::str_squish(x$sourceKey))
+          cohortTableName <- paste0(
+            stringr::str_squish("pl_"),
+            stringr::str_squish(x$sourceKey)
+          )
           cohortTableNames <-
             CohortGenerator::getCohortTableNames(cohortTable = cohortTableName)
-          
+
           if (is.null(featureCohortTableName)) {
             featureCohortTableName <- cohortTableName
           }
         }
       }
-      
+
       if (!useSubsetCohortsAsFeatures) {
-        if ('isSubset' %in% colnames(finalFeatureCohortDefinitionSet)) {
+        if ("isSubset" %in% colnames(finalFeatureCohortDefinitionSet)) {
           finalFeatureCohortDefinitionSet <- finalFeatureCohortDefinitionSet |>
             dplyr::filter(isSubset == TRUE)
         }
       }
-      
+
       if (exists("featureExtractionSettingsCohortBasedCovariateSettings1")) {
         featureExtractionSettingsCohortBasedCovariateSettings1 <- NULL
         remove(featureExtractionSettingsCohortBasedCovariateSettings1)
@@ -198,12 +199,14 @@ executeCohortDiagnosticsInParallel <-
         featureExtractionCovariateSettings <- NULL
         remove("featureExtractionCovariateSettings")
       }
-      
+
       finalFeatureCohorts <- finalFeatureCohortDefinitionSet |>
-        dplyr::select(cohortId,
-                      cohortName) |> 
+        dplyr::select(
+          cohortId,
+          cohortName
+        ) |>
         dplyr::filter(!cohortId %in% c(cohortDefinitionSet$cohortId))
-      
+
       if (nrow(finalFeatureCohorts) > 0) {
         featureExtractionSettingsCohortBasedCovariateSettings1 <-
           FeatureExtraction::createCohortBasedTemporalCovariateSettings(
@@ -216,20 +219,22 @@ executeCohortDiagnosticsInParallel <-
             temporalEndDays = featureExtractionSettingsCohortDiagnostics$temporalEndDays
           )
       }
-      
+
       featureExtractionSettingsCohortBasedCovariateSettings2 <-
         FeatureExtraction::createCohortBasedTemporalCovariateSettings(
           analysisId = 160,
           covariateCohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
           covariateCohortTable = cohortTableNames$cohortTable,
           covariateCohorts = cohortDefinitionSet |>
-            dplyr::select(cohortId,
-                          cohortName),
+            dplyr::select(
+              cohortId,
+              cohortName
+            ),
           valueType = "binary",
           temporalStartDays = featureExtractionSettingsCohortDiagnostics$temporalStartDays,
           temporalEndDays = featureExtractionSettingsCohortDiagnostics$temporalEndDays
         )
-      
+
       if (exists("featureExtractionSettingsCohortBasedCovariateSettings1")) {
         featureExtractionCovariateSettings <-
           list(
@@ -244,7 +249,7 @@ executeCohortDiagnosticsInParallel <-
             featureExtractionSettingsCohortBasedCovariateSettings2
           )
       }
-      
+
       CohortDiagnostics::executeDiagnostics(
         cohortDefinitionSet = cohortDefinitionSet,
         exportFolder = outputFolder,
@@ -273,10 +278,10 @@ executeCohortDiagnosticsInParallel <-
         temporalCovariateSettings = featureExtractionCovariateSettings,
         minCellCount = minCellCount,
         incremental = TRUE,
-        incrementalFolder = file.path(outputFolder, 'incrementalFolder')
+        incrementalFolder = file.path(outputFolder, "incrementalFolder")
       )
     }
-    
+
     ParallelLogger::clusterApply(
       cluster = cluster,
       x = x,
@@ -303,17 +308,19 @@ executeCohortDiagnosticsInParallel <-
       minCellCount = minCellCount,
       stopOnError = FALSE
     )
-    
+
     ParallelLogger::stopCluster(cluster = cluster)
-    
+
     dir.create(
-      path = file.path(outputFolder,
-                       "Combined"),
+      path = file.path(
+        outputFolder,
+        "Combined"
+      ),
       showWarnings = FALSE,
       recursive = TRUE
     )
-    
-    #create sqlite db merged file
+
+    # create sqlite db merged file
     CohortDiagnostics::createMergedResultsFile(
       dataFolder = outputFolder,
       overwrite = TRUE,
@@ -323,7 +330,7 @@ executeCohortDiagnosticsInParallel <-
         "MergedCohortDiagnosticsData.sqlite"
       )
     )
-    
+
     CohortDiagnostics::createDiagnosticsExplorerZip(
       outputZipfile = file.path(
         outputFolder,
@@ -337,7 +344,7 @@ executeCohortDiagnosticsInParallel <-
       ),
       overwrite = TRUE
     )
-    
+
     unlink(
       x = file.path(
         outputFolder,
@@ -347,7 +354,7 @@ executeCohortDiagnosticsInParallel <-
       recursive = TRUE,
       force = TRUE
     )
-    
+
     zip::unzip(
       zipfile = file.path(
         outputFolder,
@@ -356,9 +363,11 @@ executeCohortDiagnosticsInParallel <-
       ),
       overwrite = TRUE,
       junkpaths = FALSE,
-      exdir = file.path(outputFolder,
-                        "Combined")
+      exdir = file.path(
+        outputFolder,
+        "Combined"
+      )
     )
-    
+
     ParallelLogger::clearLoggers()
   }

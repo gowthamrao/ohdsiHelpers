@@ -13,20 +13,22 @@ executeCohortExplorerInParallel <-
     cdmSources <- cdmSources |>
       dplyr::filter(database %in% c(databaseIds)) |>
       dplyr::filter(sequence == !!sequence)
-    
+
     x <- list()
     for (i in 1:nrow(cdmSources)) {
-      x[[i]] <- cdmSources[i,]
+      x[[i]] <- cdmSources[i, ]
     }
-    
+
     # use Parallel Logger to run in parallel
     cluster <-
-      ParallelLogger::makeCluster(numberOfThreads = min(as.integer(trunc(
-        parallel::detectCores() /
-          2
-      )),
-      length(x)))
-    
+      ParallelLogger::makeCluster(numberOfThreads = min(
+        as.integer(trunc(
+          parallel::detectCores() /
+            2
+        )),
+        length(x)
+      ))
+
     ## file logger
     loggerName <-
       paste0(
@@ -34,13 +36,13 @@ executeCohortExplorerInParallel <-
         stringr::str_replace_all(
           string = Sys.time(),
           pattern = ":|-|EDT| ",
-          replacement = ''
+          replacement = ""
         )
       )
     loggerTrace <-
       ParallelLogger::addDefaultFileLogger(fileName = file.path(outputFolder, paste0(loggerName, ".txt")))
-    
-    
+
+
     executeCohortExplorerX <- function(x,
                                        cohortDefinitionSet,
                                        cohortIds,
@@ -56,7 +58,7 @@ executeCohortExplorerInParallel <-
       )
       outputFolder <-
         file.path(outputFolder, x$sourceKey)
-      
+
       for (i in (1:length(cohortIds))) {
         CohortExplorer::createCohortExplorerApp(
           cohortDefinitionId = cohortIds[[i]],
@@ -78,7 +80,7 @@ executeCohortExplorerInParallel <-
         )
       }
     }
-    
+
     ParallelLogger::clusterApply(
       cluster = cluster,
       x = x,
@@ -90,6 +92,6 @@ executeCohortExplorerInParallel <-
       fun = executeCohortExplorerX,
       stopOnError = FALSE
     )
-    
+
     ParallelLogger::stopCluster(cluster = cluster)
   }

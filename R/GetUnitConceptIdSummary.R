@@ -14,7 +14,7 @@ getUnitConceptIdSummary <- function(connection = NULL,
       stop("No connection or connectionDetails provided.")
     }
   }
-  
+
   conceptIds <- measurementConceptIds
   if (includeDescendants) {
     conceptIds <-
@@ -25,7 +25,7 @@ getUnitConceptIdSummary <- function(connection = NULL,
       )
     conceptIds <- conceptIds$descendantConceptId |> unique()
   }
-  
+
   sql <- "
         DROP TABLE IF EXISTS #temp_1;
         DROP TABLE IF EXISTS #temp_2;
@@ -97,7 +97,7 @@ getUnitConceptIdSummary <- function(connection = NULL,
         WHERE measurement_concept_id IN (@measurement_concepts)
         GROUP BY unit_concept_id;
   "
-  
+
   DatabaseConnector::renderTranslateExecuteSql(
     connection = connection,
     sql = sql,
@@ -105,7 +105,7 @@ getUnitConceptIdSummary <- function(connection = NULL,
     measurement_concepts = conceptIds,
     get_person_count = getPersonCount
   )
-  
+
   temp1 <- DatabaseConnector::renderTranslateQuerySql(
     connection = connection,
     sql = "SELECT * FROM #temp_1;",
@@ -131,17 +131,21 @@ getUnitConceptIdSummary <- function(connection = NULL,
     sql = "SELECT * FROM #temp_5;",
     snakeCaseToCamelCase = TRUE
   )
-  
-  recordCount <- dplyr::bind_rows(temp1,
-                                  temp2,
-                                  temp3,
-                                  temp4,
-                                  temp5) |>
+
+  recordCount <- dplyr::bind_rows(
+    temp1,
+    temp2,
+    temp3,
+    temp4,
+    temp5
+  ) |>
     dplyr::tibble() |>
-    dplyr::arrange(measurementConceptId,
-                   measurementTypeConceptId,
-                   unitConceptId)
-  
+    dplyr::arrange(
+      measurementConceptId,
+      measurementTypeConceptId,
+      unitConceptId
+    )
+
   DatabaseConnector::renderTranslateExecuteSql(
     connection = connection,
     profile = FALSE,
@@ -153,7 +157,7 @@ getUnitConceptIdSummary <- function(connection = NULL,
     DROP TABLE IF EXISTS #temp_4;
     DROP TABLE IF EXISTS #temp_5;",
   )
-  
+
   conceptIdDetails <- ConceptSetDiagnostics::getConceptIdDetails(
     conceptIds = c(
       recordCount$unitConceptId,
@@ -163,18 +167,20 @@ getUnitConceptIdSummary <- function(connection = NULL,
     connection = connection,
     vocabularyDatabaseSchema = cdmSource$vocabDatabaseSchemaFinal
   )
-  
+
   output <- c()
   output$recordCount <- recordCount |>
     dplyr::arrange(dplyr::desc(recordCount))
   output$conceptIdDetails <- conceptIdDetails |>
     dplyr::arrange(conceptId)
-  
+
   output$formattedOutput <- recordCount |>
     dplyr::inner_join(
       conceptIdDetails |>
-        dplyr::select(conceptId,
-                      conceptName) |>
+        dplyr::select(
+          conceptId,
+          conceptName
+        ) |>
         dplyr::rename(
           measurementConceptId = conceptId,
           measurementConceptName = conceptName
@@ -183,8 +189,10 @@ getUnitConceptIdSummary <- function(connection = NULL,
     ) |>
     dplyr::inner_join(
       conceptIdDetails |>
-        dplyr::select(conceptId,
-                      conceptName) |>
+        dplyr::select(
+          conceptId,
+          conceptName
+        ) |>
         dplyr::rename(
           measurementTypeConceptId = conceptId,
           measurementTypeConceptName = conceptName
@@ -193,10 +201,14 @@ getUnitConceptIdSummary <- function(connection = NULL,
     ) |>
     dplyr::inner_join(
       conceptIdDetails |>
-        dplyr::select(conceptId,
-                      conceptName) |>
-        dplyr::rename(unitConceptId = conceptId,
-                      unitConceptName = conceptName),
+        dplyr::select(
+          conceptId,
+          conceptName
+        ) |>
+        dplyr::rename(
+          unitConceptId = conceptId,
+          unitConceptName = conceptName
+        ),
       by = "unitConceptId"
     ) |>
     dplyr::relocate(
@@ -208,6 +220,6 @@ getUnitConceptIdSummary <- function(connection = NULL,
       unitConceptName
     ) |>
     dplyr::arrange(dplyr::desc(recordCount))
-  
+
   return(output)
 }

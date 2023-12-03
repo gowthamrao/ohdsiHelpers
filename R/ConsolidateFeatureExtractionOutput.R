@@ -18,58 +18,62 @@
 #' @export
 consolidateFeatureExtractionOutput <- function(rootFolder,
                                                groupName = "databaseId",
-                                               outputFolder = file.path(rootFolder,
-                                                                        'combined'),
+                                               outputFolder = file.path(
+                                                 rootFolder,
+                                                 "combined"
+                                               ),
                                                overwrite = TRUE) {
   if (!overwrite) {
     if (length(list.files(outputFolder)) > 0) {
       stop("outputFolder exists and contains files. stopping.")
     }
   }
-  
+
   eligibleFiles <-
-    listEligibleFiles(path = rootFolder,
-                      name = "FeatureExtraction") |> 
+    listEligibleFiles(
+      path = rootFolder,
+      name = "FeatureExtraction"
+    ) |>
     dplyr::filter(folderName != basename(outputFolder))
-  
+
   analysisRef <- c()
   covariateRef <- c()
   covariates <- c()
   timeRef <- c()
   covariateContinous <- c()
-  
+
   for (i in (1:nrow(eligibleFiles))) {
     eligibleFile <- eligibleFiles[i, ]
     data <- readRDS(eligibleFile$fullName)
-    
+
     analysisRef[[i]] <- data$analysisRef
     if (!is.null(data$analysisRef)) {
       analysisRef[[i]][[groupName]] <- eligibleFile$folderName
     }
-    
+
     covariateRef[[i]] <- data$covariateRef
     if (!is.null(data$covariateRef)) {
       covariateRef[[i]][[groupName]] <- eligibleFile$folderName
     }
-    
+
     timeRef[[i]] <- data$timeRef
     if (!is.null(data$timeRef)) {
       timeRef[[i]][[groupName]] <- eligibleFile$folderName
     }
-    
+
     covariates[[i]] <- data$covariates
     if (!is.null(data$covariates)) {
       covariates[[i]][[groupName]] <-
         eligibleFile$folderName
     }
-    
+
     covariateContinous[[i]] <- data$covariateContinous
     if (!is.null(covariateContinous[[i]])) {
       covariateContinous[[i]][[groupName]] <-
         eligibleFile$folderName
     }
   }
-  
+
   analysisRef <- dplyr::bind_rows(analysisRef) |>
     dplyr::distinct()
   covariateRef <- dplyr::bind_rows(covariateRef) |>
@@ -83,7 +87,7 @@ consolidateFeatureExtractionOutput <- function(rootFolder,
   covariateContinous <-
     dplyr::bind_rows(covariateContinous) |>
     dplyr::distinct()
-  
+
   featureExtractionOutput <- c()
   featureExtractionOutput$analysisRef <- analysisRef
   featureExtractionOutput$covariateRef <- covariateRef
@@ -93,20 +97,28 @@ consolidateFeatureExtractionOutput <- function(rootFolder,
     timeRef
   featureExtractionOutput$covariateContinous <-
     covariateContinous
-  
+
   if (!is.null(outputFolder)) {
-    unlink(x = outputFolder,
-           recursive = TRUE,
-           force = TRUE)
-    
-    dir.create(path = outputFolder,
-               showWarnings = FALSE,
-               recursive = TRUE)
-    
-    saveRDS(object = featureExtractionOutput,
-            file = file.path(outputFolder,
-                             "FeatureExtraction.RDS"))
+    unlink(
+      x = outputFolder,
+      recursive = TRUE,
+      force = TRUE
+    )
+
+    dir.create(
+      path = outputFolder,
+      showWarnings = FALSE,
+      recursive = TRUE
+    )
+
+    saveRDS(
+      object = featureExtractionOutput,
+      file = file.path(
+        outputFolder,
+        "FeatureExtraction.RDS"
+      )
+    )
   }
-  
+
   return(featureExtractionOutput)
 }

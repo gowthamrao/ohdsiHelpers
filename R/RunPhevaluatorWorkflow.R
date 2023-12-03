@@ -41,12 +41,12 @@
 #'   #       dplyr::filter(cohortId %in% c(candidateCohortIds)),
 #'   #     phenotypeName = phenotypeName
 #'   #   )
-#'   
+#'
 #'   cohortDatabaseSchema = x$cdmSource$cohortDatabaseSchemaFinal
 #'   cdmDatabaseSchema <- x$cdmSource$cdmDatabaseSchemaFinal
 #'   databaseId <- x$cdmSource$sourceKey
 #'   sourceName <- x$cdmSource$sourceName
-#'   
+#'
 #'   message <- paste0(
 #'     "Running ",
 #'     sourceName,
@@ -66,7 +66,7 @@
 #'   dir.create(path = cohortGeneratorIncrementalFolder,
 #'              showWarnings = FALSE,
 #'              recursive = TRUE)
-#'   
+#'
 #'   ParallelLogger::clearLoggers()
 #'   ParallelLogger::addDefaultFileLogger(fileName = file.path(
 #'     file.path(outputFolder),
@@ -74,9 +74,9 @@
 #'            x$cdmSource$sourceKey,
 #'            ".txt")
 #'   ))
-#'   
+#'
 #'   ParallelLogger::logInfo(message)
-#'   
+#'
 #'   connectionDetails <- DatabaseConnector::createConnectionDetails(
 #'     dbms = x$cdmSource$dbms,
 #'     user = keyring::key_get("OHDSI_USER"),
@@ -84,17 +84,17 @@
 #'     server = x$cdmSource$serverFinal,
 #'     port = x$cdmSource$port
 #'   )
-#'   
+#'
 #'   # CohortGenerator::createCohortTables(
 #'   #   connectionDetails = connectionDetails,
 #'   #   cohortTableNames = cohortTableNames,
 #'   #   cohortDatabaseSchema = cohortDatabaseSchema,
 #'   #   incremental = TRUE
 #'   # )
-#'   # 
+#'   #
 #'   # connection <-
 #'   #   DatabaseConnector::connect(connectionDetails = connectionDetails)
-#'   # 
+#'   #
 #'   # CohortGenerator::generateCohortSet(
 #'   #   connection = connection,
 #'   #   cdmDatabaseSchema = cdmDatabaseSchema,
@@ -105,7 +105,7 @@
 #'   #   incremental = TRUE,
 #'   #   incrementalFolder = cohortGeneratorIncrementalFolder
 #'   # )
-#'   
+#'
 #'   # saveCandidateCohortData(
 #'   #   connectionDetails = connectionDetails,
 #'   #   cohortDatabaseSchema = cohortDatabaseSchema,
@@ -113,7 +113,7 @@
 #'   #   candidateCohortId = candidateCohortIds,
 #'   #   resultsFolder = resultsFolder
 #'   # )
-#'   
+#'
 #'   debug(executePheValuator)
 #'   executePheValuator(
 #'     connectionDetails = connectionDetails,
@@ -141,7 +141,7 @@
 #'     endDate = endDate,
 #'     daysFromxSpec = daysFromxSpec
 #'   )
-#'   
+#'
 #'   # for (k in (1:nrow(fullCohortDefinitionSet))) {
 #'   #   CohortExplorer::createCohortExplorerApp(
 #'   #     connectionDetails = connectionDetails,
@@ -154,7 +154,7 @@
 #'   #     databaseId = databaseId %>% SqlRender::snakeCaseToCamelCase()
 #'   #   )
 #'   # }
-#'   
+#'
 #'   # CohortDiagnostics::executeDiagnostics(
 #'   #   cohortDefinitionSet = fullCohortDefinitionSet,
 #'   #   connectionDetails = connectionDetails,
@@ -176,7 +176,7 @@
 #'   #   minCharacterizationMean = 0,
 #'   #   incremental = FALSE
 #'   # )
-#'   # 
+#'   #
 #'   # CohortDiagnostics::createMergedResultsFile(
 #'   #   dataFolder = file.path(resultsFolder, "CohortDiagnostics"),
 #'   #   sqliteDbPath = file.path(

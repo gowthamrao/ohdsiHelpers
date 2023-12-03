@@ -1,7 +1,7 @@
 #' @export
 splitDataFrameField <- function(data,
                                 fieldName,
-                                splitChar, 
+                                splitChar,
                                 newFieldNames) {
   # Split the column into multiple columns based on the split character
   splitValues <- strsplit(data[[fieldName]], splitChar)
@@ -12,20 +12,20 @@ splitDataFrameField <- function(data,
       x[1:length(newFieldNames)]
     }
   })
-  
+
   # Add the new columns to the dataframe
   newColumns <-
     setNames(as.data.frame(t(splitValues)), newFieldNames)
-  
+
   if (fieldName %in% c(newFieldNames)) {
     # Remove the original column
-    data <- data |> 
+    data <- data |>
       dplyr::select(-fieldName)
   }
-  
+
   newData <- cbind(data, newColumns)
-  
+
   # Return the modified dataframe
-  return(newData |> 
-           dplyr::tibble())
+  return(newData |>
+    dplyr::tibble())
 }

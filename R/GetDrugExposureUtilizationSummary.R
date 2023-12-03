@@ -6,21 +6,23 @@ getDrugExposureUtilizationStrata <-
     stratifyBySex <- stratifyBySexSpecifications |>
       dplyr::rename(idSex = id) |>
       dplyr::distinct()
-    
+
     stratifyByAge <- stratifyByAgeSpecifications |>
       dplyr::rename(idAge = id) |>
       dplyr::distinct()
-    
+
     stratifyByDateRange <- stratifyByDateRangeSpecifications |>
       dplyr::rename(idCalendarYear = id) |>
       dplyr::distinct()
-    
-    reportingStrata <- tidyr::crossing(stratifyBySex,
-                                       stratifyByDateRange,
-                                       stratifyByAge) |>
+
+    reportingStrata <- tidyr::crossing(
+      stratifyBySex,
+      stratifyByDateRange,
+      stratifyByAge
+    ) |>
       dplyr::mutate(strataId = (idSex * 100) +
-                      (idAge * 10000) +
-                      (idCalendarYear * 1000000)) |>
+        (idAge * 10000) +
+        (idCalendarYear * 1000000)) |>
       dplyr::filter(strataId > 0) |>
       dplyr::select(
         strataId,
@@ -30,7 +32,7 @@ getDrugExposureUtilizationStrata <-
         ageGreaterThanOrEqualTo,
         ageLowerThan
       )
-    
+
     return(reportingStrata)
   }
 
@@ -52,7 +54,7 @@ getDrugExposureUtilizationSummary <- function(connection = NULL,
       stop("No connection or connectionDetails provided.")
     }
   }
-  
+
   conceptIds <- drugConceptIds
   if (includeDescendants) {
     conceptIds <-
@@ -63,15 +65,17 @@ getDrugExposureUtilizationSummary <- function(connection = NULL,
       )
     conceptIds <- conceptIds$descendantConceptId |> unique()
   }
-  
+
   conceptIdTableName <-
-    ConceptSetDiagnostics:::loadTempConceptTable(conceptIds = conceptIds,
-                                                 connection = connection)
-  
+    ConceptSetDiagnostics:::loadTempConceptTable(
+      conceptIds = conceptIds,
+      connection = connection
+    )
+
   nameOfReportingStrata <-
     tempTableName <-
     paste0("#", ConceptSetDiagnostics:::getUniqueString())
-  
+
   invisible(utils::capture.output(
     DatabaseConnector::insertTable(
       connection = connection,
@@ -86,7 +90,7 @@ getDrugExposureUtilizationSummary <- function(connection = NULL,
     ),
     file = nullfile()
   ))
-  
+
   sql <-
     SqlRender::loadRenderTranslateSql(
       sqlFilename = "DrugUtilizationStratified.sql",
@@ -98,7 +102,7 @@ getDrugExposureUtilizationSummary <- function(connection = NULL,
       concept_id_table = conceptIdTableName
     )
   DatabaseConnector::executeSql(connection, sql)
-  
+
   numeratorCount <- DatabaseConnector::renderTranslateQuerySql(
     connection = connection,
     sql = "SELECT * FROM #numerator_counts;",
@@ -106,7 +110,7 @@ getDrugExposureUtilizationSummary <- function(connection = NULL,
     tempEmulationSchema = tempEmulationSchema
   ) |>
     dplyr::tibble()
-  
+
   # denominatorCount <- DatabaseConnector::renderTranslateQuerySql(
   #   connection = connection,
   #   sql = "SELECT * FROM #denominator_counts;",
@@ -114,7 +118,7 @@ getDrugExposureUtilizationSummary <- function(connection = NULL,
   #   tempEmulationSchema = tempEmulationSchema
   # ) |>
   #   dplyr::tibble()
-  
+
   # strataReduced <- reportingStrata |>
   #   dplyr::group_by(strataId) |>
   #   dplyr::mutate(
@@ -126,7 +130,7 @@ getDrugExposureUtilizationSummary <- function(connection = NULL,
   #   ) |>
   #   dplyr::distinct() |>
   #   dplyr::ungroup()
-  
+
   # results <- dplyr::bind_rows(
   #   numeratorCount |>
   #     dplyr::select(strataId),
@@ -154,13 +158,13 @@ getDrugExposureUtilizationSummary <- function(connection = NULL,
   #   ) |>
   #   dplyr::mutate(datesPer1KPY = (numeratorDateCount / denominatorPersonDays) * 365.25 * 1000) |>
   #   dplyr::tibble()
-  
+
   DatabaseConnector::renderTranslateExecuteSql(
     connection = connection,
     sql = " DROP TABLE IF EXISTS #numerator_counts;
             DROP TABLE IF EXISTS #denominator_counts;",
     tempEmulationSchema = tempEmulationSchema
   )
-  
+
   return(numeratorCount)
 }

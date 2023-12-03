@@ -2,7 +2,7 @@
 #' @export
 updateSqlInCohortDefinitionSet <- function(cohortDefinitionSet) {
   circeOptions <- CirceR::createGenerateOptions(generateStats = TRUE)
-  
+
   for (i in (1:nrow(cohortDefinitionSet))) {
     json <- cohortDefinitionSet[i, ]$json
     sql <-
