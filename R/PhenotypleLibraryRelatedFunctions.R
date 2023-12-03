@@ -86,7 +86,7 @@ modifyCohortExit <- function(cohortDefinition,
       stop(
         paste0(
           "dateOffset given value: '",
-          DateOffset,
+          dateOffSet,
           "' does not match expected 'StartDate', 'EndDate'"
         )
       )
@@ -548,20 +548,20 @@ getOrcidFromPhenotypeLog <-
     uniqueOrcIds <- log |>
       dplyr::mutate(
         contributorOrcIds = stringr::str_replace(
-          string = contributorOrcIds,
+          string = .data$contributorOrcIds,
           pattern = stringr::fixed("."),
           replacement = ","
         )
       ) |>
-      tidyr::separate_rows(contributorOrcIds, sep = ",") |> # Split by comma
-      dplyr::mutate(contributorOrcIds = stringr::str_trim(contributorOrcIds, side = "both")) |> # Trim whitespace
-      dplyr::filter(contributorOrcIds != "") |> # Remove empty strings
-      dplyr::filter(contributorOrcIds != "''") |> # Remove empty strings
-      dplyr::filter(contributorOrcIds != "'") |> # Remove empty strings
-      dplyr::mutate(contributorOrcIds = stringr::str_replace_all(contributorOrcIds, "'", "")) |> # Remove quotations
-      dplyr::distinct(contributorOrcIds) |> # Get unique ORCIDs
-      dplyr::arrange(contributorOrcIds) |>
-      dplyr::pull(contributorOrcIds)
+      tidyr::separate_rows(.data$contributorOrcIds, sep = ",") |> # Split by comma
+      dplyr::mutate(contributorOrcIds = stringr::str_trim(.data$contributorOrcIds, side = "both")) |> # Trim whitespace
+      dplyr::filter(.data$contributorOrcIds != "") |> # Remove empty strings
+      dplyr::filter(.data$contributorOrcIds != "''") |> # Remove empty strings
+      dplyr::filter(.data$contributorOrcIds != "'") |> # Remove empty strings
+      dplyr::mutate(contributorOrcIds = stringr::str_replace_all(.data$contributorOrcIds, "'", "")) |> # Remove quotations
+      dplyr::distinct(.data$contributorOrcIds) |> # Get unique ORCIDs
+      dplyr::arrange(.data$contributorOrcIds) |>
+      dplyr::pull(.data$contributorOrcIds)
 
     orcidLog <- c()
     for (i in (1:length(uniqueOrcIds))) {
@@ -585,13 +585,13 @@ getOrcidFromPhenotypeLog <-
             pattern = orcidLog[i, ]$orcId |> stringr::fixed()
           )
         ) |>
-        dplyr::pull(cohortId) |>
+        dplyr::pull(.data$cohortId) |>
         unique() |>
         length()
 
       numberOfCohortsAccepted <- log |>
         dplyr::filter(stringr::str_detect(
-          string = tolower(status),
+          string = tolower(.data$status),
           pattern = "accepted"
         )) |>
         dplyr::filter(
@@ -600,14 +600,14 @@ getOrcidFromPhenotypeLog <-
             pattern = orcidLog[i, ]$orcId |> stringr::fixed()
           )
         ) |>
-        dplyr::pull(cohortId) |>
+        dplyr::pull(.data$cohortId) |>
         unique() |>
         length()
 
       orcidLogWithContributions[[i]] <- orcidLog[i, ] |>
         dplyr::mutate(
-          contributions = numberOfCohorts,
-          accepted = numberOfCohortsAccepted
+          contributions = .data$numberOfCohorts,
+          accepted = .data$numberOfCohortsAccepted
         )
     }
     return(dplyr::bind_rows(orcidLogWithContributions))
@@ -667,21 +667,21 @@ plotSmoothedTrendCurve <- function(data,
                                    yAxisLabel = "Volume") {
   # Aggregate data by dateColumn to find the volume for each date
   aggregatedData <- data %>%
-    group_by(.data[[dateColumn]]) %>%
-    summarise(volume = n())
+    dplyr::group_by(.data[[dateColumn]]) %>%
+    dplyr::summarise(volume = n())
 
   # Create the ggplot
-  plot <- ggplot(aggregatedData, aes(x = .data[[dateColumn]], y = volume)) +
-    geom_point() +
-    geom_smooth(method = smoothingMethod, se = showStandardError) +
-    labs(
+  plot <- ggplot2::ggplot(aggregatedData, ggplot2::aes(x = .data[[dateColumn]], y = volume)) +
+    ggplot2::geom_point() +
+    ggplot2::geom_smooth(method = smoothingMethod, se = showStandardError) +
+    ggplot2::labs(
       title = plotTitle,
       x = xAxisLabel,
       y = yAxisLabel
     )
 
   # Save the plot as a PNG
-  ggsave(outputFilename, plot)
+  ggplot2::ggsave(outputFilename, plot)
 
   return(paste("Plot saved as '", outputFilename, "'", sep = ""))
 }

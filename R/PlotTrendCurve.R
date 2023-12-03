@@ -43,9 +43,9 @@ plotTrendCurve <- function(dataTibble, dateColumn,
   # Round the date if requested
   if (dateRounding != "none") {
     dataTibble <- dataTibble |>
-      dplyr::mutate(!!dateColumn := lubridate::floor_date(!!rlang::sym(dateColumn), unit = dateRounding))
+      dplyr::mutate(!!rlang::sym(dateColumn) := lubridate::floor_date(!!rlang::sym(dateColumn), unit = dateRounding))
   }
-
+  
   # Pre-aggregate data to get the counts for each date
   aggregatedData <- dplyr::count(dataTibble, !!rlang::sym(dateColumn), name = "volume")
 
@@ -53,7 +53,7 @@ plotTrendCurve <- function(dataTibble, dateColumn,
   if (showCumulativeValues) {
     cumulativeData <- aggregatedData |>
       dplyr::arrange(!!rlang::sym(dateColumn)) |>
-      dplyr::mutate(volume = cumsum(volume))
+      dplyr::mutate(volume = cumsum(.data$volume))
   }
 
   # If the plot itself should be cumulative, replace aggregatedData with its cumulative version

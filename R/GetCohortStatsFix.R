@@ -12,7 +12,7 @@ getCohortStatsFix <- function(connectionDetails,
                                 "cohortSummaryStatsTable",
                                 "cohortCensorStatsTable"
                               ),
-                              cohortTableNames = getCohortTableNames()) {
+                              cohortTableNames) {
   # Names of cohort table names must include output tables
   checkmate::assertNames(names(cohortTableNames), must.include = outputTables)
   # ouput tables strictly the set of allowed tables
@@ -33,7 +33,7 @@ getCohortStatsFix <- function(connectionDetails,
     # specific information so the databaseId
     # should NOT be included.
     includeDatabaseId <-
-      ifelse(
+      dplyr::ifelse(
         test = table != "cohortInclusionTable",
         yes = TRUE,
         no = FALSE

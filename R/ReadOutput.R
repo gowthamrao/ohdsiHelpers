@@ -12,7 +12,7 @@ readOutput <- function(rootFolder,
     )
   ) |>
     dplyr::filter(stringr::str_detect(
-      string = fullName,
+      string = .data$fullName,
       pattern = paste0(name, ".RDS")
     ))
 

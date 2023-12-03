@@ -14,7 +14,7 @@ listEligibleFiles <- function(path,
       searchName = name,
       folderName = basename(gsub(
         pattern = paste0("/", name, ".RDS"),
-        x = fullName,
+        x = .data$fullName,
         replacement = ""
       ))
     )

@@ -101,15 +101,15 @@ executeConceptCovariateCharacterization <-
         featureExtractionOutputFinal[[name]] <-
           featureExtractionOutputFinal[[name]] |>
           dplyr::collect() |>
-          dplyr::filter(sumValue > minCellCount) |>
-          dplyr::filter(mean >= minCharacterizationMean)
+          dplyr::filter(.data$sumValue > minCellCount) |>
+          dplyr::filter(.data$mean >= minCharacterizationMean)
       }
       if (name == "covariatesContinuous") {
         featureExtractionOutputFinal[[name]] <-
           featureExtractionOutputFinal[[name]] |>
           dplyr::collect() |>
-          dplyr::filter(countValue > minCellCount) |>
-          dplyr::filter(mean >= minCharacterizationMean)
+          dplyr::filter(.data$countValue > minCellCount) |>
+          dplyr::filter(.data$mean >= minCharacterizationMean)
       }
     }
 
@@ -144,8 +144,8 @@ executeConceptCovariateCharacterizationInParallel <-
            tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
            outputFolder) {
     cdmSources <- cdmSources |>
-      dplyr::filter(database %in% c(databaseIds)) |>
-      dplyr::filter(sequence == !!sequence)
+      dplyr::filter(.data$database %in% c(databaseIds)) |>
+      dplyr::filter(.data$sequence == !!sequence)
 
     x <- list()
     for (i in 1:nrow(cdmSources)) {

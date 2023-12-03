@@ -3,7 +3,7 @@ readCohortGeneratorOutput <- function(rootFolder,
                                       filters) {
   output <- readOutput(
     rootFolder = rootFolder,
-    filter = filters,
+    filters = filters,
     name = "CohortGenerator"
   )
 

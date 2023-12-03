@@ -20,10 +20,10 @@ getDrugExposureUtilizationStrata <-
       stratifyByDateRange,
       stratifyByAge
     ) |>
-      dplyr::mutate(strataId = (idSex * 100) +
-        (idAge * 10000) +
-        (idCalendarYear * 1000000)) |>
-      dplyr::filter(strataId > 0) |>
+      dplyr::mutate(strataId = (.data$idSex * 100) +
+        (.data$iidAge * 10000) +
+        (.data$iidCalendarYear * 1000000)) |>
+      dplyr::filter(.data$strataId > 0) |>
       dplyr::select(
         .data$strataId,
         .data$genderConceptId,
@@ -41,6 +41,7 @@ getDrugExposureUtilizationStrata <-
 getDrugExposureUtilizationSummary <- function(connection = NULL,
                                               connectionDetails = NULL,
                                               cdmDatabaseSchema,
+                                              vocabularyDatabaseSchema = cdmDatabaseSchema,
                                               drugConceptIds,
                                               includeDescendants = TRUE,
                                               reportingStrata = getDrugExposureUtilizationStrata(),
@@ -60,8 +61,8 @@ getDrugExposureUtilizationSummary <- function(connection = NULL,
     conceptIds <-
       ConceptSetDiagnostics::getConceptDescendant(
         connection = connection,
-        conceptIds = measurementConceptIds,
-        vocabularyDatabaseSchema = cdmSource$vocabDatabaseSchemaFinal
+        conceptIds = conceptIds,
+        vocabularyDatabaseSchema = vocabularyDatabaseSchema
       )
     conceptIds <- conceptIds$descendantConceptId |> unique()
   }

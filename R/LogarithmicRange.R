@@ -5,13 +5,13 @@ logarithmicRange <- function(numbers,
     x = abs(numbers),
     base = 10
   )
-  floor <- 10^(x <- floor(value))
-  ceiling <- 10^(x <- floor(value + 1))
+  floorValue <- 10^(x <- base::floor(value))
+  ceilingValue <- 10^(x <- base::floor(value + 1))
 
 
   return(paste0(
-    as.character(floor),
+    as.character(floorValue),
     " - ",
-    as.character(ceiling)
+    as.character(floorValue)
   ))
 }

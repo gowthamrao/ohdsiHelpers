@@ -3,7 +3,7 @@ readFeatureExtractionOutput <- function(rootFolder,
                                         filters = NULL) {
   output <- readOutput(
     rootFolder = rootFolder,
-    filter = filters,
+    filters = !!filters,
     name = "FeatureExtraction"
   )
 
