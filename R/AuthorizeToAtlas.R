@@ -1,3 +1,4 @@
+#' @export
 authorizeToOhdsiPlAtlas <- function(keyringName = "ohda") {
   baseUrl <- "https://atlas-phenotype.ohdsi.org/WebAPI"
   return(
@@ -16,6 +17,7 @@ authorizeToOhdsiPlAtlas <- function(keyringName = "ohda") {
   )
 }
 
+#' @export
 authorizedToJnjAtlas <- function(keyringName = "ohda") {
   baseUrl <- Sys.getenv("baseUrl")
   ROhdsiWebApi::authorizeWebApi(
