@@ -103,7 +103,7 @@ executeCohortGeneration <- function(connectionDetails,
     incremental = generateCohortIncremental
   )
 
-  cohortStatsTables <- ohdsiHelpers::getCohortStatsFix(
+  cohortStatsTables <- OhdsiHelpers::getCohortStatsFix(
     connectionDetails = connectionDetails,
     connection = NULL,
     databaseId = databaseId,

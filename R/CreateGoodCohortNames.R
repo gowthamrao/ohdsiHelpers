@@ -1,8 +1,8 @@
 #' @export
 createGoodCohortNames <- function(text) {
-  ohdsiHelpers::removeUnWantedSpace(
-    ohdsiHelpers::removeStringWithinParenthesis(
-      ohdsiHelpers::removeStringWithinSquareBracket(text = text)
+  OhdsiHelpers::removeUnWantedSpace(
+    OhdsiHelpers::removeStringWithinParenthesis(
+      OhdsiHelpers::removeStringWithinSquareBracket(text = text)
     )
   )
 }

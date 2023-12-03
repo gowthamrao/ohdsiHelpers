@@ -1,4 +1,4 @@
-Package: ohdsiHelpers
+Package: OhdsiHelpers
 Type: Package
 Title: An R package with helper functions.
 Version: 0.0.1

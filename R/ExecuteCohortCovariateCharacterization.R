@@ -349,7 +349,7 @@ executeCohortCovariateCharacterizationInParallel <-
         }
 
         featureExtractionOutput <-
-          ohdsiHelpers::executeCohortCovariateCharacterization(
+          OhdsiHelpers::executeCohortCovariateCharacterization(
             connectionDetails = connectionDetails,
             cdmDatabaseSchema = x$cdmDatabaseSchemaFinal,
             targetCohortDatabaseSchema = targetCohortDatabaseSchema,
