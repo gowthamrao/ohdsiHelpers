@@ -1,3 +1,4 @@
+#' @export
 prettyTable <- function(dataFrame,
                         caption = "Table",
                         align = "l") {
