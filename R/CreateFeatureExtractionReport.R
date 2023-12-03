@@ -10,44 +10,44 @@ createFeatureExtractionReport <- function(characterization,
                                           cohortDefinitionSet = NULL) {
   if (!is.null(cohortIds)) {
     characterization$covariates <- characterization$covariates |>
-      dplyr::filter(cohortId %in% c(cohortIds))
+      dplyr::filter(.data$cohortId %in% c(cohortIds))
   }
 
   if (!is.null(meanThreshold)) {
     characterization$covariates <- characterization$covariates |>
-      dplyr::filter(mean >= meanThreshold)
+      dplyr::filter(.data$mean >= meanThreshold)
   }
 
   if (!is.null(analysisNames)) {
     characterization$analysisRef <- characterization$analysisRef |>
-      dplyr::filter(characterization$analysisRef$analysisName %in% c(analysisNames))
+      dplyr::filter(.data$analysisRef$analysisName %in% c(analysisNames))
 
     characterization$covariates <- characterization$covariates |>
-      dplyr::filter(analysisId %in% c(characterization$analysisRef$analysisId |> unique()))
+      dplyr::filter(.data$analysisId %in% c(characterization$analysisRef$analysisId |> unique()))
   }
 
   if (!is.null(domainIds)) {
     characterization$analysisRef <- characterization$analysisRef |>
-      dplyr::filter(characterization$analysisRef$domainId %in% c(domainIds))
+      dplyr::filter(.data$domainId %in% c(domainIds))
 
     characterization$covariates <- characterization$covariates |>
-      dplyr::filter(analysisId %in% c(characterization$analysisRef$analysisId |> unique()))
+      dplyr::filter(.data$analysisId %in% c(characterization$analysisRef$analysisId |> unique()))
   }
 
   if (!is.null(startDays)) {
     characterization$timeRef <- characterization$timeRef |>
-      dplyr::filter(characterization$timeRef$startDay %in% c(startDays))
+      dplyr::filter(.data$startDay %in% c(startDays))
 
     characterization$covariates <- characterization$covariates |>
-      dplyr::filter(timeId %in% c(characterization$timeRef$timeId |> unique()))
+      dplyr::filter(.data$timeId %in% c(characterization$timeRef$timeId |> unique()))
   }
 
   if (!is.null(endDays)) {
     characterization$timeRef <- characterization$timeRef |>
-      dplyr::filter(characterization$timeRef$endDay %in% c(endDays))
+      dplyr::filter(.data$endDay %in% c(endDays))
 
     characterization$covariates <- characterization$covariates |>
-      dplyr::filter(timeId %in% c(characterization$timeRef$timeId |> unique()))
+      dplyr::filter(.data$timeId %in% c(characterization$timeRef$timeId |> unique()))
   }
 
   output <- characterization$covariates |>
@@ -63,7 +63,7 @@ createFeatureExtractionReport <- function(characterization,
   characterization$analysisRef <- NULL
 
   output <- output |>
-    dplyr::mutate(covariateConceptId = (covariateId - analysisId) / 1000)
+    dplyr::mutate(covariateConceptId = (.data$covariateId - .data$analysisId) / 1000)
 
   fields <- intersect(
     colnames(output),
@@ -94,8 +94,8 @@ createFeatureExtractionReport <- function(characterization,
       dplyr::left_join(
         cohortDefinitionSet |>
           dplyr::select(
-            cohortId,
-            cohortName
+            .data$cohortId,
+            .data$cohortName
           ),
         by = "cohortId"
       )
@@ -103,10 +103,10 @@ createFeatureExtractionReport <- function(characterization,
 
   output <- output |>
     dplyr::arrange(
-      cohortId,
-      startDay,
-      endDay,
-      dplyr::desc(mean)
+      .data$cohortId,
+      .data$startDay,
+      .data$endDay,
+      dplyr::desc(.data$mean)
     )
 
   if (splitCovariateName) {
@@ -120,8 +120,8 @@ createFeatureExtractionReport <- function(characterization,
         )
       ) |>
       dplyr::mutate(
-        featureExtractionPrefix = stringr::str_squish(featureExtractionPrefix),
-        covariateName = stringr::str_squish(covariateName)
+        featureExtractionPrefix = stringr::str_squish(.data$featureExtractionPrefix),
+        covariateName = stringr::str_squish(.data$covariateName)
       )
   }
 

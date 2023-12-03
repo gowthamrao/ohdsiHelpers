@@ -199,8 +199,8 @@ getWhereAnObjectExistsInNestedList <- function(nestedList,
         namedItems
       )) |>
       dplyr::select(
-        newName,
-        value
+        .data$newName,
+        .data$value
       ) |>
       tidyr::pivot_wider(
         names_from  = "newName",

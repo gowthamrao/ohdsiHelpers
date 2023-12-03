@@ -2,6 +2,7 @@
 getUnitConceptIdSummary <- function(connection = NULL,
                                     connectionDetails = NULL,
                                     cdmDatabaseSchema,
+                                    vocabularyDatabaseSchema = cdmDatabaseSchema,
                                     measurementConceptIds,
                                     includeDescendants = TRUE,
                                     getPersonCount = FALSE) {
@@ -21,7 +22,7 @@ getUnitConceptIdSummary <- function(connection = NULL,
       ConceptSetDiagnostics::getConceptDescendant(
         connection = connection,
         conceptIds = measurementConceptIds,
-        vocabularyDatabaseSchema = cdmSource$vocabDatabaseSchemaFinal
+        vocabularyDatabaseSchema = vocabularyDatabaseSchema
       )
     conceptIds <- conceptIds$descendantConceptId |> unique()
   }
@@ -141,9 +142,9 @@ getUnitConceptIdSummary <- function(connection = NULL,
   ) |>
     dplyr::tibble() |>
     dplyr::arrange(
-      measurementConceptId,
-      measurementTypeConceptId,
-      unitConceptId
+      .data$measurementConceptId,
+      .data$measurementTypeConceptId,
+      .data$unitConceptId
     )
 
   DatabaseConnector::renderTranslateExecuteSql(
@@ -165,61 +166,61 @@ getUnitConceptIdSummary <- function(connection = NULL,
       recordCount$measurementTypeConceptId
     ) |> unique(),
     connection = connection,
-    vocabularyDatabaseSchema = cdmSource$vocabDatabaseSchemaFinal
+    vocabularyDatabaseSchema = vocabularyDatabaseSchema
   )
 
   output <- c()
   output$recordCount <- recordCount |>
-    dplyr::arrange(dplyr::desc(recordCount))
+    dplyr::arrange(dplyr::desc(.data$recordCount))
   output$conceptIdDetails <- conceptIdDetails |>
-    dplyr::arrange(conceptId)
+    dplyr::arrange(.data$conceptId)
 
   output$formattedOutput <- recordCount |>
     dplyr::inner_join(
       conceptIdDetails |>
         dplyr::select(
-          conceptId,
-          conceptName
+          .data$conceptId,
+          .data$conceptName
         ) |>
         dplyr::rename(
-          measurementConceptId = conceptId,
-          measurementConceptName = conceptName
+          measurementConceptId = .data$conceptId,
+          measurementConceptName = .data$conceptName
         ),
       by = "measurementConceptId"
     ) |>
     dplyr::inner_join(
       conceptIdDetails |>
         dplyr::select(
-          conceptId,
-          conceptName
+          .data$conceptId,
+          .data$conceptName
         ) |>
         dplyr::rename(
-          measurementTypeConceptId = conceptId,
-          measurementTypeConceptName = conceptName
+          measurementTypeConceptId = .data$conceptId,
+          measurementTypeConceptName = .data$conceptName
         ),
       by = "measurementTypeConceptId"
     ) |>
     dplyr::inner_join(
       conceptIdDetails |>
         dplyr::select(
-          conceptId,
-          conceptName
+          .data$conceptId,
+          .data$conceptName
         ) |>
         dplyr::rename(
-          unitConceptId = conceptId,
-          unitConceptName = conceptName
+          unitConceptId = .data$conceptId,
+          unitConceptName = .data$conceptName
         ),
       by = "unitConceptId"
     ) |>
     dplyr::relocate(
-      measurementConceptId,
-      measurementConceptName,
-      measurementTypeConceptId,
-      measurementTypeConceptName,
-      unitConceptId,
-      unitConceptName
+      .data$measurementConceptId,
+      .data$measurementConceptName,
+      .data$measurementTypeConceptId,
+      .data$measurementTypeConceptName,
+      .data$unitConceptId,
+      .data$unitConceptName
     ) |>
-    dplyr::arrange(dplyr::desc(recordCount))
+    dplyr::arrange(dplyr::desc(.data$recordCount))
 
   return(output)
 }

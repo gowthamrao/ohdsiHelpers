@@ -77,7 +77,7 @@ executeCohortGeneration <- function(connectionDetails,
 
   if (!is.null(cohortIds)) {
     cohortDefinitionSet <- cohortDefinitionSet |>
-      dplyr::filter(cohortId %in% c(cohortIds))
+      dplyr::filter(.data$cohortId %in% c(cohortIds))
   }
 
   # Generate the cohort set
@@ -123,11 +123,11 @@ executeCohortGeneration <- function(connectionDetails,
   readr::write_excel_csv(
     x = cohortCount |>
       dplyr::select(
-        cohortId,
-        cohortEntries,
-        cohortSubjects
+        .data$cohortId,
+        .data$cohortEntries,
+        .data$cohortSubjects
       ) |>
-      dplyr::arrange(cohortId),
+      dplyr::arrange(.data$cohortId),
     file = file.path(
       outputFolder,
       "cohortCount.csv"
@@ -170,8 +170,8 @@ executeCohortGenerationInParallel <- function(cdmSources,
                                               generateCohortIncremental = TRUE,
                                               cohortIds = NULL) {
   cdmSources <- cdmSources |>
-    dplyr::filter(database %in% c(databaseIds)) |>
-    dplyr::filter(sequence == !!sequence)
+    dplyr::filter(.data$database %in% c(databaseIds)) |>
+    dplyr::filter(.data$sequence == !!sequence)
 
   x <- list()
   for (i in 1:nrow(cdmSources)) {

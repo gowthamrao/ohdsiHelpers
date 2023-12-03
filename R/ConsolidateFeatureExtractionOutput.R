@@ -34,7 +34,7 @@ consolidateFeatureExtractionOutput <- function(rootFolder,
       path = rootFolder,
       name = "FeatureExtraction"
     ) |>
-    dplyr::filter(folderName != basename(outputFolder))
+    dplyr::filter(.data$folderName != basename(outputFolder))
 
   analysisRef <- c()
   covariateRef <- c()

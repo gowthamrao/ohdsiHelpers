@@ -94,8 +94,8 @@ executeCohortDiagnosticsInParallel <-
            useSubsetCohortsAsFeatures = FALSE,
            minCellCount = 5) {
     cdmSources <- cdmSources |>
-      dplyr::filter(database %in% c(databaseIds)) |>
-      dplyr::filter(sequence == !!sequence)
+      dplyr::filter(.data$database %in% c(databaseIds)) |>
+      dplyr::filter(.data$sequence == !!sequence)
 
     if (nrow(cdmSources) == 0) {
       stop("no matching cdm sources.")
@@ -183,7 +183,7 @@ executeCohortDiagnosticsInParallel <-
       if (!useSubsetCohortsAsFeatures) {
         if ("isSubset" %in% colnames(finalFeatureCohortDefinitionSet)) {
           finalFeatureCohortDefinitionSet <- finalFeatureCohortDefinitionSet |>
-            dplyr::filter(isSubset == TRUE)
+            dplyr::filter(.data$isSubset == TRUE)
         }
       }
 
@@ -202,10 +202,10 @@ executeCohortDiagnosticsInParallel <-
 
       finalFeatureCohorts <- finalFeatureCohortDefinitionSet |>
         dplyr::select(
-          cohortId,
-          cohortName
+          .data$cohortId,
+          .data$cohortName
         ) |>
-        dplyr::filter(!cohortId %in% c(cohortDefinitionSet$cohortId))
+        dplyr::filter(!.data$cohortId %in% c(cohortDefinitionSet$cohortId))
 
       if (nrow(finalFeatureCohorts) > 0) {
         featureExtractionSettingsCohortBasedCovariateSettings1 <-
@@ -227,8 +227,8 @@ executeCohortDiagnosticsInParallel <-
           covariateCohortTable = cohortTableNames$cohortTable,
           covariateCohorts = cohortDefinitionSet |>
             dplyr::select(
-              cohortId,
-              cohortName
+              .data$cohortId,
+              .data$cohortName
             ),
           valueType = "binary",
           temporalStartDays = featureExtractionSettingsCohortDiagnostics$temporalStartDays,

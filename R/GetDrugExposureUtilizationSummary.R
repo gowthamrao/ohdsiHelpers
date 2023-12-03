@@ -4,15 +4,15 @@ getDrugExposureUtilizationStrata <-
            stratifyByAgeSpecifications,
            stratifyByDateRangeSpecifications) {
     stratifyBySex <- stratifyBySexSpecifications |>
-      dplyr::rename(idSex = id) |>
+      dplyr::rename(idSex = .data$id) |>
       dplyr::distinct()
 
     stratifyByAge <- stratifyByAgeSpecifications |>
-      dplyr::rename(idAge = id) |>
+      dplyr::rename(idAge = .data$id) |>
       dplyr::distinct()
 
     stratifyByDateRange <- stratifyByDateRangeSpecifications |>
-      dplyr::rename(idCalendarYear = id) |>
+      dplyr::rename(idCalendarYear = .data$id) |>
       dplyr::distinct()
 
     reportingStrata <- tidyr::crossing(
@@ -25,12 +25,12 @@ getDrugExposureUtilizationStrata <-
         (idCalendarYear * 1000000)) |>
       dplyr::filter(strataId > 0) |>
       dplyr::select(
-        strataId,
-        genderConceptId,
-        dateOnOrAfter,
-        dateBefore,
-        ageGreaterThanOrEqualTo,
-        ageLowerThan
+        .data$strataId,
+        .data$genderConceptId,
+        .data$dateOnOrAfter,
+        .data$dateBefore,
+        .data$ageGreaterThanOrEqualTo,
+        .data$ageLowerThan
       )
 
     return(reportingStrata)

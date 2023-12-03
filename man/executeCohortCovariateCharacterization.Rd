@@ -14,8 +14,8 @@ executeCohortCovariateCharacterization(
   covariateCohortIds,
   unionCovariateCohorts = TRUE,
   covariateCohortDefinitionSet =
-    dplyr::select(dplyr::filter(PhenotypeLibrary::getPhenotypeLog(), cohortId \%in\%
-    c(covariateCohortIds)), cohortId, cohortName),
+    dplyr::select(dplyr::filter(PhenotypeLibrary::getPhenotypeLog(), .data$cohortId
+    \%in\% c(covariateCohortIds)), .data$cohortId, .data$cohortName),
   targetCohortTableName,
   cohortCovariateAnalysisId = 150,
   covariateCohortTableName,

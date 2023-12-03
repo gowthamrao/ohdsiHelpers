@@ -56,10 +56,10 @@ executeCohortCovariateCharacterization <-
            covariateCohortIds,
            unionCovariateCohorts = TRUE,
            covariateCohortDefinitionSet = PhenotypeLibrary::getPhenotypeLog() |>
-             dplyr::filter(cohortId %in% c(covariateCohortIds)) |>
+             dplyr::filter(.data$cohortId %in% c(covariateCohortIds)) |>
              dplyr::select(
-               cohortId,
-               cohortName
+               .data$cohortId,
+               .data$cohortName
              ),
            targetCohortTableName,
            cohortCovariateAnalysisId = 150,
@@ -189,7 +189,7 @@ executeCohortCovariateCharacterization <-
           covariateCohortDatabaseSchema = NULL,
           covariateCohortTable = finalTempTable,
           covariateCohorts = covariateCohortDefinitionSet |>
-            dplyr::filter(cohortId %in% c(covariateCohortIds)),
+            dplyr::filter(.data$cohortId %in% c(covariateCohortIds)),
           valueType = "binary",
           temporalStartDays = temporalStartDays,
           temporalEndDays = temporalEndDays
@@ -201,7 +201,7 @@ executeCohortCovariateCharacterization <-
           covariateCohortDatabaseSchema = covariateCohortDatabaseSchema,
           covariateCohortTable = covariateCohortTableName,
           covariateCohorts = covariateCohortDefinitionSet |>
-            dplyr::filter(cohortId %in% c(covariateCohortIds)),
+            dplyr::filter(.data$cohortId %in% c(covariateCohortIds)),
           valueType = "binary",
           temporalStartDays = temporalStartDays,
           temporalEndDays = temporalEndDays
@@ -227,15 +227,15 @@ executeCohortCovariateCharacterization <-
       if (name == "covariates") {
         featureExtractionOutputFinal[[name]] <- featureExtractionOutputFinal[[name]] |>
           dplyr::collect() |>
-          dplyr::filter(sumValue > minCellCount) |>
-          dplyr::filter(mean >= minCharacterizationMean)
+          dplyr::filter(.data$sumValue > minCellCount) |>
+          dplyr::filter(.data$mean >= minCharacterizationMean)
       }
       if (name == "covariatesContinuous") {
         featureExtractionOutputFinal[[name]] <-
           featureExtractionOutputFinal[[name]] |>
           dplyr::collect() |>
-          dplyr::filter(countValue > minCellCount) |>
-          dplyr::filter(mean >= minCharacterizationMean)
+          dplyr::filter(.data$countValue > minCellCount) |>
+          dplyr::filter(.data$mean >= minCharacterizationMean)
       }
     }
 
@@ -277,8 +277,8 @@ executeCohortCovariateCharacterizationInParallel <-
            tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
            outputFolder) {
     cdmSources <- cdmSources |>
-      dplyr::filter(database %in% c(databaseIds)) |>
-      dplyr::filter(sequence == !!sequence)
+      dplyr::filter(.data$database %in% c(databaseIds)) |>
+      dplyr::filter(.data$sequence == !!sequence)
 
     x <- list()
     for (i in 1:nrow(cdmSources)) {
@@ -350,8 +350,6 @@ executeCohortCovariateCharacterizationInParallel <-
           showWarnings = FALSE,
           recursive = TRUE
         )
-
-
 
         if (is.null(targetCohortDatabaseSchema)) {
           targetCohortDatabaseSchema <- x$cohortDatabaseSchemaFinal

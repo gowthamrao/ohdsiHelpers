@@ -24,6 +24,7 @@ Suggests:
   knitr,
 	testthat,
 	withr
+License:
 Remotes:
   ohdsi/CohortAlgebra,
   ohdsi/Eunomia,

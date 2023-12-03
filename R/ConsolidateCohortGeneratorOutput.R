@@ -20,7 +20,7 @@ consolidateCohortGeneratorOutput <- function(rootFolder,
       path = pathToGetData,
       name = "CohortGenerator"
     ) |>
-    dplyr::filter(folderName != basename(pathToGetData))
+    dplyr::filter(.data$folderName != basename(pathToGetData))
 
   cohortCount <- c()
   cohortInclusionTable <- c()
