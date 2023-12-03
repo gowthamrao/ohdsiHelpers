@@ -19,10 +19,6 @@
 #' @param unionCovariateCohorts               Do you want to union the covariateCohorts into one cohort. If yes,
 #'                                            a new cohort will be created and that cohort will be called Composite
 #'                                            with the cohortId = -1.
-#' @param vocabularyDatabaseSchema            Schema name where your OMOP vocabulary data resides. This
-#'                                            is commonly the same as cdmDatabaseSchema. Note that for
-#'                                            SQL Server, this should include both the database and
-#'                                            schema name, for example 'vocabulary.dbo'.
 #' @param targetCohortTableName               target Cohort Table Names
 #' @param covariateCohortTableName            Covariate Cohort Table Names
 #' @param tempEmulationSchema                 Some database platforms like Oracle and Impala do not
@@ -49,7 +45,6 @@
 executeCohortCovariateCharacterization <-
   function(connectionDetails,
            cdmDatabaseSchema,
-           vocabularyDatabaseSchema = cdmDatabaseSchema,
            targetCohortDatabaseSchema,
            targetCohortIds,
            covariateCohortDatabaseSchema,
@@ -310,8 +305,8 @@ executeCohortCovariateCharacterizationInParallel <-
       )
 
     dir.create(path = outputFolder, showWarnings = FALSE, recursive = TRUE)
-    loggerTrace <-
-      ParallelLogger::addDefaultFileLogger(fileName = file.path(outputFolder, paste0(loggerName, ".txt")))
+    
+    ParallelLogger::addDefaultFileLogger(fileName = file.path(outputFolder, paste0(loggerName, ".txt")))
 
     executeCohortCovariateCharacterizationX <-
       function(x,

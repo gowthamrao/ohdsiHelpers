@@ -5,8 +5,8 @@ logarithmicRange <- function(numbers,
     x = abs(numbers),
     base = 10
   )
-  floorValue <- 10^(x <- base::floor(value))
-  ceilingValue <- 10^(x <- base::floor(value + 1))
+  floorValue <- 10^(floor(value))
+  ceilingValue <- 10^(floor(value + 1))
 
 
   return(paste0(

@@ -394,7 +394,7 @@ parseCohortDefinitionSpecifications <- function(cohortDefinition) {
     "Gender"
   )
   typeConcepts <- c("VisitType")
-  measureMent <-
+  measurement <-
     c(
       "ValueAsConcept",
       "Operator",
@@ -408,7 +408,7 @@ parseCohortDefinitionSpecifications <- function(cohortDefinition) {
   other <- c("PlaceOfServiceCS", "ProviderSpecialty", "First")
 
   combined <-
-    c(sourceDomains, demographics, typeConcepts, other) |> unique()
+    c(sourceDomains, demographics, typeConcepts, measurement, other) |> unique()
   for (i in (1:length(combined))) {
     whereExists <-
       getWhereAnObjectExistsInNestedList(nestedList = cohortDefinition, object = combined[[i]])
@@ -606,8 +606,8 @@ getOrcidFromPhenotypeLog <-
 
       orcidLogWithContributions[[i]] <- orcidLog[i, ] |>
         dplyr::mutate(
-          contributions = .data$numberOfCohorts,
-          accepted = .data$numberOfCohortsAccepted
+          contributions = max(numberOfCohorts),
+          accepted = max(numberOfCohortsAccepted)
         )
     }
     return(dplyr::bind_rows(orcidLogWithContributions))

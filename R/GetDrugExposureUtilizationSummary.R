@@ -73,14 +73,13 @@ getDrugExposureUtilizationSummary <- function(connection = NULL,
       connection = connection
     )
 
-  nameOfReportingStrata <-
-    tempTableName <-
+  tempTableName <-
     paste0("#", ConceptSetDiagnostics:::getUniqueString())
 
   invisible(utils::capture.output(
     DatabaseConnector::insertTable(
       connection = connection,
-      tableName = nameOfReportingStrata,
+      tableName = tempTableName,
       dropTableIfExists = TRUE,
       tempTable = TRUE,
       tempEmulationSchema = tempEmulationSchema,
@@ -99,7 +98,7 @@ getDrugExposureUtilizationSummary <- function(connection = NULL,
       dbms = connection@dbms,
       tempEmulationSchema = tempEmulationSchema,
       cdm_database_schema = cdmDatabaseSchema,
-      strata_table = nameOfReportingStrata,
+      strata_table = tempTableName,
       concept_id_table = conceptIdTableName
     )
   DatabaseConnector::executeSql(connection, sql)

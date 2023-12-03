@@ -289,8 +289,8 @@
 #'           replacement = ''
 #'         )
 #'       )
-#'     loggerTrace <-
-#'       ParallelLogger::addDefaultFileLogger(fileName = file.path(outputFolder, paste0(loggerName, ".txt")))
+#'     
+#'     ParallelLogger::addDefaultFileLogger(fileName = file.path(outputFolder, paste0(loggerName, ".txt")))
 #'
 #'
 #'     executeTimeDistributionDiagnosticsX <- function(x,

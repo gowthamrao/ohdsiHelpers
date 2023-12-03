@@ -11,14 +11,14 @@ executeCohortExplorerInParallel <-
            sequence = 1,
            cohortIds = NULL) {
     cdmSources <- cdmSources |>
-      dplyr::filter(database %in% c(databaseIds)) |>
-      dplyr::filter(sequence == !!sequence)
-
+      dplyr::filter(.data$database %in% c(databaseIds)) |>
+      dplyr::filter(.data$sequence == !!sequence)
+    
     x <- list()
     for (i in 1:nrow(cdmSources)) {
       x[[i]] <- cdmSources[i, ]
     }
-
+    
     # use Parallel Logger to run in parallel
     cluster <-
       ParallelLogger::makeCluster(numberOfThreads = min(
@@ -28,7 +28,7 @@ executeCohortExplorerInParallel <-
         )),
         length(x)
       ))
-
+    
     ## file logger
     loggerName <-
       paste0(
@@ -39,10 +39,9 @@ executeCohortExplorerInParallel <-
           replacement = ""
         )
       )
-    loggerTrace <-
-      ParallelLogger::addDefaultFileLogger(fileName = file.path(outputFolder, paste0(loggerName, ".txt")))
-
-
+    
+    ParallelLogger::addDefaultFileLogger(fileName = file.path(outputFolder, paste0(loggerName, ".txt")))
+    
     executeCohortExplorerX <- function(x,
                                        cohortDefinitionSet,
                                        cohortIds,
@@ -58,13 +57,11 @@ executeCohortExplorerInParallel <-
       )
       outputFolder <-
         file.path(outputFolder, x$sourceKey)
-
-      for (i in (1:length(cohortIds))) {
+      
+      for (i in (1:nrow(cohortDefinitionSet))) {
         CohortExplorer::createCohortExplorerApp(
-          cohortDefinitionId = cohortIds[[i]],
-          cohortName = cohortDefinitionSet |>
-            dplyr::filter(cohortId == cohortIds[[i]]) |>
-            dplyr::pull(cohortName),
+          cohortDefinitionId = cohortDefinitionSet[i, ]$cohortId,
+          cohortName = cohortDefinitionSet[i, ]$cohortName,
           exportFolder = outputFolder,
           databaseId = SqlRender::snakeCaseToCamelCase(x$sourceKey),
           cohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
@@ -75,12 +72,13 @@ executeCohortExplorerInParallel <-
           tempEmulationSchema = tempEmulationSchema,
           cohortTable = cohortTableNames$cohortTable,
           featureCohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
-          featureCohortDefinitionSet = cohortDefinitionSet,
-          featureCohortTable = cohortTableNames$cohortTable
+          featureCohortTable = cohortTableNames$cohortTable,
+          sampleSize = 100,
+          featureCohortDefinitionSet = cohortDefinitionSet
         )
       }
     }
-
+    
     ParallelLogger::clusterApply(
       cluster = cluster,
       x = x,
@@ -92,6 +90,6 @@ executeCohortExplorerInParallel <-
       fun = executeCohortExplorerX,
       stopOnError = FALSE
     )
-
+    
     ParallelLogger::stopCluster(cluster = cluster)
   }
