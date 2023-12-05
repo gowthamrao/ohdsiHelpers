@@ -8,7 +8,8 @@ executeConceptRecordCountInParallel <-
            tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
            databaseIds = getListOfDatabaseIds(),
            sequence = 1,
-           minCellCount = 0) {
+           minCellCount = 0,
+           domainTableName = NULL) {
     cdmSources <- cdmSources |>
       dplyr::filter(.data$database %in% c(databaseIds)) |>
       dplyr::filter(.data$sequence == !!sequence)
@@ -43,7 +44,8 @@ executeConceptRecordCountInParallel <-
                                           conceptIds,
                                           outputFolder,
                                           tempEmulationSchema,
-                                          minCellCount) {
+                                          minCellCount,
+                                          domainTableName) {
       connectionDetails <- DatabaseConnector::createConnectionDetails(
         dbms = x$dbms,
         user = keyring::key_get(userService),
@@ -54,6 +56,16 @@ executeConceptRecordCountInParallel <-
       outputFolder <-
         file.path(outputFolder, x$sourceKey)
       
+      if (is.null(domainTableName)) {
+        domainTableName = c(
+          "drug_exposure",
+          "condition_occurrence",
+          "procedure_occurrence",
+          "mesaurement",
+          "observation"
+        )
+      }
+      
       dir.create(path = outputFolder,
                  showWarnings = FALSE,
                  recursive = TRUE)
@@ -63,7 +75,8 @@ executeConceptRecordCountInParallel <-
         connectionDetails = connectionDetails,
         cdmDatabaseSchema = x$cdmDatabaseSchemaFinal,
         vocabularyDatabaseSchema = x$vocabDatabaseSchemaFinal,
-        tempEmulationSchema = tempEmulationSchema
+        tempEmulationSchema = tempEmulationSchema,
+        domainTableName = domainTableName
       )
       saveRDS(object = output,
               file = file.path(outputFolder, "ConceptRecordCount.RDS"))
@@ -77,6 +90,7 @@ executeConceptRecordCountInParallel <-
       tempEmulationSchema = tempEmulationSchema,
       fun = executeConceptRecordCount,
       minCellCount = minCellCount,
+      domainTableName = domainTableName,
       stopOnError = FALSE
     )
     
