@@ -77,7 +77,10 @@ executeConceptRecordCountInParallel <-
         vocabularyDatabaseSchema = x$vocabDatabaseSchemaFinal,
         tempEmulationSchema = tempEmulationSchema,
         domainTableName = domainTableName
-      )
+      ) |> 
+        dplyr::mutate(sourceKey = x$sourceKey,
+                      database = x$database)
+      
       saveRDS(object = output,
               file = file.path(outputFolder, "ConceptRecordCount.RDS"))
     }

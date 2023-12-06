@@ -1,0 +1,63 @@
+#' @export
+prettyReportKabbleTable <- function(dataFrame,
+                                    caption = "Table",
+                                    captionStyle = "",
+                                    align = "l",
+                                    formatAsInteger = NULL,
+                                    formatAsDecimals = NULL,
+                                    formatAsPercent = NULL) {
+  # Format columns as integers with commas
+  if (!is.null(formatAsInteger)) {
+    for (col in formatAsInteger) {
+      dataFrame[[col]] <- scales::label_comma()(dataFrame[[col]])
+    }
+  }
+  
+  # Format columns as decimals
+  if (!is.null(formatAsDecimals)) {
+    for (col in formatAsDecimals) {
+      dataFrame[[col]] <-
+        scales::label_number(accuracy = 0.1)(dataFrame[[col]])
+    }
+  }
+  
+  # Format columns as integers with commas
+  if (!is.null(formatAsPercent)) {
+    for (col in formatAsPercent) {
+      dataFrame[[col]] <-
+        scales::label_percent(accuracy = 0.01)(dataFrame[[col]])
+    }
+  }
+  
+  colnames(dataFrame) <-
+    SqlRender::camelCaseToTitleCase(colnames(dataFrame))
+  
+  table <- knitr::kable(dataFrame,
+                        caption = caption,
+                        format = "html",
+                        align = align)
+  
+  # Apply caption style if specified
+  if (!is.null(captionStyle)) {
+    if (tolower(captionStyle) %in% c("html", "latex")) {
+      # For HTML or LaTeX, use the 'caption' package
+      table <- table |>
+        kableExtra::kable_styling(
+          latex_options = c("hold_position"),
+          full_width = FALSE,
+          position = "center"
+        ) |>
+        kableExtra::add_header_above(c(" " = ncol(dfFormatted), . = captionStyle))
+    } else {
+      # For other styles, assume it's a CSS class for HTML output
+      table <- table |>
+        kableExtra::kable_styling(bootstrap_options = c("striped", "hover"),
+                                  html_font = captionStyle)
+    }
+  } else {
+    table <- table |>
+      kableExtra::kable_styling(bootstrap_options = c("striped", "hover"))
+  }
+  
+  return(table)
+}
