@@ -16,14 +16,6 @@ rOhdsiWebApiConceptSetDetails <- function(baseUrl,
       "includeDescendants"
     )
   
-  #pretty table---
-  reportTable <- conceptSetExpressionTable
-  colnames(reportTable) <-
-    SqlRender::camelCaseToTitleCase(colnames(reportTable))
-  prettyTableConceptSetExpression <-
-    OhdsiHelpers::prettyTable(dataFrame = reportTable,
-                              caption = "Concept Set Expression")
-  
   # resolve concepts
   resolveConceptSets <-
     ROhdsiWebApi::resolveConceptSet(conceptSetDefinition = conceptSetExpression,
@@ -52,7 +44,6 @@ rOhdsiWebApiConceptSetDetails <- function(baseUrl,
   output$mapped <- sourceConcepts$conceptId |> unique() |> sort()
   output$expression <- conceptSetExpression
   output$expressionTable <- conceptSetExpressionTable
-  output$expressionTablePretty <- prettyTableConceptSetExpression
   
   return(output)
 }
