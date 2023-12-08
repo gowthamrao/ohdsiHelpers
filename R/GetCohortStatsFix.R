@@ -28,12 +28,13 @@ getCohortStatsFix <- function(connectionDetails,
     )
   )
   results <- list()
+  browser()
   for (table in outputTables) {
     # The cohortInclusionTable does not hold database
     # specific information so the databaseId
     # should NOT be included.
     includeDatabaseId <-
-      dplyr::ifelse(
+      ifelse(
         test = table != "cohortInclusionTable",
         yes = TRUE,
         no = FALSE
