@@ -31,7 +31,7 @@ performConceptSetDiagnostics <-
       function(conceptSetDefinition,
                connection,
                cdmSource) {
-        resolvedConceptIds <-
+        resolvedConcepts <-
           ConceptSetDiagnostics::resolveConceptSetExpression(
             conceptSetExpression = RJSONIO::fromJSON(conceptSetDefinition$conceptSetDefinition, digits = 23),
             connection = connection,
@@ -41,22 +41,22 @@ performConceptSetDiagnostics <-
         
         mappedConcepts <-
           ConceptSetDiagnostics::getMappedSourceConcepts(
-            conceptIds = resolvedConceptIds$conceptId,
+            conceptIds = resolvedConcepts$conceptId,
             connection = connection,
             vocabularyDatabaseSchema = cdmSource$vocabDatabaseSchemaFinal
           ) |>
           dplyr::mutate(conceptSetId = conceptSetDefinition$conceptSetId)
         
-        list(resolvedConceptIds = resolvedConceptIds,
+        list(resolvedConcepts = resolvedConcepts,
              mappedConcepts = mappedConcepts)
       }
     
     resolvedAndMappedConcepts <-
       lapply(1:nrow(conceptSetDefinitions), function(i) {
-        resolveAndMapConcepts(conceptSetDefinitions[i,], connection, cdmSourceSelected)
+        resolveAndMapConcepts(conceptSetDefinitions[i, ], connection, cdmSourceSelected)
       })
     
-    resolvedConceptIds <-
+    resolvedConcepts <-
       dplyr::bind_rows(lapply(resolvedAndMappedConcepts, `[[`, "resolvedConceptIds")) |>
       dplyr::distinct() |>
       dplyr::arrange(conceptSetId, conceptId)
@@ -88,7 +88,7 @@ performConceptSetDiagnostics <-
       outputLocation <-
         file.path(outputFolder,
                   "TemporalUtilization",
-                  conceptSetDefinitions[i, ]$conceptSetId)
+                  conceptSetDefinitions[i,]$conceptSetId)
       dir.create(path = outputLocation,
                  showWarnings = FALSE,
                  recursive = TRUE)
@@ -105,7 +105,7 @@ performConceptSetDiagnostics <-
         outputLocation <-
           file.path(outputFolder,
                     "TemporalUtilization",
-                    conceptSetDefinitions[i, ]$conceptSetId)
+                    conceptSetDefinitions[i,]$conceptSetId)
         rdsFiles <- list.files(
           path = outputLocation,
           pattern = "ConceptRecordCount.RDS",
@@ -118,7 +118,7 @@ performConceptSetDiagnostics <-
         allRds <- lapply(rdsFiles, readRDS)
         bindedRds <- do.call(dplyr::bind_rows, allRds) |>
           dplyr::distinct() |>
-          dplyr::mutate(conceptSetId = conceptSetDefinitions[i, ]$conceptSetId) |>
+          dplyr::mutate(conceptSetId = conceptSetDefinitions[i,]$conceptSetId) |>
           dplyr::relocate(conceptSetId)
         
         return(bindedRds)
