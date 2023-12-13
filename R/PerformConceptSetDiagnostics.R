@@ -53,7 +53,7 @@ performConceptSetDiagnostics <-
     
     resolvedAndMappedConcepts <-
       lapply(1:nrow(conceptSetDefinitions), function(i) {
-        resolveAndMapConcepts(conceptSetDefinitions[i, ], connection, cdmSourceSelected)
+        resolveAndMapConcepts(conceptSetDefinitions[i,], connection, cdmSourceSelected)
       })
     
     resolvedConcepts <-
@@ -88,7 +88,7 @@ performConceptSetDiagnostics <-
       outputLocation <-
         file.path(outputFolder,
                   "ConceptRecordCount",
-                  conceptSetDefinitions[i,]$conceptSetId)
+                  conceptSetDefinitions[i, ]$conceptSetId)
       dir.create(path = outputLocation,
                  showWarnings = FALSE,
                  recursive = TRUE)
@@ -100,12 +100,12 @@ performConceptSetDiagnostics <-
       )
     }
     
-    temporalRecordCount <-
+    conceptRecordCount <-
       lapply(1:nrow(conceptSetDefinitions), function(i) {
         outputLocation <-
           file.path(outputFolder,
                     "ConceptRecordCount",
-                    conceptSetDefinitions[i,]$conceptSetId)
+                    conceptSetDefinitions[i, ]$conceptSetId)
         rdsFiles <- list.files(
           path = outputLocation,
           pattern = "ConceptRecordCount.RDS",
@@ -118,13 +118,13 @@ performConceptSetDiagnostics <-
         allRds <- lapply(rdsFiles, readRDS)
         bindedRds <- do.call(dplyr::bind_rows, allRds) |>
           dplyr::distinct() |>
-          dplyr::mutate(conceptSetId = conceptSetDefinitions[i,]$conceptSetId) |>
+          dplyr::mutate(conceptSetId = conceptSetDefinitions[i, ]$conceptSetId) |>
           dplyr::relocate(conceptSetId)
         
         return(bindedRds)
       })
     
-    temporalRecordCount |>
+    conceptRecordCount |>
       dplyr::bind_rows() |>
       saveRDS(file.path(outputFolder, "ConceptRecordCount.RDS"))
     
