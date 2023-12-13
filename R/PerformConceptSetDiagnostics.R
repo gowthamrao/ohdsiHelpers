@@ -87,7 +87,7 @@ performConceptSetDiagnostics <-
     for (i in 1:nrow(conceptSetDefinitions)) {
       outputLocation <-
         file.path(outputFolder,
-                  "TemporalUtilization",
+                  "ConceptRecordCount",
                   conceptSetDefinitions[i,]$conceptSetId)
       dir.create(path = outputLocation,
                  showWarnings = FALSE,
@@ -104,7 +104,7 @@ performConceptSetDiagnostics <-
       lapply(1:nrow(conceptSetDefinitions), function(i) {
         outputLocation <-
           file.path(outputFolder,
-                    "TemporalUtilization",
+                    "ConceptRecordCount",
                     conceptSetDefinitions[i,]$conceptSetId)
         rdsFiles <- list.files(
           path = outputLocation,
@@ -126,6 +126,6 @@ performConceptSetDiagnostics <-
     
     temporalRecordCount |>
       dplyr::bind_rows() |>
-      saveRDS(file.path(outputFolder, "TemporalUtilization.RDS"))
+      saveRDS(file.path(outputFolder, "ConceptRecordCount.RDS"))
     
   }
