@@ -57,7 +57,7 @@ performConceptSetDiagnostics <-
       })
     
     resolvedConcepts <-
-      dplyr::bind_rows(lapply(resolvedAndMappedConcepts, `[[`, "resolvedConceptIds")) |>
+      dplyr::bind_rows(lapply(resolvedAndMappedConcepts, `[[`, "resolvedConcepts")) |>
       dplyr::distinct() |>
       dplyr::arrange(conceptSetId, conceptId)
     mappedConcepts <-
