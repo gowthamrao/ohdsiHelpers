@@ -25,7 +25,7 @@ reportOnConceptRecordCount <-
     
     # table 1: concept set by data source ----
     conceptSetId <-
-      conceptSetDefinition$conceptSetId |> as.integer()
+      conceptSetDefinition$conceptSetId |> as.numeric()
     personsWithConceptSet <-
       OhdsiHelpers::filterDataFrame(
         data = conceptRecordCount,
