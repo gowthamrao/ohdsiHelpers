@@ -85,7 +85,7 @@ performConceptSetDiagnostics <-
           dplyr::filter(conceptSetId %in% concepSetDefinition[i,]$conceptSetId) |>
           dplyr::pull(conceptId),
         mappedConcepts |>
-          dplyr::filter(conceptSetId %in% concepSetDefinition[i]$conceptSetId) |>
+          dplyr::filter(conceptSetId %in% concepSetDefinition[i,]$conceptSetId) |>
           dplyr::pull(conceptId)
       ) |>
         unique() |>
