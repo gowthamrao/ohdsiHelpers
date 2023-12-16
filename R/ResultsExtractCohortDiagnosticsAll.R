@@ -57,8 +57,7 @@ resultsExtractCohortDiagnosticsIncidenceRate <-
         minSubjectCount = minSubjectCount
       )
     
-    if (all(!is.null(minIncidenceRate),
-            minIncidenceRate > 0)) {
+    if (!is.null(minIncidenceRate)) {
       cohortDiagnosticsIncidenceRateResult <-
         cohortDiagnosticsIncidenceRateResult |>
         dplyr::filter(incidenceRate > minIncidenceRate)
