@@ -6,26 +6,39 @@ prettyReportKabbleTable <- function(dataFrame,
                                     formatAsInteger = NULL,
                                     formatAsDecimals = NULL,
                                     formatAsPercent = NULL) {
+  colnamesInDataFrame <- colnames(dataFrame)
   # Format columns as integers with commas
   if (!is.null(formatAsInteger)) {
-    for (col in formatAsInteger) {
-      dataFrame[[col]] <- scales::label_comma()(dataFrame[[col]])
+    formatAsInteger <- intersect(colnamesInDataFrame,
+                                 formatAsInteger)
+    if (length(formatAsInteger) > 0) {
+      for (col in formatAsInteger) {
+        dataFrame[[col]] <- scales::label_comma()(dataFrame[[col]])
+      }
     }
   }
   
   # Format columns as decimals
   if (!is.null(formatAsDecimals)) {
-    for (col in formatAsDecimals) {
-      dataFrame[[col]] <-
-        scales::label_number(accuracy = 0.1)(dataFrame[[col]])
+    formatAsDecimals <- intersect(colnamesInDataFrame,
+                                  formatAsDecimals)
+    if (length(formatAsDecimals) > 0) {
+      for (col in formatAsDecimals) {
+        dataFrame[[col]] <-
+          scales::label_number(accuracy = 0.1)(dataFrame[[col]])
+      }
     }
   }
   
   # Format columns as integers with commas
   if (!is.null(formatAsPercent)) {
-    for (col in formatAsPercent) {
-      dataFrame[[col]] <-
-        scales::label_percent(accuracy = 0.01)(dataFrame[[col]])
+    formatAsPercent <- intersect(colnamesInDataFrame,
+                                 formatAsPercent)
+    if (length(formatAsPercent) > 0) {
+      for (col in formatAsPercent) {
+        dataFrame[[col]] <-
+          scales::label_percent(accuracy = 0.01)(dataFrame[[col]])
+      }
     }
   }
   
