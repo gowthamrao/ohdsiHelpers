@@ -3,15 +3,32 @@ resultsExtractConnection <- function(connectionDetails) {
   ResultModelManager::PooledConnectionHandler$new(connectionDetails)
 }
 
+
+
 #' @export
 resultsExtractCohortDiagnosticsDataSource <- function(connection,
-                                                      resultsSchema) {
+                                                      resultsSchema,
+                                                      resultDatabaseSettings = NULL) {
+  if (is.null(resultDatabaseSettings)) {
+    resultDatabaseSettings <-
+      ShinyAppBuilder::createDefaultResultDatabaseSettings(schema = resultsSchema)
+  }
   ##cd data source----
   cohortDiagnosticsDataSource <-
     OhdsiShinyModules::createCdDatabaseDataSource(
       connectionHandler = connection,
       resultDatabaseSettings = ShinyAppBuilder::createDefaultResultDatabaseSettings(schema = resultsSchema)
     )
+  
+  cohortDiagnosticsDataSource$cohortDefinitionSet <-
+    DatabaseConnector::renderTranslateQuerySql(
+      connection = connection$con,
+      sql = "SELECT * FROM @results_schema.@prefixcohort;",
+      results_schema = resultDatabaseSettings$schema,
+      prefix = resultDatabaseSettings$cdTablePrefix,
+      snakeCaseToCamelCase = TRUE
+    ) |>
+    dplyr::tibble()
   
   # Define the list of elements to be converted
   elementsToConvert <-

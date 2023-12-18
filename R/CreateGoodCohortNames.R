@@ -1,8 +1,4 @@
 #' @export
 createGoodCohortNames <- function(text) {
-  removeUnWantedSpace(
-    removeStringWithinParenthesis(
-      removeStringWithinSquareBracket(text = text)
-    )
-  )
+  removeUnWantedSpace(removeStringWithinParenthesis(removeStringWithinSquareBracket(removeTrailingCommas(text = text))))
 }
