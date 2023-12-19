@@ -182,7 +182,7 @@ executeCohortDiagnosticsInParallel <-
       if (!useSubsetCohortsAsFeatures) {
         if ("isSubset" %in% colnames(finalFeatureCohortDefinitionSet)) {
           finalFeatureCohortDefinitionSet <- finalFeatureCohortDefinitionSet |>
-            dplyr::filter(.data$isSubset == TRUE)
+            dplyr::filter(!.data$isSubset == TRUE)
         }
       }
 

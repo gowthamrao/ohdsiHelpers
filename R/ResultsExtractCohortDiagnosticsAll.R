@@ -86,12 +86,16 @@ resultsExtractCohortDiagnosticsIncidenceRate <-
 resultsExtractCohortDiagnosticsCharacterization <-
   function(dataSource,
            cohortIds,
-           databaseIds) {
+           databaseIds,
+           meanThreshold = 0.005) {
     ## cd characterization result-----
     cohortDiagnosticsCharacterizationResult <-
-      OhdsiShinyModules:::queryResultCovariateValue(dataSource = dataSource,
-                                                    cohortIds = cohortIds,
-                                                    databaseIds = databaseIds)
+      OhdsiShinyModules:::getCharacterizationOutput(
+        dataSource = dataSource,
+        cohortIds = cohortIds,
+        databaseIds = databaseIds,
+        meanThreshold = meanThreshold
+      ) #this is the default value
     
     return(cohortDiagnosticsCharacterizationResult)
   }
@@ -117,6 +121,25 @@ resultsExtractCohortDiagnosticsConceptsInCohort <-
     
     return(cohortDiagnosticsConceptsInCohort)
   }
+
+#' @export
+resultsExtractCohortDiagnosticsCohortOverlap <- function(dataSource,
+                                                         cohortIds = NULL,
+                                                         comparatorCohortIds = NULL,
+                                                         databaseIds = NULL,
+                                                         startDays = NULL,
+                                                         endDays = NULL) {
+  # Returns data from cohort_relationships table of Cohort Diagnostics results data model
+  data <- OhdsiShinyModules:::getResultsCohortRelationships(
+    dataSource = dataSource,
+    cohortIds = cohortIds,
+    comparatorCohortIds = comparatorCohortIds,
+    databaseIds = databaseIds,
+    startDays = startDays,
+    endDays = endDays
+  )
+  return(data)
+}
 
 #' @export
 resultsExtractCohortDiagnosticsIndexEventBreakdown <-
@@ -176,9 +199,18 @@ resultsExtractCohortDiagnosticsAll <- function(connection = NULL,
     )
   ## cd characterization-----
   cohortDiagnosticsCovariateCharacterization <-
-    resultsExtractCohortDiagnosticsCharacterization(dataSource = dataSource,
-                                                    cohortIds = cohortIds,
-                                                    databaseIds = databaseIds)
+    resultsExtractCohortDiagnosticsCharacterization(
+      dataSource = dataSource,
+      cohortIds = cohortIds,
+      databaseIds = databaseIds,
+      meanThreshold = 0.01
+    )
+  
+  ## cd cohort overalp----
+  cohortDiagnosticsCohortOverlap <-
+    resultsExtractCohortDiagnosticsCohortOverlap(dataSource = dataSource,
+                                                 cohortIds = cohortIds,
+                                                 databaseIds = databaseIds)
   
   ## concepts in data----
   cohortDiagnosticsConceptsInCohort <-
@@ -202,6 +234,8 @@ resultsExtractCohortDiagnosticsAll <- function(connection = NULL,
     cohortDiagnosticsConceptsInCohort
   cohortDiagnosticsResults$indexEventBreakdown <-
     cohortDiagnosticsIndexEventBreakdown
+  cohortDiagnosticsResults$cohortOverlap <-
+    cohortDiagnosticsCohortOverlap
   
   if (!is.null(outputFolder)) {
     dir.create(path = outputFolder,
