@@ -92,6 +92,7 @@ executeCohortDiagnosticsInParallel <-
            runTemporalCohortCharacterization = TRUE,
            temporalCovariateSettings = getDefaultCovariateSettings(),
            useSubsetCohortsAsFeatures = FALSE,
+           createMergedFile = FALSE,
            minCellCount = 5) {
     cdmSources <- cdmSources |>
       dplyr::filter(.data$database %in% c(databaseIds)) |>
@@ -309,64 +310,58 @@ executeCohortDiagnosticsInParallel <-
     )
 
     ParallelLogger::stopCluster(cluster = cluster)
-
-    dir.create(
-      path = file.path(
-        outputFolder,
-        "Combined"
-      ),
-      showWarnings = FALSE,
-      recursive = TRUE
-    )
-
-    # create sqlite db merged file
-    CohortDiagnostics::createMergedResultsFile(
-      dataFolder = outputFolder,
-      overwrite = TRUE,
-      sqliteDbPath = file.path(
-        outputFolder,
-        "Combined",
-        "MergedCohortDiagnosticsData.sqlite"
+    
+    if (createMergedFile) {
+      dir.create(
+        path = file.path(outputFolder,
+                         "Combined"),
+        showWarnings = FALSE,
+        recursive = TRUE
       )
-    )
-
-    CohortDiagnostics::createDiagnosticsExplorerZip(
-      outputZipfile = file.path(
-        outputFolder,
-        "Combined",
-        "DiagnosticsExplorer.zip"
-      ),
-      sqliteDbPath = file.path(
-        outputFolder,
-        "Combined",
-        "MergedCohortDiagnosticsData.sqlite"
-      ),
-      overwrite = TRUE
-    )
-
-    unlink(
-      x = file.path(
-        outputFolder,
-        "Combined",
-        "MergedCohortDiagnosticsData.sqlite"
-      ),
-      recursive = TRUE,
-      force = TRUE
-    )
-
-    zip::unzip(
-      zipfile = file.path(
-        outputFolder,
-        "Combined",
-        "DiagnosticsExplorer.zip"
-      ),
-      overwrite = TRUE,
-      junkpaths = FALSE,
-      exdir = file.path(
-        outputFolder,
-        "Combined"
+      
+      # create sqlite db merged file
+      CohortDiagnostics::createMergedResultsFile(
+        dataFolder = outputFolder,
+        overwrite = TRUE,
+        sqliteDbPath = file.path(
+          outputFolder,
+          "Combined",
+          "MergedCohortDiagnosticsData.sqlite"
+        )
       )
-    )
+      
+      CohortDiagnostics::createDiagnosticsExplorerZip(
+        outputZipfile = file.path(outputFolder,
+                                  "Combined",
+                                  "DiagnosticsExplorer.zip"),
+        sqliteDbPath = file.path(
+          outputFolder,
+          "Combined",
+          "MergedCohortDiagnosticsData.sqlite"
+        ),
+        overwrite = TRUE
+      )
+      
+      unlink(
+        x = file.path(
+          outputFolder,
+          "Combined",
+          "MergedCohortDiagnosticsData.sqlite"
+        ),
+        recursive = TRUE,
+        force = TRUE
+      )
+      
+      zip::unzip(
+        zipfile = file.path(outputFolder,
+                            "Combined",
+                            "DiagnosticsExplorer.zip"),
+        overwrite = TRUE,
+        junkpaths = FALSE,
+        exdir = file.path(outputFolder,
+                          "Combined")
+      )
+    }
 
     ParallelLogger::clearLoggers()
   }
