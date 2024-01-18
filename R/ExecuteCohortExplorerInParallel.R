@@ -55,8 +55,6 @@ executeCohortExplorerInParallel <-
         server = x$serverFinal,
         port = x$port
       )
-      outputFolder <-
-        file.path(outputFolder, x$sourceKey)
       
       featureCohortDefinitionSet <- cohortDefinitionSet
       
@@ -100,20 +98,5 @@ executeCohortExplorerInParallel <-
     )
     
     ParallelLogger::stopCluster(cluster = cluster)
-    
-    cohortExplorerFiles <-
-      list.files(
-        path = file.path(baseResultsFolder,
-                         "CohortExplorer"),
-        pattern = "CohortExplorer",
-        recursive = TRUE,
-        full.names = TRUE
-      )
-    
-    createCohortExplorerAppFromOutputs(
-      cohortExplorerFiles = cohortExplorerFiles,
-      outputLocation = file.path(baseResultsFolder,
-                                 "CohortExplorer",
-                                 "Consolidated")
-    )
+
   }
