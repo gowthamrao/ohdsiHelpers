@@ -9,6 +9,7 @@ executeCohortExplorerInParallel <-
            tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
            databaseIds = getListOfDatabaseIds(),
            sequence = 1,
+           sampleSize = 100,
            cohortIds = NULL) {
     cdmSources <- cdmSources |>
       dplyr::filter(.data$database %in% c(databaseIds)) |>
@@ -45,6 +46,7 @@ executeCohortExplorerInParallel <-
                                        cohortIds,
                                        cohortTableNames,
                                        outputFolder,
+                                       sampleSize,
                                        tempEmulationSchema) {
       connectionDetails <- DatabaseConnector::createConnectionDetails(
         dbms = x$dbms,
@@ -55,6 +57,13 @@ executeCohortExplorerInParallel <-
       )
       outputFolder <-
         file.path(outputFolder, x$sourceKey)
+      
+      featureCohortDefinitionSet <- cohortDefinitionSet
+      
+      if (!is.null(cohortIds)) {
+        cohortDefinitionSet <- cohortDefinitionSet |>
+          dplyr::filter(cohortId %in% cohortIds)
+      }
       
       for (i in (1:nrow(cohortDefinitionSet))) {
         CohortExplorer::createCohortExplorerApp(
@@ -71,8 +80,8 @@ executeCohortExplorerInParallel <-
           cohortTable = cohortTableNames$cohortTable,
           featureCohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
           featureCohortTable = cohortTableNames$cohortTable,
-          sampleSize = 100,
-          featureCohortDefinitionSet = cohortDefinitionSet
+          sampleSize = sampleSize,
+          featureCohortDefinitionSet = featureCohortDefinitionSet
         )
       }
     }
@@ -84,6 +93,7 @@ executeCohortExplorerInParallel <-
       cohortIds = cohortIds,
       outputFolder = outputFolder,
       cohortTableNames = cohortTableNames,
+      sampleSize = sampleSize,
       tempEmulationSchema = tempEmulationSchema,
       fun = executeCohortExplorerX,
       stopOnError = FALSE

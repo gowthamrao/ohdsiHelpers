@@ -30,7 +30,7 @@ Remotes:
   ohdsi/Eunomia,
   ohdsi/OhdsiShinyModules,
   ohdsi/ParallelLogger
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.0
 VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE)
 Encoding: UTF-8
