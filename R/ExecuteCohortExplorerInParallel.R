@@ -16,18 +16,16 @@ executeCohortExplorerInParallel <-
     
     x <- list()
     for (i in 1:nrow(cdmSources)) {
-      x[[i]] <- cdmSources[i, ]
+      x[[i]] <- cdmSources[i,]
     }
     
     # use Parallel Logger to run in parallel
     cluster <-
-      ParallelLogger::makeCluster(numberOfThreads = min(
-        as.integer(trunc(
-          parallel::detectCores() /
-            2
-        )),
-        length(x)
-      ))
+      ParallelLogger::makeCluster(numberOfThreads = min(as.integer(trunc(
+        parallel::detectCores() /
+          2
+      )),
+      length(x)))
     
     ## file logger
     loggerName <-
@@ -60,8 +58,8 @@ executeCohortExplorerInParallel <-
       
       for (i in (1:nrow(cohortDefinitionSet))) {
         CohortExplorer::createCohortExplorerApp(
-          cohortDefinitionId = cohortDefinitionSet[i, ]$cohortId,
-          cohortName = cohortDefinitionSet[i, ]$cohortName,
+          cohortDefinitionId = cohortDefinitionSet[i,]$cohortId,
+          cohortName = cohortDefinitionSet[i,]$cohortName,
           exportFolder = outputFolder,
           databaseId = SqlRender::snakeCaseToCamelCase(x$sourceKey),
           cohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
@@ -92,4 +90,20 @@ executeCohortExplorerInParallel <-
     )
     
     ParallelLogger::stopCluster(cluster = cluster)
+    
+    cohortExplorerFiles <-
+      list.files(
+        path = file.path(baseResultsFolder,
+                         "CohortExplorer"),
+        pattern = "CohortExplorer",
+        recursive = TRUE,
+        full.names = TRUE
+      )
+    
+    createCohortExplorerAppFromOutputs(
+      cohortExplorerFiles = cohortExplorerFiles,
+      outputLocation = file.path(baseResultsFolder,
+                                 "CohortExplorer",
+                                 "Consolidated")
+    )
   }
