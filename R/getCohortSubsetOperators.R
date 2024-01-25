@@ -25,7 +25,18 @@ getCohortSubsetOperators <- function(subsetCohortIds,
                                      timeStart = -9999,
                                      timeEnd = 9999,
                                      targetAnchor = "cohortStart") {
+  if (targetAnchor == "cohortStart") {
+    targetAnchorName = "Starts"
+  } else if (targetAnchor == "cohortEnd") {
+    targetAnchorName = "Ends"
+  } else {
+    stop("targetAnchor should be either cohortStart or cohortEnd.")
+  }
+  
   # Validate input parameters
+  if (timeStart > timeEnd) {
+    stop("timeStart > timeEnd")
+  }
   if (!is.vector(subsetCohortIds)) {
     stop("subsetCohortIds must be a vector.")
   }
@@ -72,10 +83,10 @@ getCohortSubsetOperators <- function(subsetCohortIds,
       suffix <- ifelse(negate, "_Negate", "")
       windowVar <- windowVars[[period]]
       objectName <-
-        paste0("limitWhenSubsetCohort_Starts_",
-               period,
+        paste0("limitWhenSubsetCohort_",
+               targetAnchorName,
                "_",
-               baseName,
+               period,
                suffix)
       tryCatch({
         results[[objectName]] <- CohortGenerator::createCohortSubset(
