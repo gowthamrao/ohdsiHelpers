@@ -94,11 +94,10 @@ getCohortSubsetOperators <- function(subsetCohortIds,
       tryCatch({
         results[[objectName]] <- CohortGenerator::createCohortSubset(
           name = paste0(
-            "with ",
+            ifelse(negate, "Without ", "With "),
             baseName,
             " ",
-            tolower(period),
-            ifelse(negate, "out", "")
+            tolower(period)
           ),
           cohortIds = subsetCohortIds,
           cohortCombinationOperator = subsetCombinationOperator,
