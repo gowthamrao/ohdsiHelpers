@@ -6,7 +6,7 @@
 \usage{
 getCohortSubsetOperators(
   subsetCohortIds,
-  subsetCombinationOperator,
+  subsetCombinationOperator = "any",
   baseName,
   timeStart = -9999,
   timeEnd = 9999,
@@ -37,6 +37,6 @@ cohort analysis by allowing for the creation of various time-bound cohort subset
 \examples{
 # Example usage:
 results <- getCohortSubsetOperators(subsetCohortIds = c(1, 2, 3),
-                                    subsetCombinationOperator = "AND",
+                                    subsetCombinationOperator = "any",
                                     baseName = "exampleCohort")
 }

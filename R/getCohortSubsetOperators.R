@@ -17,10 +17,10 @@
 #' @examples
 #' # Example usage:
 #' results <- getCohortSubsetOperators(subsetCohortIds = c(1, 2, 3),
-#'                                     subsetCombinationOperator = "AND",
+#'                                     subsetCombinationOperator = "any",
 #'                                     baseName = "exampleCohort")
 getCohortSubsetOperators <- function(subsetCohortIds,
-                                     subsetCombinationOperator,
+                                     subsetCombinationOperator = "any",
                                      baseName,
                                      timeStart = -9999,
                                      timeEnd = 9999,
@@ -43,6 +43,9 @@ getCohortSubsetOperators <- function(subsetCohortIds,
   if (!is.character(subsetCombinationOperator)) {
     stop("subsetCombinationOperator must be a character string.")
   }
+  if (!subsetCombinationOperator %in% c("any", "all")) {
+    stop("subsetCombinationOperator may only be any or all")
+  }
   if (!is.character(baseName)) {
     stop("baseName must be a character string.")
   }
@@ -60,7 +63,7 @@ getCohortSubsetOperators <- function(subsetCohortIds,
   
   # Define cohort subset windows
   anytimeBeforeToAnytimeAfter <- createWindow(timeStart, timeEnd)
-  anytimeBeforeTo1DayBefore <- createWindow(timeStart,-1)
+  anytimeBeforeTo1DayBefore <- createWindow(timeStart, -1)
   anyTimeBeforeToDay0 <- createWindow(timeStart, 0)
   onDay0 <- createWindow(0, 0)
   onDay0ToAnytimeAfter <- createWindow(0, timeEnd)
