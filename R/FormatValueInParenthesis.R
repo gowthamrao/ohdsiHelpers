@@ -7,9 +7,9 @@ formatMeanSd <- function(mean, standardDeviation) {
 
 #' @export
 formatCountPercent <- function(count, percent, percentDigits = 1) {
-  return(paste(
+  return(paste0(
     formatIntegerWithComma(count),
-    "(",
+    " (",
     formatPercent(percent, digits = percentDigits),
     ")"
   ))
