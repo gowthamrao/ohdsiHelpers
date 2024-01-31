@@ -18,6 +18,12 @@ createFeatureExtractionReport <- function(characterization,
       dplyr::filter(.data$mean >= meanThreshold)
   }
 
+  if ('startDay' %in% colnames(characterization$analysisRef)) {
+    characterization$analysisRef <- characterization$analysisRef |>
+      dplyr::select(-startDay,
+                    -endDay)
+  }
+  
   if (!is.null(analysisNames)) {
     characterization$analysisRef <- characterization$analysisRef |>
       dplyr::filter(.data$analysisRef$analysisName %in% c(analysisNames))
