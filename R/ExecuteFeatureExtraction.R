@@ -31,14 +31,74 @@ executeFeatureExtraction <-
            cohortDatabaseSchema,
            cohortIds,
            cohortTable,
+           runCohortBasedTemporalCharacterization = TRUE,
+           covariateCohortDatabaseSchema = NULL,
+           covariateCohortIds = NULL,
+           covariateCohortTable = cohortTable,
+           covariateCohortDefinitionSet = NULL,
+           cohortCovariateAnalysisId = 150,
            covariateSettings = FeatureExtraction::createDefaultCovariateSettings(),
            tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
-           minCellCount = 5,
-           minCharacterizationMean = 0.00001,
-           notes = NULL,
            outputFolder) {
     if (!file.exists(outputFolder)) {
       dir.create(outputFolder, recursive = TRUE)
+    }
+    
+    if (runCohortBasedTemporalCharacterization) {
+      if (covariateSettings$temporal) {
+        if (is.null(covariateCohortDefinitionSet)) {
+          stop(
+            "covariateCohortDefinitionSet is NULL. cannot run cohort temporal characterization"
+          )
+        }
+        
+        if (!is.null(covariateCohortIds)) {
+          covariateCohortDefinitionSet <- covariateCohortDefinitionSet |>
+            dplyr::filter(cohortId %in% covariateCohortIds)
+        }
+        
+        if (is.null(covariateCohortTable)) {
+          stop("covariateCohortTable is NULL. cannot run cohort temporal characterization")
+        }
+        if (is.null(covariateCohortDatabaseSchema)) {
+          stop(
+            "covariateCohortDatabaseSchema is NULL. cannot run cohort temporal characterization"
+          )
+        }
+        if (is.null(cohortCovariateAnalysisId)) {
+          stop(
+            "cohortCovariateAnalysisId is NULL. cannot run cohort temporal characterization"
+          )
+        }
+        
+        temporalStartDays <- covariateSettings$temporalStartDays
+        temporalEndDays <- covariateSettings$temporalEndDays
+        
+        if (is.null(covariateCohortIds)) {
+          covariateCohortIds <-
+            covariateCohortDefinitionSet$cohortId |> unique() |> sort()
+        }
+        
+        cohortBasedTemporalCovariateSettings <-
+          FeatureExtraction::createCohortBasedTemporalCovariateSettings(
+            analysisId = cohortCovariateAnalysisId,
+            covariateCohortDatabaseSchema = covariateCohortDatabaseSchema,
+            covariateCohortTable = covariateCohortTable,
+            covariateCohorts = covariateCohortDefinitionSet |>
+              dplyr::filter(.data$cohortId %in% c(covariateCohortIds)),
+            valueType = "binary",
+            temporalStartDays = temporalStartDays,
+            temporalEndDays = temporalEndDays
+          )
+        
+        covariateSettings <- list(covariateSettings,
+                                  cohortBasedTemporalCovariateSettings)
+        
+      } else {
+        stop(
+          "Cant run cohort based temporal characterization because covariate setting is not temporal"
+        )
+      }
     }
     
     ParallelLogger::addDefaultFileLogger(file.path(outputFolder, "log.txt"))
@@ -85,10 +145,14 @@ executeFeatureExtractionInParallel <-
            passwordService = "OHDSI_PASSWORD",
            databaseIds = getListOfDatabaseIds(),
            covariateSettings = FeatureExtraction::createDefaultCovariateSettings(),
+           runCohortBasedTemporalCharacterization = TRUE,
+           covariateCohortIds = NULL,
+           covariateCohortTable = cohortTable,
+           covariateCohortDefinitionSet = NULL,
+           cohortCovariateAnalysisId = 150,
            sequence = 1,
            maxCores = parallel::detectCores() /
              3,
-           databaseId = NULL,
            tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
            outputFolder) {
     cdmSources <- cdmSources |>
@@ -130,6 +194,11 @@ executeFeatureExtractionInParallel <-
                passwordService,
                tempEmulationSchema,
                covariateSettings,
+               runCohortBasedTemporalCharacterization,
+               covariateCohortIds,
+               covariateCohortTable,
+               covariateCohortDefinitionSet,
+               cohortCovariateAnalysisId,
                outputFolder) {
         connectionDetails <- DatabaseConnector::createConnectionDetails(
           dbms = x$dbms,
@@ -153,7 +222,13 @@ executeFeatureExtractionInParallel <-
           cohortIds = cohortIds,
           cohortTable = cohortTable,
           covariateSettings = covariateSettings,
-          outputFolder = outputFolder
+          outputFolder = outputFolder,
+          runCohortBasedTemporalCharacterization = runCohortBasedTemporalCharacterization,
+          covariateCohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
+          covariateCohortIds = covariateCohortIds,
+          covariateCohortTable = covariateCohortTable,
+          covariateCohortDefinitionSet = covariateCohortDefinitionSet,
+          cohortCovariateAnalysisId = cohortCovariateAnalysisId
         )
       }
     
@@ -167,7 +242,12 @@ executeFeatureExtractionInParallel <-
       passwordService = passwordService,
       covariateSettings = covariateSettings,
       tempEmulationSchema = tempEmulationSchema,
-      outputFolder = outputFolder
+      outputFolder = outputFolder,
+      runCohortBasedTemporalCharacterization = runCohortBasedTemporalCharacterization,
+      covariateCohortIds = covariateCohortIds,
+      covariateCohortTable = covariateCohortTable,
+      covariateCohortDefinitionSet = covariateCohortDefinitionSet,
+      cohortCovariateAnalysisId = cohortCovariateAnalysisId
     )
     
     ParallelLogger::stopCluster(cluster = cluster)

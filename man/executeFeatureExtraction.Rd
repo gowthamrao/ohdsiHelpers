@@ -11,11 +11,14 @@ executeFeatureExtraction(
   cohortDatabaseSchema,
   cohortIds,
   cohortTable,
+  runCohortBasedTemporalCharacterization = TRUE,
+  covariateCohortDatabaseSchema = NULL,
+  covariateCohortIds = NULL,
+  covariateCohortTable = cohortTable,
+  covariateCohortDefinitionSet = NULL,
+  cohortCovariateAnalysisId = 150,
   covariateSettings = FeatureExtraction::createDefaultCovariateSettings(),
   tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
-  minCellCount = 5,
-  minCharacterizationMean = 1e-05,
-  notes = NULL,
   outputFolder
 )
 }
