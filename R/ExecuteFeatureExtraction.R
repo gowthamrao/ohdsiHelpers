@@ -53,7 +53,7 @@ executeFeatureExtraction <-
       DatabaseConnector::connect(connectionDetails = connectionDetails)
     
     ParallelLogger::logInfo(" - Beginning Feature Extraction")
-    featureExtractionOutput <-
+    covariateData <-
       FeatureExtraction::getDbCovariateData(
         connection = connection,
         oracleTempSchema = tempEmulationSchema,
@@ -66,12 +66,12 @@ executeFeatureExtraction <-
         aggregated = TRUE
       )
     
-    saveRDS(object = featureExtractionOutput,
-            file = file.path(outputFolder, "FeatureExtraction.RDS"))
+    FeatureExtraction::saveCovariateData(covariateData = covariateData,
+                                         file = file.path(outputFolder, "covariateData"))
     
     DatabaseConnector::disconnect(connection = connection)
     
-    return(featureExtractionOutput)
+    return(covariateData)
   }
 
 
@@ -97,7 +97,7 @@ executeFeatureExtractionInParallel <-
     
     x <- list()
     for (i in 1:nrow(cdmSources)) {
-      x[[i]] <- cdmSources[i,]
+      x[[i]] <- cdmSources[i, ]
     }
     
     # use Parallel Logger to run in parallel
@@ -146,17 +146,15 @@ executeFeatureExtractionInParallel <-
                    showWarnings = FALSE,
                    recursive = TRUE)
         
-        featureExtractionOutput <-
-          executeFeatureExtraction(
-            connectionDetails = connectionDetails,
-            cdmDatabaseSchema = x$cdmDatabaseSchemaFinal,
-            cohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
-            cohortIds = cohortIds,
-            cohortTable = cohortTable,
-            covariateSettings = covariateSettings,
-            outputFolder = outputFolder
-          )
-        rm("featureExtractionOutput")
+        executeFeatureExtraction(
+          connectionDetails = connectionDetails,
+          cdmDatabaseSchema = x$cdmDatabaseSchemaFinal,
+          cohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
+          cohortIds = cohortIds,
+          cohortTable = cohortTable,
+          covariateSettings = covariateSettings,
+          outputFolder = outputFolder
+        )
       }
     
     ParallelLogger::clusterApply(
