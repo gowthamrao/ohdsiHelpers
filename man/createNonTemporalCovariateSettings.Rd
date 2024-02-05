@@ -14,7 +14,25 @@ createNonTemporalCovariateSettings(
   startDayWindow2 = NULL,
   endDayWindow2 = NULL,
   startDayWindow3 = NULL,
-  endDayWindow3 = NULL
+  endDayWindow3 = NULL,
+  useDemographicsGender = TRUE,
+  useDemographicsAgeGroup = TRUE,
+  useDemographicsRace = TRUE,
+  useDemographicsEthnicity = TRUE,
+  useConditionGroupEra = TRUE,
+  useDrugGroupEra = TRUE,
+  useProcedureOccurrence = TRUE,
+  useDeviceExposureLongTerm = TRUE,
+  useMeasurement = TRUE,
+  useMeasurementValue = TRUE,
+  useMeasurementRangeGroup = TRUE,
+  useObservation = TRUE,
+  useDistinctConditionCount = TRUE,
+  useDistinctIngredientCount = TRUE,
+  useDistinctProcedureCount = TRUE,
+  useDistinctMeasurementCount = TRUE,
+  useVisitCount = TRUE,
+  useVisitConceptCount = TRUE
 )
 }
 \arguments{
