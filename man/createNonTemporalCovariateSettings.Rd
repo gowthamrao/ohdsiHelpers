@@ -32,7 +32,8 @@ createNonTemporalCovariateSettings(
   useDistinctProcedureCount = TRUE,
   useDistinctMeasurementCount = TRUE,
   useVisitCount = TRUE,
-  useVisitConceptCount = TRUE
+  useVisitConceptCount = TRUE,
+  useDeviceExposure = TRUE
 )
 }
 \arguments{
