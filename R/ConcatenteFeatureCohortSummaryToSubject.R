@@ -4,13 +4,18 @@ concatenteFeatureCohortSummaryToSubject <- function(connection,
                                                     featureCohortTableName,
                                                     featureCohortDatabaseSchema,
                                                     featureCohortIsTemp = FALSE,
-                                                    featureCohortIds,
+                                                    featureCohortId,
                                                     subjectTableName,
                                                     subjectTableDatabaseSchema = NULL,
                                                     subjectTableIsTemp = FALSE,
                                                     subjectStartDate = NULL,
                                                     subjectEndDate = NULL,
-                                                    prefix) {
+                                                    prefix = NULL) {
+  
+  if (is.null(prefix)) {
+    prefix = paste0("C", featureCohortId)
+  }
+  
   limitToSubjectDates <- FALSE
   if (any(!is.null(subjectStartDate), !is.null(subjectEndDate))) {
     limitToSubjectDates <- TRUE
@@ -49,7 +54,8 @@ concatenteFeatureCohortSummaryToSubject <- function(connection,
               	        f.@prefix_le_btn,
               	        f.@prefix_ld_btn,
               	        f.@prefix_sn_btn,
-              	        f.@prefix_ev_btn
+              	        f.@prefix_ev_btn,
+      	                CASE WHEN f.@prefix_fs_btn IS NULL THEN 0 ELSE 1 END as @prefix_t_btn
                       }
         	        }
                   {@use_lower_limit_date} ? {,
@@ -60,7 +66,8 @@ concatenteFeatureCohortSummaryToSubject <- function(connection,
               	        f.@prefix_le_aft,
               	        f.@prefix_ld_aft,
               	        f.@prefix_sn_aft,
-              	        f.@prefix_ev_aft
+              	        f.@prefix_ev_aft,
+      	                CASE WHEN f.@prefix_fs_aft IS NULL THEN 0 ELSE 1 END as @prefix_t_aft
                     }
                   {@use_upper_limit_date} ? {,
               	        f.@prefix_fs_bf,
@@ -70,7 +77,8 @@ concatenteFeatureCohortSummaryToSubject <- function(connection,
               	        f.@prefix_le_bf,
               	        f.@prefix_ld_bf,
               	        f.@prefix_sn_bf,
-              	        f.@prefix_ev_bf
+              	        f.@prefix_ev_bf,
+      	                CASE WHEN f.@prefix_fs_bf IS NULL THEN 0 ELSE 1 END as @prefix_t_bf
                       }
       	        }
       	INTO #concatenated_table
@@ -87,7 +95,6 @@ concatenteFeatureCohortSummaryToSubject <- function(connection,
                 DATEDIFF(day, MAX(a.cohort_start_date), MAX(a.cohort_end_date)) AS @prefix_ld,
                 DATEDIFF(day, MIN(a.cohort_start_date), MAX(a.cohort_end_date)) AS @prefix_sn,
                 COUNT(DISTINCT a.cohort_start_date) AS @prefix_ev
-
 
                 {@limit_to_subject_dates} ? {
 
@@ -197,7 +204,7 @@ concatenteFeatureCohortSummaryToSubject <- function(connection,
               ) b
             ON a.subject_id = b.subject_id
       }
-          	WHERE a.cohort_definition_id IN(@feature_definition_ids)
+          	WHERE a.cohort_definition_id = @feature_definition_id
           	GROUP BY a.subject_id
       	  ) f
       	ON a.subject_id = f.subject_id;
@@ -219,7 +226,7 @@ concatenteFeatureCohortSummaryToSubject <- function(connection,
     sql = sql,
     cohort_database_schema = featureCohortDatabaseSchema,
     cohort_table_name = featureCohortTableName,
-    feature_definition_ids = featureCohortIds,
+    feature_definition_id = featureCohortId,
     feature_cohort_table_is_temp = featureCohortIsTemp,
     subject_table_is_temp = subjectTableIsTemp,
     subject_table_database_schema = subjectTableDatabaseSchema,
