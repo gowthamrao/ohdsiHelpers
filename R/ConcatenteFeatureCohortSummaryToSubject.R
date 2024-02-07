@@ -1,3 +1,100 @@
+#' @export
+concatenteFeatureCohortSummaryToSubjectInParallel <-
+  function(cdmSources,
+           userService = "OHDSI_USER",
+           passwordService = "OHDSI_PASSWORD",
+           tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
+           databaseIds = getListOfDatabaseIds(),
+           sequence = 1,
+           cohortTableName,
+           subjectTableName,
+           featureCohortIds,
+           subjectStartDate,
+           subjectEndDate,
+           prefix = NULL) {
+    cdmSources <- cdmSources |>
+      dplyr::filter(.data$database %in% c(databaseIds)) |>
+      dplyr::filter(.data$sequence == !!sequence)
+    
+    x <- list()
+    for (i in 1:nrow(cdmSources)) {
+      x[[i]] <- cdmSources[i, ]
+    }
+    
+    # use Parallel Logger to run in parallel
+    cluster <-
+      ParallelLogger::makeCluster(numberOfThreads = min(as.integer(trunc(
+        parallel::detectCores() /
+          2
+      )),
+      length(x)))
+    
+    ## file logger
+    loggerName <-
+      paste0(
+        "CR_",
+        stringr::str_replace_all(
+          string = Sys.time(),
+          pattern = ":|-|EDT| ",
+          replacement = ""
+        )
+      )
+    
+    ParallelLogger::addDefaultFileLogger(fileName = file.path(outputFolder, paste0(loggerName, ".txt")))
+    
+    concatenteFeatureCohortSummaryToSubjectX <- function(x,
+                                                         featureCohortTableName,
+                                                         featureCohortIds,
+                                                         subjectTableName,
+                                                         subjectStartDate,
+                                                         subjectEndDate,
+                                                         prefix) {
+      connectionDetails <- DatabaseConnector::createConnectionDetails(
+        dbms = x$dbms,
+        user = keyring::key_get(userService),
+        password = keyring::key_get(passwordService),
+        server = x$serverFinal,
+        port = x$port
+      )
+      connection <-
+        DatabaseConnector::connect(connectionDetails = connectionDetails)
+      
+      for (j in (1:length(featureCohortIds))) {
+        featureCohortId <- featureCohortIds[[j]]
+        concatenteFeatureCohortSummaryToSubject(
+          connection = connection,
+          featureCohortTableName = featureCohortTableName,
+          featureCohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
+          featureCohortIsTemp = FALSE,
+          featureCohortId = featureCohortId,
+          subjectTableName = subjectTableName,
+          subjectTableDatabaseSchema = x$cohortDatabaseSchemaFinal,
+          subjectTableIsTemp = FALSE,
+          subjectStartDate = subjectStartDate,
+          subjectEndDate = subjectEndDate,
+          prefix = prefix
+        )
+      }
+    }
+    
+    ParallelLogger::clusterApply(
+      cluster = cluster,
+      x = x,
+      featureCohortTableName = cohortTableName,
+      featureCohortIds = featureCohortIds,
+      subjectTableName = subjectTableName,
+      subjectTableDatabaseSchema = subjectTableDatabaseSchema,
+      subjectStartDate = subjectStartDate,
+      subjectEndDate = subjectEndDate,
+      prefix = prefix,
+      stopOnError = FALSE
+    )
+    
+    ParallelLogger::stopCluster(cluster = cluster)
+  }
+
+
+
 # Function to concatenate feature cohorts summary to subject table
 #' @export
 concatenteFeatureCohortSummaryToSubject <- function(connection,
@@ -11,7 +108,6 @@ concatenteFeatureCohortSummaryToSubject <- function(connection,
                                                     subjectStartDate = NULL,
                                                     subjectEndDate = NULL,
                                                     prefix = NULL) {
-  
   if (is.null(prefix)) {
     prefix = paste0("C", featureCohortId)
   }
@@ -99,9 +195,9 @@ concatenteFeatureCohortSummaryToSubject <- function(connection,
                 {@limit_to_subject_dates} ? {
 
                       {@use_lower_limit_date} ? {
-      
+
                             {@use_upper_limit_date} ? {,
-            
+
                             MIN(CASE WHEN  a.cohort_start_date >= b.lower_limit_date AND
                                         a.cohort_start_date <= b.upper_limit_date
                               THEN a.cohort_start_date END) AS @prefix_fs_btn,
@@ -135,7 +231,7 @@ concatenteFeatureCohortSummaryToSubject <- function(connection,
                             COUNT(DISTINCT CASE WHEN  a.cohort_start_date >= b.lower_limit_date AND
                                                       a.cohort_start_date <= b.upper_limit_date
                                             THEN a.cohort_start_date END) AS @prefix_ev_btn
-            
+
                             }
                       }
 
@@ -188,7 +284,7 @@ concatenteFeatureCohortSummaryToSubject <- function(connection,
                                                  THEN a.cohort_end_date END)) AS @prefix_sn_bf,
                           COUNT(DISTINCT CASE WHEN a.cohort_start_date <= b.upper_limit_date
                                               THEN a.cohort_start_date END) AS @prefix_ev_bf
-          
+
                       }
                 }
 
