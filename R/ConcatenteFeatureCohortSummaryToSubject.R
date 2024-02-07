@@ -285,7 +285,7 @@ concatenteFeatureCohortSummaryToSubject <- function(connection,
                                              THEN a.cohort_end_date END)) AS @prefix_sn_on_ll,
                       COUNT(DISTINCT CASE WHEN a.cohort_start_date = b.lower_limit_date
                                           THEN a.cohort_start_date END) AS @prefix_ev_on_ll,
-                                          ,
+                                          
                       MIN(CASE WHEN a.cohort_start_date > b.lower_limit_date
                                THEN a.cohort_start_date END) AS @prefix_fs_aft_ll,
                       MIN(CASE WHEN a.cohort_start_date > b.lower_limit_date
