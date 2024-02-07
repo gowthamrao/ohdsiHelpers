@@ -22,7 +22,7 @@ createObservedPersonsCohortInParallel <-
     
     x <- list()
     for (i in 1:nrow(cdmSources)) {
-      x[[i]] <- cdmSources[i, ]
+      x[[i]] <- cdmSources[i,]
     }
     
     # use Parallel Logger to run in parallel
@@ -32,19 +32,6 @@ createObservedPersonsCohortInParallel <-
           2
       )),
       length(x)))
-    
-    ## file logger
-    loggerName <-
-      paste0(
-        "CR_",
-        stringr::str_replace_all(
-          string = Sys.time(),
-          pattern = ":|-|EDT| ",
-          replacement = ""
-        )
-      )
-    
-    ParallelLogger::addDefaultFileLogger(fileName = file.path(outputFolder, paste0(loggerName, ".txt")))
     
     createObservedPersonsCohortX <- function(x,
                                              cohortTableName,
@@ -82,6 +69,7 @@ createObservedPersonsCohortInParallel <-
         endDateStrategy = endDateStrategy,
         unit = unit
       )
+      
     }
     
     ParallelLogger::clusterApply(
@@ -89,6 +77,7 @@ createObservedPersonsCohortInParallel <-
       x = x,
       fun = createObservedPersonsCohortX,
       startYear = startYear,
+      cohortTableName = cohortTableName,
       endYear = endYear,
       cohortIdStart = cohortIdStart,
       overRide = overRide,
@@ -99,7 +88,6 @@ createObservedPersonsCohortInParallel <-
       unit = unit,
       stopOnError = FALSE
     )
-    
     ParallelLogger::stopCluster(cluster = cluster)
   }
 

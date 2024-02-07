@@ -29,19 +29,6 @@ concatenteFeatureCohortSummaryToSubjectInParallel <-
       )),
       length(x)))
     
-    ## file logger
-    loggerName <-
-      paste0(
-        "CR_",
-        stringr::str_replace_all(
-          string = Sys.time(),
-          pattern = ":|-|EDT| ",
-          replacement = ""
-        )
-      )
-    
-    ParallelLogger::addDefaultFileLogger(fileName = file.path(outputFolder, paste0(loggerName, ".txt")))
-    
     concatenteFeatureCohortSummaryToSubjectX <- function(x,
                                                          featureCohortTableName,
                                                          featureCohortIds,
@@ -84,7 +71,6 @@ concatenteFeatureCohortSummaryToSubjectInParallel <-
       featureCohortTableName = cohortTableName,
       featureCohortIds = featureCohortIds,
       subjectTableName = subjectTableName,
-      subjectTableDatabaseSchema = subjectTableDatabaseSchema,
       subjectStartDate = subjectStartDate,
       subjectEndDate = subjectEndDate,
       prefix = prefix,
