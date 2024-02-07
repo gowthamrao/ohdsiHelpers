@@ -80,6 +80,7 @@ concatenteFeatureCohortSummaryToSubjectInParallel <-
     ParallelLogger::clusterApply(
       cluster = cluster,
       x = x,
+      fun = concatenteFeatureCohortSummaryToSubjectX,
       featureCohortTableName = cohortTableName,
       featureCohortIds = featureCohortIds,
       subjectTableName = subjectTableName,
