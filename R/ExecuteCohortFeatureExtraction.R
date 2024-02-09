@@ -52,7 +52,9 @@ executeCohortFeatureExtraction <-
         covariateCohortDatabaseSchema = covariateCohortDatabaseSchema,
         covariateCohortTable = covariateCohortTable,
         covariateCohorts = covariateCohortDefinitionSet |>
-          dplyr::filter(.data$cohortId %in% c(covariateCohortIds)),
+          dplyr::filter(.data$cohortId %in% c(covariateCohortIds)) |>
+          dplyr::select(cohortId,
+                        cohortName),
         valueType = "binary",
         temporalStartDays = temporalStartDays,
         temporalEndDays = temporalEndDays
@@ -62,14 +64,15 @@ executeCohortFeatureExtraction <-
       DatabaseConnector::connect(connectionDetails = connectionDetails)
     
     featureExtractionOutput <-
-      CohortDiagnostics:::getCohortCharacteristics(
+      FeatureExtraction::getDbCovariateData(
         connection = connection,
+        oracleTempSchema = tempEmulationSchema,
         cdmDatabaseSchema = cdmDatabaseSchema,
-        cohortDatabaseSchema = cohortDatabaseSchema,
-        cohortTable = cohortTable,
         cohortIds = cohortIds,
         covariateSettings = cohortDomainSettings,
-        exportFolder = outputFolder
+        aggregated = TRUE,
+        cohortTable = cohortTable,
+        cohortDatabaseSchema = cohortDatabaseSchema
       )
     
     DatabaseConnector::disconnect(connection = connection)
@@ -81,8 +84,6 @@ executeCohortFeatureExtraction <-
     )
     FeatureExtraction::saveCovariateData(covariateData = featureExtractionOutput,
                                          file = file.path(outputFolder, "covariateData"))
-    
-    return(featureExtractionOutput)
   }
 
 
