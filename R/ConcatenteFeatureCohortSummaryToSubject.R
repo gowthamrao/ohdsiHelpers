@@ -18,7 +18,7 @@ concatenteFeatureCohortSummaryToSubjectInParallel <-
     
     x <- list()
     for (i in 1:nrow(cdmSources)) {
-      x[[i]] <- cdmSources[i, ]
+      x[[i]] <- cdmSources[i,]
     }
     
     # use Parallel Logger to run in parallel
@@ -84,37 +84,38 @@ concatenteFeatureCohortSummaryToSubjectInParallel <-
 
 # Function to concatenate feature cohorts summary to subject table
 #' @export
-concatenteFeatureCohortSummaryToSubject <- function(connection,
-                                                    featureCohortTableName,
-                                                    featureCohortDatabaseSchema,
-                                                    featureCohortIsTemp = FALSE,
-                                                    featureCohortId,
-                                                    subjectTableName,
-                                                    subjectTableDatabaseSchema = NULL,
-                                                    subjectTableIsTemp = FALSE,
-                                                    subjectStartDate = NULL,
-                                                    subjectEndDate = NULL,
-                                                    prefix = NULL) {
-  if (is.null(prefix)) {
-    prefix = paste0("C", featureCohortId)
-  }
-  
-  limitToSubjectDates <- FALSE
-  if (any(!is.null(subjectStartDate), !is.null(subjectEndDate))) {
-    limitToSubjectDates <- TRUE
-  }
-  
-  useLowerLimitDate <- FALSE
-  if (!is.null(subjectStartDate)) {
-    useLowerLimitDate <- TRUE
-  }
-  
-  useUpperLimitDate <- FALSE
-  if (!is.null(subjectEndDate)) {
-    useUpperLimitDate <- TRUE
-  }
-  
-  sql <- "
+concatenteFeatureCohortSummaryToSubject <-
+  function(connection,
+           featureCohortTableName,
+           featureCohortDatabaseSchema,
+           featureCohortIsTemp = FALSE,
+           featureCohortId,
+           subjectTableName,
+           subjectTableDatabaseSchema = NULL,
+           subjectTableIsTemp = FALSE,
+           subjectStartDate = NULL,
+           subjectEndDate = NULL,
+           prefix = NULL) {
+    if (is.null(prefix)) {
+      prefix = paste0("C", featureCohortId)
+    }
+    
+    limitToSubjectDates <- FALSE
+    if (any(!is.null(subjectStartDate),!is.null(subjectEndDate))) {
+      limitToSubjectDates <- TRUE
+    }
+    
+    useLowerLimitDate <- FALSE
+    if (!is.null(subjectStartDate)) {
+      useLowerLimitDate <- TRUE
+    }
+    
+    useUpperLimitDate <- FALSE
+    if (!is.null(subjectEndDate)) {
+      useUpperLimitDate <- TRUE
+    }
+    
+    sql <- "
     DROP TABLE IF EXISTS #concatenated_table;
 
     SELECT a.*,
@@ -151,7 +152,7 @@ concatenteFeatureCohortSummaryToSubject <- function(connection,
               	        f.@prefix_sn_on_ll,
               	        f.@prefix_ev_on_ll,
       	                CASE WHEN f.@prefix_fs_on_ll IS NULL THEN 0 ELSE 1 END as @prefix_t_on_ll,
-      	                
+
               	        f.@prefix_fs_aft_ll,
               	        f.@prefix_fe_aft_ll,
               	        f.@prefix_fd_aft_ll,
@@ -161,7 +162,7 @@ concatenteFeatureCohortSummaryToSubject <- function(connection,
               	        f.@prefix_sn_aft_ll,
               	        f.@prefix_ev_aft_ll,
       	                CASE WHEN f.@prefix_fs_aft_ll IS NULL THEN 0 ELSE 1 END as @prefix_t_aft_ll,
-      	                
+
               	        f.@prefix_fs_bf_ll,
               	        f.@prefix_fe_bf_ll,
               	        f.@prefix_fd_bf_ll,
@@ -182,7 +183,7 @@ concatenteFeatureCohortSummaryToSubject <- function(connection,
               	        f.@prefix_sn_on_ul,
               	        f.@prefix_ev_on_ul,
       	                CASE WHEN f.@prefix_fs_on_ul IS NULL THEN 0 ELSE 1 END as @prefix_t_on_ul,
-      	                
+
               	        f.@prefix_fs_bf_ul,
               	        f.@prefix_fe_bf_ul,
               	        f.@prefix_fd_bf_ul,
@@ -192,7 +193,7 @@ concatenteFeatureCohortSummaryToSubject <- function(connection,
               	        f.@prefix_sn_bf_ul,
               	        f.@prefix_ev_bf_ul,
       	                CASE WHEN f.@prefix_fs_bf_ul IS NULL THEN 0 ELSE 1 END as @prefix_t_bf_ul,
-      	                
+
               	        f.@prefix_fs_aft_ul,
               	        f.@prefix_fe_aft_ul,
               	        f.@prefix_fd_aft_ul,
@@ -285,7 +286,7 @@ concatenteFeatureCohortSummaryToSubject <- function(connection,
                                              THEN a.cohort_end_date END)) AS @prefix_sn_on_ll,
                       COUNT(DISTINCT CASE WHEN a.cohort_start_date = b.lower_limit_date
                                           THEN a.cohort_start_date END) AS @prefix_ev_on_ll,
-                                          
+
                       MIN(CASE WHEN a.cohort_start_date > b.lower_limit_date
                                THEN a.cohort_start_date END) AS @prefix_fs_aft_ll,
                       MIN(CASE WHEN a.cohort_start_date > b.lower_limit_date
@@ -308,7 +309,7 @@ concatenteFeatureCohortSummaryToSubject <- function(connection,
                                              THEN a.cohort_end_date END)) AS @prefix_sn_aft_ll,
                       COUNT(DISTINCT CASE WHEN a.cohort_start_date > b.lower_limit_date
                                           THEN a.cohort_start_date END) AS @prefix_ev_aft_ll,
-                                          
+
                       MIN(CASE WHEN a.cohort_start_date < b.lower_limit_date
                                THEN a.cohort_start_date END) AS @prefix_fs_bf_ll,
                       MIN(CASE WHEN a.cohort_start_date < b.lower_limit_date
@@ -356,7 +357,7 @@ concatenteFeatureCohortSummaryToSubject <- function(connection,
                                                  THEN a.cohort_end_date END)) AS @prefix_sn_on_ul,
                           COUNT(DISTINCT CASE WHEN a.cohort_start_date = b.upper_limit_date
                                               THEN a.cohort_start_date END) AS @prefix_ev_on_ul,
-                                              
+
                           MIN(CASE WHEN a.cohort_start_date < b.upper_limit_date
                                    THEN a.cohort_start_date END) AS @prefix_fs_bf_ul,
                           MIN(CASE WHEN a.cohort_start_date < b.upper_limit_date
@@ -379,7 +380,7 @@ concatenteFeatureCohortSummaryToSubject <- function(connection,
                                                  THEN a.cohort_end_date END)) AS @prefix_sn_bf_ul,
                           COUNT(DISTINCT CASE WHEN a.cohort_start_date < b.upper_limit_date
                                               THEN a.cohort_start_date END) AS @prefix_ev_bf_ul,
-                          
+
                           MIN(CASE WHEN a.cohort_start_date > b.upper_limit_date
                                    THEN a.cohort_start_date END) AS @prefix_fs_aft_ul,
                           MIN(CASE WHEN a.cohort_start_date > b.upper_limit_date
@@ -434,22 +435,22 @@ concatenteFeatureCohortSummaryToSubject <- function(connection,
   	DROP TABLE IF EXISTS #concatenated_table;
 
 "
-  
-  DatabaseConnector::renderTranslateExecuteSql(
-    connection = connection,
-    sql = sql,
-    cohort_database_schema = featureCohortDatabaseSchema,
-    cohort_table_name = featureCohortTableName,
-    feature_definition_id = featureCohortId,
-    feature_cohort_table_is_temp = featureCohortIsTemp,
-    subject_table_is_temp = subjectTableIsTemp,
-    subject_table_database_schema = subjectTableDatabaseSchema,
-    subject_table_name = subjectTableName,
-    prefix = prefix,
-    limit_to_subject_dates = limitToSubjectDates,
-    use_lower_limit_date = useLowerLimitDate,
-    lower_limit_date = subjectStartDate,
-    use_upper_limit_date = useUpperLimitDate,
-    upper_limit_date = subjectEndDate
-  )
-}
+    
+    DatabaseConnector::renderTranslateExecuteSql(
+      connection = connection,
+      sql = sql,
+      cohort_database_schema = featureCohortDatabaseSchema,
+      cohort_table_name = featureCohortTableName,
+      feature_definition_id = featureCohortId,
+      feature_cohort_table_is_temp = featureCohortIsTemp,
+      subject_table_is_temp = subjectTableIsTemp,
+      subject_table_database_schema = subjectTableDatabaseSchema,
+      subject_table_name = subjectTableName,
+      prefix = prefix,
+      limit_to_subject_dates = limitToSubjectDates,
+      use_lower_limit_date = useLowerLimitDate,
+      lower_limit_date = subjectStartDate,
+      use_upper_limit_date = useUpperLimitDate,
+      upper_limit_date = subjectEndDate
+    )
+  }

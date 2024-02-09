@@ -51,7 +51,6 @@ renderTranslateExecuteSqlInParallel <-
       )
       
     }
-    debug(renderTranslateExecuteSqlX)
     ParallelLogger::clusterApply(
       cluster = cluster,
       x = x,
