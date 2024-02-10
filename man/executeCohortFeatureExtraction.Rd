@@ -21,7 +21,7 @@ executeCohortFeatureExtraction(
   minCellCount = 5,
   minCharacterizationMean = 1e-04,
   tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
-  outputFolder
+  outputFolder = NULL
 )
 }
 \arguments{

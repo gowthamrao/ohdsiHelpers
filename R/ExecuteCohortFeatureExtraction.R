@@ -41,9 +41,11 @@ executeCohortFeatureExtraction <-
            minCellCount = 5,
            minCharacterizationMean = 0.0001,
            tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
-           outputFolder) {
-    if (!file.exists(outputFolder)) {
-      dir.create(outputFolder, recursive = TRUE)
+           outputFolder = NULL) {
+    if (!is.null(outputFolder)) {
+      if (!file.exists(outputFolder)) {
+        dir.create(outputFolder, recursive = TRUE)
+      }
     }
     
     cohortDomainSettings <-
@@ -77,13 +79,17 @@ executeCohortFeatureExtraction <-
     
     DatabaseConnector::disconnect(connection = connection)
     
-    unlink(
-      file.path(outputFolder, "covariateData"),
-      recursive = TRUE,
-      force = TRUE
-    )
-    FeatureExtraction::saveCovariateData(covariateData = featureExtractionOutput,
-                                         file = file.path(outputFolder, "covariateData"))
+    if (!is.null(outputFolder)) {
+      unlink(
+        file.path(outputFolder, "covariateData"),
+        recursive = TRUE,
+        force = TRUE
+      )
+      FeatureExtraction::saveCovariateData(covariateData = featureExtractionOutput,
+                                           file = file.path(outputFolder, "covariateData"))
+    } else {
+      return(featureExtractionOutput)
+    }
   }
 
 
