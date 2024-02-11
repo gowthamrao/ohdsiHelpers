@@ -2,38 +2,41 @@
 % Please edit documentation in R/AddMultipleCohortSubsetDefinitions.R
 \name{addMultipleCohortSubsetDefinitions}
 \alias{addMultipleCohortSubsetDefinitions}
-\title{Add multiple cohort subset definitions}
+\title{Add Multiple Cohort Subset Definitions with Progress Bar}
 \usage{
 addMultipleCohortSubsetDefinitions(
   cohortDefinitionSet,
   targetCohortIds,
-  namePrefix,
+  prefix,
   ...
 )
 }
 \arguments{
-\item{cohortDefinitionSet}{A cohort definition set to which the subset definitions will be added.}
+\item{cohortDefinitionSet}{The initial cohort definition set to which subset definitions will be added.}
 
-\item{targetCohortIds}{A vector of target cohort IDs.}
+\item{targetCohortIds}{A vector of target cohort IDs that the subset definitions will be applied to.}
 
-\item{namePrefix}{A prefix for the name of each cohort subset definition.}
+\item{prefix}{A string prefix for the names of the subset definitions.}
 
-\item{...}{One or more vectors of subset operators.}
+\item{...}{Additional arguments representing sequences of subset operators.}
 }
 \value{
 The modified cohort definition set with added subset definitions.
 }
 \description{
-This function adds multiple cohort subset definitions to a given cohort definition set.
-It iterates over provided sequences of subset operators in a nested manner,
-creating a unique subset definition for every possible combination of operators.
+This function iteratively adds cohort subset definitions to a given cohort definition set.
+It processes multiple sequences of subset operators, first adding each operator from the first sequence individually,
+and then combining each operator from the first sequence with each operator from the subsequent sequences in turn.
+A progress bar and console messages indicate the progress of the operation.
 }
 \examples{
-cohortDefinitionSetWithSubset <- addMultipleCohortSubsetDefinitions(
-  cohortDefinitionSet,
-  targetOrIndicationCohortIds,
-  subsetOperatorSequence1,
-  subsetOperatorSequence2
-  # ... Add more sequences if necessary
-)
+# Usage:
+# cohortDefinitionSetWithSubset <- addMultipleCohortSubsetDefinitions(
+#   cohortDefinitionSet,
+#   targetOrIndicationCohortIds,
+#   "CustomPrefix",
+#   subsetOperatorSequence1,
+#   subsetOperatorSequence2
+#   # ... Add more sequences if necessary
+# )
 }
