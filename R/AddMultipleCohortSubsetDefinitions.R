@@ -6,6 +6,7 @@
 #'
 #' @param cohortDefinitionSet A cohort definition set to which the subset definitions will be added.
 #' @param targetCohortIds A vector of target cohort IDs.
+#' @param namePrefix A prefix for the name of each cohort subset definition.
 #' @param ... One or more vectors of subset operators.
 #'
 #' @return The modified cohort definition set with added subset definitions.
@@ -18,9 +19,11 @@
 #'   subsetOperatorSequence2
 #'   # ... Add more sequences if necessary
 #' )
+#' @export
 addMultipleCohortSubsetDefinitions <-
   function(cohortDefinitionSet,
            targetCohortIds,
+           namePrefix,
            ...) {
     subsetOperatorLists <- list(...)
     definitionId <- 1
@@ -31,7 +34,7 @@ addMultipleCohortSubsetDefinitions <-
         # Base case: no more operators to process, create and add subset definition
         subsetDefinition <-
           CohortGenerator::createCohortSubsetDefinition(
-            name = paste("Subset", definitionId),
+            name = namePrefix,
             definitionId = definitionId,
             subsetOperators = currentOperators
           )
