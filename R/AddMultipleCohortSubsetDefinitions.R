@@ -33,6 +33,8 @@ addMultipleCohortSubsetDefinitions <-
       Reduce("*", lapply(subsetOperatorSequences, length))
     definitionId <- 1
     
+    writeLines(paste0(" - adding ", totalDefinitions, " definitions."))
+    
     # Initialize the progress bar
     pb <- txtProgressBar(min = 0, max = totalDefinitions, style = 3)
     
@@ -50,14 +52,6 @@ addMultipleCohortSubsetDefinitions <-
             subsetOperators = currentOperators
           )
           
-          message(
-            sprintf(
-              "Adding subset definition %d of %d: %s",
-              definitionId,
-              totalDefinitions,
-              subsetName
-            )
-          )
           cohortDefinitionSet <<-
             CohortGenerator::addCohortSubsetDefinition(
               cohortDefinitionSet,

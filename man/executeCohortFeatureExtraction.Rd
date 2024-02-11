@@ -19,6 +19,7 @@ executeCohortFeatureExtraction(
   temporalStartDays = c(-1:1),
   temporalEndDays = temporalStartDays,
   minCellCount = 5,
+  aggregated = TRUE,
   minCharacterizationMean = 1e-04,
   tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
   outputFolder = NULL
@@ -40,6 +41,8 @@ include both the database and schema name, for example
 \item{cohortIds}{cohort ids.}
 
 \item{cohortTable}{cohort Table Names}
+
+\item{aggregated}{Should aggregate statistics be computed instead of covariates per cohort entry?}
 
 \item{tempEmulationSchema}{Some database platforms like Oracle and Impala do not
 truly support temp tables. To emulate temp tables,

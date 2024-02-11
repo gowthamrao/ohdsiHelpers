@@ -22,6 +22,7 @@
 #'                                            forward slashes (/). Do not use a folder on a network
 #'                                            drive since this greatly impacts performance.
 #' @param covariateSettings                   FeatureExtraction covariateSettings object
+#' @param aggregated                          Should aggregate statistics be computed instead of covariates per cohort entry?
 #'
 #' @export
 executeCohortFeatureExtraction <-
@@ -39,6 +40,7 @@ executeCohortFeatureExtraction <-
            temporalStartDays = c(-1:1),
            temporalEndDays = temporalStartDays,
            minCellCount = 5,
+           aggregated= TRUE,
            minCharacterizationMean = 0.0001,
            tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
            outputFolder = NULL) {
@@ -72,7 +74,7 @@ executeCohortFeatureExtraction <-
         cdmDatabaseSchema = cdmDatabaseSchema,
         cohortIds = cohortIds,
         covariateSettings = cohortDomainSettings,
-        aggregated = TRUE,
+        aggregated = aggregated,
         cohortTable = cohortTable,
         cohortDatabaseSchema = cohortDatabaseSchema
       )
@@ -111,6 +113,7 @@ executeCohortFeatureExtractionInParallel <-
            minCellCount = 5,
            minCharacterizationMean = 0.0001,
            sequence = 1,
+           aggregated = TRUE,
            maxCores = parallel::detectCores() /
              3,
            tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
@@ -162,7 +165,8 @@ executeCohortFeatureExtractionInParallel <-
                temporalEndDays,
                minCellCount,
                minCharacterizationMean,
-               outputFolder) {
+               outputFolder,
+               aggregated) {
         connectionDetails <- DatabaseConnector::createConnectionDetails(
           dbms = x$dbms,
           user = keyring::key_get(userService),
@@ -192,7 +196,8 @@ executeCohortFeatureExtractionInParallel <-
           cohortCovariateAnalysisId = cohortCovariateAnalysisId,
           temporalStartDays = temporalStartDays,
           temporalEndDays = temporalEndDays,
-          minCharacterizationMean = minCharacterizationMean
+          minCharacterizationMean = minCharacterizationMean,
+          aggregated = aggregated
         )
       }
     
@@ -213,7 +218,8 @@ executeCohortFeatureExtractionInParallel <-
       cohortCovariateAnalysisId = cohortCovariateAnalysisId,
       temporalStartDays = temporalStartDays,
       temporalEndDays = temporalEndDays,
-      minCharacterizationMean = minCharacterizationMean
+      minCharacterizationMean = minCharacterizationMean,
+      aggregated = aggregated
     )
     
     ParallelLogger::stopCluster(cluster = cluster)
