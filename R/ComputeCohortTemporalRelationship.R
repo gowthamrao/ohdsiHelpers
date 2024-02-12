@@ -27,7 +27,9 @@ computeCohortTemporalRelationship <- function(connection = NULL,
       cohort_database_schema = cohortDatabaseSchema,
       cohort_table = cohortTableName,
       max_days_diff = maxDays,
-      round_days = roundDays
+      round_days = roundDays,
+      target_cohort_definition_ids = targetCohortIds,
+      event_cohort_definition_ids = eventCohortIds
     )
   results <-
     DatabaseConnector::querySql(

@@ -44,6 +44,13 @@ executeCohortFeatureExtraction <-
            minCharacterizationMean = 0.0001,
            tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
            outputFolder = NULL) {
+    
+    if (!aggregated) {
+      if (!length(cohortIds) == 1) {
+        stop("When aggregate = FALSE, only calculation is done one cohort at a time.")
+      }
+    }
+    
     if (!is.null(outputFolder)) {
       if (!file.exists(outputFolder)) {
         dir.create(outputFolder, recursive = TRUE)
@@ -66,7 +73,7 @@ executeCohortFeatureExtraction <-
     
     connection <-
       DatabaseConnector::connect(connectionDetails = connectionDetails)
-    
+
     featureExtractionOutput <-
       FeatureExtraction::getDbCovariateData(
         connection = connection,

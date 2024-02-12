@@ -15,12 +15,8 @@ WITH RECURSIVE event_series(subject_id, target_start_date, event_episode_start_d
     FROM @cohort_database_schema.@cohort_table t -- The target cohort table
     INNER JOIN @cohort_database_schema.@cohort_table e -- The event cohort table
         ON t.subject_id = e.subject_id -- Joining the tables on subject_id to match patients
-        -- AND e.cohort_end_date < t.cohort_start_date -- Filtering to consider only events that ended before the target cohort started
-        AND 
-        ((DATEDIFF(day, t.cohort_start_date, e.cohort_start_date)) < @max_days_diff 
-              OR
-         (DATEDIFF(day, e.cohort_start_date, t.cohort_start_date)) < @max_days_diff 
-        ) -- Filtering for events that started within a year before the target cohort
+        AND e.cohort_end_date < t.cohort_start_date -- Filtering to consider only events that ended before the target cohort started
+        AND DATEDIFF(day, e.cohort_start_date, t.cohort_start_date) < @max_days_diff -- Filtering for events that started within some days before the target cohort
     WHERE t.cohort_definition_id IN (@target_cohort_definition_ids)
           AND e.cohort_definition_id IN (@event_cohort_definition_ids)
 
@@ -52,4 +48,4 @@ SELECT
     SUM(day_count) AS total_treatment_days -- Total treatment days across all subjects
 FROM event_series
 GROUP BY CEIL(DATEDIFF(day, target_start_date, treatment_date)/(@round_days*1.0)), target_cohort_definition_id, event_cohort_definition_id -- Grouping results by the weekly period and both definition IDs
-ORDER BY CEIL(DATEDIFF(day, target_start_date, treatment_date)/(@round_days*1.0)); -- Ordering the results by the weekly period
+ORDER BY CEIL(DATEDIFF(day, target_start_date, treatment_date)/(@round_days*1.0)), target_cohort_definition_id, event_cohort_definition_id; -- Ordering the results by the weekly period
