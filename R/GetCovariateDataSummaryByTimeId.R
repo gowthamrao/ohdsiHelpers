@@ -1,8 +1,12 @@
 #' @export
 getCovaraiteDataSummaryByTimeId <- function(covariateData,
-                                            cohortCovariateAnalysisId,
+                                            cohortCovariateAnalysisId = 150,
                                             covariateCohortId = NULL,
-                                            startDay = NULL) {
+                                            startDay = NULL,
+                                            minProportion = NULL,
+                                            minCount = NULL,
+                                            getCohortId = TRUE,
+                                            cohortDefinitionSet) {
   # Validate input parameters
   if (!FeatureExtraction::isTemporalCovariateData(covariateData)) {
     stop("Must be a tmeporal covariateData object")
@@ -39,11 +43,13 @@ getCovaraiteDataSummaryByTimeId <- function(covariateData,
   }
   
   if (!is.null(cohortCovariateAnalysisId)) {
+    filterCovariateIds <-
+      ((featureCohortIds * 1000) + cohortCovariateAnalysisId) |> unique()
     covariates <- covariates |>
-      dplyr::filter(covariateId %in% c((featureCohortIds * 1000) + cohortCovariateAnalysisId))
+      dplyr::filter(covariateId %in% filterCovariateIds)
   }
   
-  covariates <- covariates |> 
+  covariates <- covariates |>
     dplyr::filter(covariateId > 0)
   
   # Calculate summary statistics for covariates
@@ -99,9 +105,37 @@ getCovaraiteDataSummaryByTimeId <- function(covariateData,
       dplyr::arrange(startDay,
                      endDay) |>
       dplyr::collect() |>
-      dplyr::mutate(covariateId = 0)
+      dplyr::mutate(covariateId = (1000 + cohortCovariateAnalysisId))
   )
   
-  return(dplyr::bind_rows(output,
-                          outputAggegated))
+  output <- dplyr::bind_rows(outputAll,
+                             outputAggegated) |>
+    dplyr::arrange(covariateId,
+                   startDay,
+                   endDay) |>
+    dplyr::relocate(covariateId,
+                    startDay,
+                    endDay)
+  
+  if (!is.null(minProportion)) {
+    output <- output |>
+      dplyr::filter(proportion > minProportion)
+  }
+  if (!is.null(minCount)) {
+    output <- output |>
+      dplyr::filter(rowCount > minCount)
+  }
+  
+  if (getCohortId) {
+    output <- output |>
+      dplyr::mutate(cohortId = (covariateId - cohortCovariateAnalysisId) / 1000) |>
+      dplyr::relocate(cohortId)
+  }
+  
+  if (!is.null(cohortDefinitionSet)) {
+    output <- output |>
+      dplyr::left_join(cohortDefinitionSet,
+                       by = "cohortId")
+  }
+  return(output)
 }
