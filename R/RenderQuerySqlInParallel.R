@@ -1,5 +1,5 @@
 #' @export
-renderQuerySqlSqlInParallel <-
+renderQuerySqlInParallel <-
   function(cdmSources,
            sequence = 1,
            sql,
@@ -17,7 +17,8 @@ renderQuerySqlSqlInParallel <-
       x[[i]] <- cdmSources[i, ]
     }
     
-    outputLocation <- tempfile()
+    outputLocation <-
+      file.path(tempfile(), paste0("c", sample(1:1000, 1)))
     dir.create(path = outputLocation,
                showWarnings = FALSE,
                recursive = TRUE)
@@ -33,6 +34,7 @@ renderQuerySqlSqlInParallel <-
     renderTranslateQuerySqlX <- function(x,
                                          sql,
                                          tempEmulationSchema,
+                                         outputLocation,
                                          ...) {
       connectionDetails <- DatabaseConnector::createConnectionDetails(
         dbms = x$dbms,
@@ -43,12 +45,14 @@ renderQuerySqlSqlInParallel <-
       )
       connection = DatabaseConnector::connect(connectionDetails = connectionDetails)
       
+      debug(DatabaseConnector::renderTranslateQuerySql)
       output <- DatabaseConnector::renderTranslateQuerySql(
         connection = connection,
         sql = sql,
         cohort_database_schema = x$cohortDatabaseSchemaFinal,
         vocabulary_databaseS_schema = x$vocabularyDatabaseSchemaFinal,
         cdm_database_schema = x$cdmDatabaseSchemaFinal,
+        snakeCaseToCamelCase = TRUE,
         ...
       ) |>
         dplyr::tibble() |>
@@ -59,11 +63,14 @@ renderQuerySqlSqlInParallel <-
               file = file.path(outputLocation, paste0(x$sourceKey, ".RDS")))
       
     }
+    
+    debug(renderTranslateQuerySqlX)
     ParallelLogger::clusterApply(
       cluster = cluster,
       x = x,
       fun = renderTranslateQuerySqlX,
       sql = sql,
+      outputLocation = outputLocation,
       ...
     )
     
@@ -82,11 +89,14 @@ renderQuerySqlSqlInParallel <-
         include.dirs = TRUE
       )
     
+    filesToRead <- filesToRead[[stringr::str_detect(string = filesToRead,
+                                                    pattern = sourceKeys)]]
+    
     browser()
     
     outputData <- c()
     for (i in (1:length(filesToRead))) {
-      outputData[[i]] <- readRDS(filesToRead[[i]])
+      outputData[[i]] <- readRDS(filesToRead[i])
     }
     
     outputData <- dplyr::bind_rows(outputData)
