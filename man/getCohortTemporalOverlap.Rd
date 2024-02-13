@@ -2,7 +2,7 @@
 % Please edit documentation in R/GetCohortTemporalOverlap.R
 \name{getCohortTemporalOverlap}
 \alias{getCohortTemporalOverlap}
-\title{Calculate Temporal Relationships Between OHDSI Cohorts}
+\title{Get temporal overlap between covariate and target cohorts}
 \usage{
 getCohortTemporalOverlap(
   connection = NULL,
@@ -51,11 +51,16 @@ getCohortTemporalOverlap(
 A data frame containing the covariate data.
 }
 \description{
-This function assesses the temporal relationships between a target OHDSI cohort
-and multiple covariate cohorts. It does this by examining the start and end
-dates of the covariate cohorts in relation to the start date of the target cohort.
-The function generates a series of time windows based on \code{groupingDays} and
-\code{maxDays}, and checks for overlaps of the cohorts within these windows.
+This function assesses the temporal relationships between a target cohort
+and multiple covariate cohorts by looking for overlap of covariate cohort
+in a time window in relation to target cohort start date.
+}
+\details{
+The function generates a series of equal time windows based on \code{groupingDays} and
+\code{maxDays}, where \code{groupingDays} defines the length of each time window and
+\code{maxDays} determines the overall period under consideration.
+
+Overlap is calculated using FeatureExtraction.
 }
 \examples{
 # Example usage

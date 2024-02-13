@@ -1,10 +1,14 @@
-#' Calculate Temporal Relationships Between OHDSI Cohorts
+#' Get temporal overlap between covariate and target cohorts
 #'
-#' This function assesses the temporal relationships between a target OHDSI cohort
-#' and multiple covariate cohorts. It does this by examining the start and end 
-#' dates of the covariate cohorts in relation to the start date of the target cohort.
-#' The function generates a series of time windows based on `groupingDays` and 
-#' `maxDays`, and checks for overlaps of the cohorts within these windows.
+#' This function assesses the temporal relationships between a target cohort
+#' and multiple covariate cohorts by looking for overlap of covariate cohort 
+#' in a time window in relation to target cohort start date.
+#' 
+#' The function generates a series of equal time windows based on `groupingDays` and 
+#' `maxDays`, where `groupingDays` defines the length of each time window and 
+#' `maxDays` determines the overall period under consideration. 
+#' 
+#' Overlap is calculated using FeatureExtraction.
 #'
 #' @param connection An optional database connection object.
 #' @param connectionDetails An object containing the database connection details.
@@ -41,6 +45,21 @@ getCohortTemporalOverlap <- function(connection = NULL,
                                      groupingDays = 30,
                                      maxDays = 1000,
                                      targetCohortId) {
+  
+  # Assert checks using checkmate
+  checkmate::assertList(connectionDetails, null.ok = TRUE)
+  checkmate::assertCharacter(cohortDatabaseSchema)
+  checkmate::assertCharacter(cdmDatabaseSchema)
+  checkmate::assertIntegerish(cohortCovariateAnalysisId, len = 1)
+  checkmate::assertCharacter(cohortTable)
+  checkmate::assertTRUE(CohortGenerator::isCohortDefinitionSet(covariateCohortDefinitionSet))
+  checkmate::assertIntegerish(covariateCohortIds)
+  checkmate::assertIntegerish(exitCohortIds, null.ok = TRUE)
+  checkmate::assertIntegerish(entryCohortIds, null.ok = TRUE)
+  checkmate::assertIntegerish(groupingDays, lower = 1)
+  checkmate::assertIntegerish(maxDays, lower = 1)
+  checkmate::assertIntegerish(targetCohortId, len = 1)
+  
   # Calculate the start days for the temporal windows
   temporalStartDays <- c(seq(
     from = (-groupingDays * round(maxDays / groupingDays)),
