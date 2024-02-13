@@ -19,6 +19,10 @@ getCovaraiteDataSummaryByTimeId <- function(covariateData,
       !is.numeric(covariateCohortId)) {
     stop("covariateCohortId must be numeric")
   }
+  if (!is.null(covariateCohortId) &&
+      is.null(cohortCovariateAnalysisId)) {
+    stop("cannot filter by covariateCohortId. cohortCovariateAnalysisId should be provided")
+  }
   if (!is.null(startDay) && !is.numeric(startDay)) {
     stop("startDay must be numeric")
   }
@@ -43,10 +47,12 @@ getCovaraiteDataSummaryByTimeId <- function(covariateData,
   }
   
   if (!is.null(cohortCovariateAnalysisId)) {
-    filterCovariateIds <-
-      ((featureCohortIds * 1000) + cohortCovariateAnalysisId) |> unique()
-    covariates <- covariates |>
-      dplyr::filter(covariateId %in% filterCovariateIds)
+    if (!is.null(covariateCohortId)) {
+      filterCovariateIds <-
+        ((cohortDefinitionSet$cohortId * 1000) + cohortCovariateAnalysisId) |> unique()
+      covariates <- covariates |>
+        dplyr::filter(covariateId %in% filterCovariateIds)      
+    }
   }
   
   covariates <- covariates |>

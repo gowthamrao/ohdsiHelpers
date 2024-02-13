@@ -7,7 +7,7 @@ getMatchingFolders <- function(rootPath, matchString) {
   folderPaths <- allPaths[file.info(allPaths)$isdir]
 
   # Filter folders that contain the matchString
-  matchingFolders <- grep(pattern = paste0(matchString, "$"), x = folderPaths, value = TRUE) |>
+  matchingFolders <- grep(pattern = matchString, x = folderPaths, value = TRUE) |>
     unique()
 
   if ((matchingFolders |> length()) > 1) {
