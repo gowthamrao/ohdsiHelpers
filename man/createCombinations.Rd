@@ -7,10 +7,10 @@
 createCombinations(array)
 }
 \arguments{
-\item{array}{A character vector containing unique elements for which combinations are to be generated.}
+\item{array}{A vector containing unique elements for which combinations are to be generated.}
 }
 \value{
-A tibble with two columns: \code{array} containing the individual elements, and \code{combinatrix} containing the combinations.
+A tibble with two columns: \code{array} containing the individual elements, and \code{combinations} containing the combinations.
 }
 \description{
 This function generates all possible combinations of the elements in a given array.
