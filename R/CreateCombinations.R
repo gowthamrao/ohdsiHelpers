@@ -13,8 +13,8 @@ createCombinations <- function(array) {
   if (!requireNamespace("tibble", quietly = TRUE))
     install.packages("tibble")
   
-  # Convert array elements to character type for consistent processing
-  array <- as.character(array)
+  # Convert array elements to character type, get unique and sort for consistent processing
+  array <- as.character(array) |> unique() |> sort()
   
   # Initialize an empty tibble to store combinations
   resultDataFrame <-
