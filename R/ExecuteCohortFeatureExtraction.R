@@ -6,6 +6,7 @@
 #' @param connectionDetails                   An object of type \code{connectionDetails} as created
 #'                                            using the
 #'                                            \code{\link[DatabaseConnector]{createConnectionDetails}}
+#' @param connection                          An optional database connection object.
 #'                                            function in the DatabaseConnector package.
 #' @param cdmDatabaseSchema                   Schema name where your patient-level data in OMOP CDM
 #'                                            format resides. Note that for SQL Server, this should
@@ -27,6 +28,7 @@
 #' @export
 executeCohortFeatureExtraction <-
   function(connectionDetails,
+           connection,
            cdmDatabaseSchema,
            vocabularyDatabaseSchema = cdmDatabaseSchema,
            cohortDatabaseSchema,
@@ -71,8 +73,10 @@ executeCohortFeatureExtraction <-
         temporalEndDays = temporalEndDays
       )
     
-    connection <-
-      DatabaseConnector::connect(connectionDetails = connectionDetails)
+    if (is.null(connection)) {
+      connection <- DatabaseConnector::connect(connectionDetails)
+      on.exit(DatabaseConnector::disconnect(connection))
+    }
 
     featureExtractionOutput <-
       FeatureExtraction::getDbCovariateData(

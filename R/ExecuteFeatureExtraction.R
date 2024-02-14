@@ -26,6 +26,7 @@
 #' @export
 executeFeatureExtraction <-
   function(connectionDetails,
+           connection,
            cdmDatabaseSchema,
            vocabularyDatabaseSchema = cdmDatabaseSchema,
            cohortDatabaseSchema,
@@ -109,8 +110,10 @@ executeFeatureExtraction <-
       add = TRUE
     )
     
-    connection <-
-      DatabaseConnector::connect(connectionDetails = connectionDetails)
+    if (is.null(connection)) {
+      connection <- DatabaseConnector::connect(connectionDetails)
+      on.exit(DatabaseConnector::disconnect(connection))
+    }
     
     ParallelLogger::logInfo(" - Beginning Feature Extraction")
     covariateData <-

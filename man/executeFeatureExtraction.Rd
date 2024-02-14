@@ -6,6 +6,7 @@
 \usage{
 executeFeatureExtraction(
   connectionDetails,
+  connection,
   cdmDatabaseSchema,
   vocabularyDatabaseSchema = cdmDatabaseSchema,
   cohortDatabaseSchema,

@@ -29,7 +29,7 @@ renderTranslateQuerySqlInParallel <- function(cdmSources,
   # Convert the filtered cdmSources to a list for parallel processing
   x <- list()
   for (i in 1:nrow(cdmSources)) {
-    x[[i]] <- cdmSources[i, ]
+    x[[i]] <- cdmSources[i,]
   }
   
   # Create a temporary directory for storing output files
@@ -108,16 +108,20 @@ renderTranslateQuerySqlInParallel <- function(cdmSources,
       ignore.case = TRUE,
       include.dirs = TRUE
     )
-  filesToRead <-
-    filesToRead[[stringr::str_detect(string = filesToRead, pattern = sourceKeys)]]
   
-  # Read and combine all output data
-  outputData <- c()
-  for (i in (1:length(filesToRead))) {
-    outputData[[i]] <- readRDS(filesToRead[i])
+  if (length(filesToRead) > 0) {
+    df <-
+      dplyr::tibble(fileNames = filesToRead) |> 
+      dplyr::filter(stringr::str_detect(string = fileNames, pattern = sourceKeys))
+    
+    # Read and combine all outputData data
+    outputData <- c()
+    for (i in (1:nrow(df))) {
+      outputData[[i]] <- readRDS(df[i,]$fileNames)
+    }
+    
+    outputData <- dplyr::bind_rows(outputData)
+    
+    return(outputData)
   }
-  
-  outputData <- dplyr::bind_rows(outputData)
-  
-  return(outputData)
 }

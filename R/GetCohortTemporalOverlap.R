@@ -1,13 +1,13 @@
 #' Get temporal overlap between covariate and target cohorts
 #'
 #' This function assesses the temporal relationships between a target cohort
-#' and multiple covariate cohorts by looking for overlap of covariate cohort 
+#' and multiple covariate cohorts by looking for overlap of covariate cohort
 #' in a time window in relation to target cohort start date.
-#' 
-#' The function generates a series of equal time windows based on `groupingDays` and 
-#' `maxDays`, where `groupingDays` defines the length of each time window and 
-#' `maxDays` determines the overall period under consideration. 
-#' 
+#'
+#' The function generates a series of equal time windows based on `groupingDays` and
+#' `maxDays`, where `groupingDays` defines the length of each time window and
+#' `maxDays` determines the overall period under consideration.
+#'
 #' Overlap is calculated using FeatureExtraction.
 #'
 #' @param connection An optional database connection object.
@@ -45,14 +45,12 @@ getCohortTemporalOverlap <- function(connection = NULL,
                                      groupingDays = 30,
                                      maxDays = 1000,
                                      targetCohortId) {
-  
   # Assert checks using checkmate
   checkmate::assertList(connectionDetails, null.ok = TRUE)
   checkmate::assertCharacter(cohortDatabaseSchema)
   checkmate::assertCharacter(cdmDatabaseSchema)
   checkmate::assertIntegerish(cohortCovariateAnalysisId, len = 1)
   checkmate::assertCharacter(cohortTable)
-  checkmate::assertTRUE(CohortGenerator::isCohortDefinitionSet(covariateCohortDefinitionSet))
   checkmate::assertIntegerish(covariateCohortIds)
   checkmate::assertIntegerish(exitCohortIds, null.ok = TRUE)
   checkmate::assertIntegerish(entryCohortIds, null.ok = TRUE)
@@ -86,6 +84,38 @@ getCohortTemporalOverlap <- function(connection = NULL,
     temporalEndDays = temporalEndDays
   )
   
-  browser()
+  if (!is.null(exitCohortIds)) {
+    exitCovariateIds <-
+      c((exitCohortIds * 1000) + cohortCovariateAnalysisId)
+    
+    rowIdMaxTimeId <- covariateData$covariates |>
+      dplyr::filter(covariateId %in% exitCovariateIds) |>
+      dplyr::group_by(rowId) |>
+      dplyr::summarise(maxTimeId = min(timeId, na.rm = TRUE)) |> ## max time id is earliest timeId for any exitCohortId
+      dplyr::ungroup()
+    
+    covariateData$covariates <- covariateData$covariates |>
+      dplyr::left_join(rowIdMaxTimeId, by = "rowId") |>
+      dplyr::filter(timeId < maxTimeId | is.na(maxTimeId)) |>
+      dplyr::select(-maxTimeId)
+  }
+  
+  if (!is.null(entryCohortIds)) {
+    entryCovariateIds <-
+      c((entryCohortIds * 1000) + cohortCovariateAnalysisId)
+    
+    rowIdMaxTimeId <- covariateData$covariates |>
+      dplyr::filter(covariateId %in% entryCovariateIds) |>
+      dplyr::group_by(rowId) |>
+      dplyr::summarise(maxTimeId = max(timeId, na.rm = TRUE)) |> ## max time id is latest timeId for any exitCohortId
+      dplyr::ungroup()
+    
+    covariateData$covariates <- covariateData$covariates |>
+      dplyr::left_join(rowIdMaxTimeId, by = "rowId") |>
+      dplyr::filter(timeId >= maxTimeId |
+                      is.na(maxTimeId)) |>  #on or after
+      dplyr::select(-maxTimeId)
+  }
+  
   return(covariateData)
 }

@@ -6,6 +6,7 @@
 \usage{
 executeCohortFeatureExtraction(
   connectionDetails,
+  connection,
   cdmDatabaseSchema,
   vocabularyDatabaseSchema = cdmDatabaseSchema,
   cohortDatabaseSchema,
@@ -28,7 +29,9 @@ executeCohortFeatureExtraction(
 \arguments{
 \item{connectionDetails}{An object of type \code{connectionDetails} as created
 using the
-\code{\link[DatabaseConnector]{createConnectionDetails}}
+\code{\link[DatabaseConnector]{createConnectionDetails}}}
+
+\item{connection}{An optional database connection object.
 function in the DatabaseConnector package.}
 
 \item{cdmDatabaseSchema}{Schema name where your patient-level data in OMOP CDM
