@@ -81,13 +81,31 @@ concatenteFeatureCohortSummaryToSubjectInParallel <-
   }
 
 
-# Function to concatenate feature cohorts summary to subject table.
-# Uses a subject table which is always one row per subject. If not will throw an error. Should be in a remote database and at the minimum have subject_id
-# Performs left join to the subject table and adds new columns to subject table.
-# if the optional subjectStartDate and subjectEndDate are provided than more columns are added, if not only the occurrecen dates of feature cohort are returned without limits of start or end date
-#
-# it can create a large number of columns
-#
+#' Concatenate Feature Cohort Summary to Subject Table
+#'
+#' This function performs a left join on a subject table with a feature cohort table 
+#' and adds new columns to the subject table based on the feature cohorts. 
+#' The subject table must have one row per subject and be located in a remote database, 
+#' and must contain a 'subject_id' column at the minimum.
+#'
+#' If 'subjectStartDate' and 'subjectEndDate' are provided, additional columns are added 
+#' to the subject table to reflect these date limits; otherwise, only the occurrence dates 
+#' of the feature cohort are returned without any start or end date limits.
+#'
+#' @param connection Database connection object.
+#' @param subjectTableName Name of the subject table.
+#' @param subjectTableDatabaseSchema (Optional) Database schema that contains the wide subject table.
+#' @param subjectTableIsTemp Boolean flag indicating if the subject table is temporary.
+#' @param subjectStartDate (Optional) Date field in the subject table to left-censor the occurrence check.
+#' @param subjectEndDate (Optional) Date field in the subject table to right-censor the occurrence check.
+#' @param featureCohortTableName Name of the feature cohort table.
+#' @param featureCohortDatabaseSchema Database schema containing the feature cohort table.
+#' @param featureCohortIsTemp Boolean flag indicating if the feature cohort table is temporary.
+#' @param featureCohortId Identifier for the feature cohort.
+#' @param tempEmulationSchema (Optional) Schema for temporary emulation.
+#' @param prefix (Optional) Prefix for the new columns added to the subject table. If NULL, then prefix will be the feature cohort id such as c1234
+#'
+#' @return A tibble listing the new columns added to the subject table.
 #' @export
 concatenteFeatureCohortSummaryToSubject <-
   function(connection,
@@ -105,7 +123,7 @@ concatenteFeatureCohortSummaryToSubject <-
            featureCohortIsTemp = FALSE,
            featureCohortId,
            tempEmulationSchema = NULL,
-           prefix) {
+           prefix = NULL) {
     if (is.null(prefix)) {
       prefix = paste0("C", featureCohortId)
     }
