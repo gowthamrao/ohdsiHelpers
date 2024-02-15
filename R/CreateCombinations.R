@@ -36,8 +36,14 @@ createCombinations <- function(array) {
         # Check if the element is part of the current combination
         if (name %in% unlist(strsplit(comb, ","))) {
           # Add a row to the tibble with the element and its combination
-          resultDataFrame <- dplyr::bind_rows(resultDataFrame,
-                                              tibble::tibble(array = name, combinations = comb))
+          resultDataFrame <- dplyr::bind_rows(
+            resultDataFrame,
+            tibble::tibble(
+              array = name,
+              combinations = comb,
+              numberOfItems = i
+            )
+          )
         }
       }
     }

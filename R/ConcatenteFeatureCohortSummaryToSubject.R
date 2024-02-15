@@ -18,7 +18,7 @@ concatenteFeatureCohortSummaryToSubjectInParallel <-
     
     x <- list()
     for (i in 1:nrow(cdmSources)) {
-      x[[i]] <- cdmSources[i,]
+      x[[i]] <- cdmSources[i, ]
     }
     
     # use Parallel Logger to run in parallel
@@ -81,27 +81,37 @@ concatenteFeatureCohortSummaryToSubjectInParallel <-
   }
 
 
-
-# Function to concatenate feature cohorts summary to subject table
+# Function to concatenate feature cohorts summary to subject table.
+# Uses a subject table which is always one row per subject. If not will throw an error. Should be in a remote database and at the minimum have subject_id
+# Performs left join to the subject table and adds new columns to subject table.
+# if the optional subjectStartDate and subjectEndDate are provided than more columns are added, if not only the occurrecen dates of feature cohort are returned without limits of start or end date
+#
+# it can create a large number of columns
+#
 #' @export
 concatenteFeatureCohortSummaryToSubject <-
   function(connection,
+           subjectTableName,
+           # subject table is not a OHDSI cohort table. it is wide table with one row per subjectId
+           subjectTableDatabaseSchema = NULL,
+           # the database schema that has the wide subjectTable
+           subjectTableIsTemp = FALSE,
+           subjectStartDate = NULL,
+           #a date field in the subjectTable to left censor the check of occurrence of a feature
+           subjectEndDate = NULL,
+           #a date field in the subjectTable to right censor the check of occurrence of a feature
            featureCohortTableName,
            featureCohortDatabaseSchema,
            featureCohortIsTemp = FALSE,
            featureCohortId,
-           subjectTableName,
-           subjectTableDatabaseSchema = NULL,
-           subjectTableIsTemp = FALSE,
-           subjectStartDate = NULL,
-           subjectEndDate = NULL,
-           prefix = NULL) {
+           tempEmulationSchema = NULL,
+           prefix) {
     if (is.null(prefix)) {
       prefix = paste0("C", featureCohortId)
     }
     
     limitToSubjectDates <- FALSE
-    if (any(!is.null(subjectStartDate),!is.null(subjectEndDate))) {
+    if (any(!is.null(subjectStartDate), !is.null(subjectEndDate))) {
       limitToSubjectDates <- TRUE
     }
     
@@ -115,326 +125,36 @@ concatenteFeatureCohortSummaryToSubject <-
       useUpperLimitDate <- TRUE
     }
     
-    sql <- "
-    DROP TABLE IF EXISTS #concatenated_table;
-
-    SELECT a.*,
-      	        f.@prefix_fs,
-      	        f.@prefix_fe,
-      	        f.@prefix_fd,
-      	        f.@prefix_ls,
-      	        f.@prefix_le,
-      	        f.@prefix_ld,
-      	        f.@prefix_sn,
-      	        f.@prefix_ev,
-      	        CASE WHEN f.@prefix_fs IS NULL THEN 0 ELSE 1 END as @prefix_t
-      	        {@limit_to_subject_dates} ? {
-        	        {@use_lower_limit_date} ? {
-                      {@use_upper_limit_date} ? {,
-              	        f.@prefix_fs_btn,
-              	        f.@prefix_fe_btn,
-              	        f.@prefix_fd_btn,
-              	        f.@prefix_ls_btn,
-              	        f.@prefix_le_btn,
-              	        f.@prefix_ld_btn,
-              	        f.@prefix_sn_btn,
-              	        f.@prefix_ev_btn,
-      	                CASE WHEN f.@prefix_fs_btn IS NULL THEN 0 ELSE 1 END as @prefix_t_btn
-                      }
-        	        }
-                  {@use_lower_limit_date} ? {,
-              	        f.@prefix_fs_on_ll,
-              	        f.@prefix_fe_on_ll,
-              	        f.@prefix_fd_on_ll,
-              	        f.@prefix_ls_on_ll,
-              	        f.@prefix_le_on_ll,
-              	        f.@prefix_ld_on_ll,
-              	        f.@prefix_sn_on_ll,
-              	        f.@prefix_ev_on_ll,
-      	                CASE WHEN f.@prefix_fs_on_ll IS NULL THEN 0 ELSE 1 END as @prefix_t_on_ll,
-
-              	        f.@prefix_fs_aft_ll,
-              	        f.@prefix_fe_aft_ll,
-              	        f.@prefix_fd_aft_ll,
-              	        f.@prefix_ls_aft_ll,
-              	        f.@prefix_le_aft_ll,
-              	        f.@prefix_ld_aft_ll,
-              	        f.@prefix_sn_aft_ll,
-              	        f.@prefix_ev_aft_ll,
-      	                CASE WHEN f.@prefix_fs_aft_ll IS NULL THEN 0 ELSE 1 END as @prefix_t_aft_ll,
-
-              	        f.@prefix_fs_bf_ll,
-              	        f.@prefix_fe_bf_ll,
-              	        f.@prefix_fd_bf_ll,
-              	        f.@prefix_ls_bf_ll,
-              	        f.@prefix_le_bf_ll,
-              	        f.@prefix_ld_bf_ll,
-              	        f.@prefix_sn_bf_ll,
-              	        f.@prefix_ev_bf_ll,
-      	                CASE WHEN f.@prefix_fs_bf_ll IS NULL THEN 0 ELSE 1 END as @prefix_t_bf_ll
-                    }
-                  {@use_upper_limit_date} ? {,
-              	        f.@prefix_fs_on_ul,
-              	        f.@prefix_fe_on_ul,
-              	        f.@prefix_fd_on_ul,
-              	        f.@prefix_ls_on_ul,
-              	        f.@prefix_le_on_ul,
-              	        f.@prefix_ld_on_ul,
-              	        f.@prefix_sn_on_ul,
-              	        f.@prefix_ev_on_ul,
-      	                CASE WHEN f.@prefix_fs_on_ul IS NULL THEN 0 ELSE 1 END as @prefix_t_on_ul,
-
-              	        f.@prefix_fs_bf_ul,
-              	        f.@prefix_fe_bf_ul,
-              	        f.@prefix_fd_bf_ul,
-              	        f.@prefix_ls_bf_ul,
-              	        f.@prefix_le_bf_ul,
-              	        f.@prefix_ld_bf_ul,
-              	        f.@prefix_sn_bf_ul,
-              	        f.@prefix_ev_bf_ul,
-      	                CASE WHEN f.@prefix_fs_bf_ul IS NULL THEN 0 ELSE 1 END as @prefix_t_bf_ul,
-
-              	        f.@prefix_fs_aft_ul,
-              	        f.@prefix_fe_aft_ul,
-              	        f.@prefix_fd_aft_ul,
-              	        f.@prefix_ls_aft_ul,
-              	        f.@prefix_le_aft_ul,
-              	        f.@prefix_ld_aft_ul,
-              	        f.@prefix_sn_aft_ul,
-              	        f.@prefix_ev_aft_ul,
-      	                CASE WHEN f.@prefix_fs_aft_ul IS NULL THEN 0 ELSE 1 END as @prefix_t_aft_ul
-                      }
-      	        }
-      	INTO #concatenated_table
-      	FROM {@subject_table_is_temp} ? {@subject_table_name} : {@subject_table_database_schema.@subject_table_name} a
-      	LEFT JOIN
-      	  (
-      	    SELECT
-      	        a.subject_id,
-                MIN(a.cohort_start_date) AS @prefix_fs,
-                MIN(a.cohort_end_date) AS @prefix_fe,
-                DATEDIFF(day, MIN(a.cohort_start_date), MIN(a.cohort_end_date)) AS @prefix_fd,
-                MAX(a.cohort_start_date) AS @prefix_ls,
-                MAX(a.cohort_end_date) AS @prefix_le,
-                DATEDIFF(day, MAX(a.cohort_start_date), MAX(a.cohort_end_date)) AS @prefix_ld,
-                DATEDIFF(day, MIN(a.cohort_start_date), MAX(a.cohort_end_date)) AS @prefix_sn,
-                COUNT(DISTINCT a.cohort_start_date) AS @prefix_ev
-
-                {@limit_to_subject_dates} ? {
-
-                      {@use_lower_limit_date} ? {
-
-                            {@use_upper_limit_date} ? {,
-
-                            MIN(CASE WHEN  a.cohort_start_date >= b.lower_limit_date AND
-                                        a.cohort_start_date <= b.upper_limit_date
-                              THEN a.cohort_start_date END) AS @prefix_fs_btn,
-                            MIN(CASE WHEN a.cohort_start_date >= b.lower_limit_date AND
-                                        a.cohort_start_date <= b.upper_limit_date
-                              THEN a.cohort_end_date END) AS @prefix_fe_btn,
-                            DATEDIFF(day, MIN(CASE WHEN a.cohort_start_date >= b.lower_limit_date AND
-                                                      a.cohort_start_date <= b.upper_limit_date
-                                            THEN a.cohort_start_date END),
-                                          MIN(CASE WHEN a.cohort_start_date >= b.lower_limit_date AND
-                                                      a.cohort_start_date <= b.upper_limit_date
-                                            THEN a.cohort_end_date END)) AS @prefix_fd_btn,
-                            MAX(CASE WHEN a.cohort_start_date >= b.lower_limit_date AND
-                                          a.cohort_start_date <= b.upper_limit_date
-                                            THEN a.cohort_start_date END) AS @prefix_ls_btn,
-                            MAX(CASE WHEN a.cohort_start_date >= b.lower_limit_date AND
-                                          a.cohort_start_date <= b.upper_limit_date
-                                            THEN a.cohort_end_date END) AS @prefix_le_btn,
-                            DATEDIFF(day, MAX(CASE WHEN a.cohort_start_date >= b.lower_limit_date AND
-                                                    a.cohort_start_date <= b.upper_limit_date
-                                            THEN a.cohort_start_date END),
-                                          MAX(CASE WHEN a.cohort_start_date >= b.lower_limit_date AND
-                                                    a.cohort_start_date <= b.upper_limit_date
-                                            THEN a.cohort_end_date END)) AS @prefix_ld_btn,
-                            DATEDIFF(day, MIN(CASE WHEN a.cohort_start_date >= b.lower_limit_date AND
-                                                    a.cohort_start_date <= b.upper_limit_date
-                                            THEN a.cohort_start_date END),
-                                          MAX(CASE WHEN a.cohort_start_date >= b.lower_limit_date AND
-                                                    a.cohort_start_date <= b.upper_limit_date
-                                            THEN a.cohort_end_date END)) AS @prefix_sn_btn,
-                            COUNT(DISTINCT CASE WHEN  a.cohort_start_date >= b.lower_limit_date AND
-                                                      a.cohort_start_date <= b.upper_limit_date
-                                            THEN a.cohort_start_date END) AS @prefix_ev_btn
-
-                            }
-                      }
-
-                      {@use_lower_limit_date} ? {,
-                      MIN(CASE WHEN a.cohort_start_date = b.lower_limit_date
-                               THEN a.cohort_start_date END) AS @prefix_fs_on_ll,
-                      MIN(CASE WHEN a.cohort_start_date = b.lower_limit_date
-                               THEN a.cohort_end_date END) AS @prefix_fe_on_ll,
-                      DATEDIFF(day, MIN(CASE WHEN a.cohort_start_date > b.lower_limit_date
-                                             THEN a.cohort_start_date END),
-                                    MIN(CASE WHEN a.cohort_start_date > b.lower_limit_date
-                                             THEN a.cohort_end_date END)) AS @prefix_fd_on_ll,
-                      MAX(CASE WHEN a.cohort_start_date = b.lower_limit_date
-                               THEN a.cohort_start_date END) AS @prefix_ls_on_ll,
-                      MAX(CASE WHEN a.cohort_start_date = b.lower_limit_date
-                               THEN a.cohort_end_date END) AS @prefix_le_on_ll,
-                      DATEDIFF(day, MAX(CASE WHEN a.cohort_start_date = b.lower_limit_date
-                                             THEN a.cohort_start_date END),
-                                    MAX(CASE WHEN a.cohort_start_date = b.lower_limit_date
-                                             THEN a.cohort_end_date END)) AS @prefix_ld_on_ll,
-                      DATEDIFF(day, MIN(CASE WHEN a.cohort_start_date = b.lower_limit_date
-                                             THEN a.cohort_start_date END),
-                                    MAX(CASE WHEN a.cohort_start_date = b.lower_limit_date
-                                             THEN a.cohort_end_date END)) AS @prefix_sn_on_ll,
-                      COUNT(DISTINCT CASE WHEN a.cohort_start_date = b.lower_limit_date
-                                          THEN a.cohort_start_date END) AS @prefix_ev_on_ll,
-
-                      MIN(CASE WHEN a.cohort_start_date > b.lower_limit_date
-                               THEN a.cohort_start_date END) AS @prefix_fs_aft_ll,
-                      MIN(CASE WHEN a.cohort_start_date > b.lower_limit_date
-                               THEN a.cohort_end_date END) AS @prefix_fe_aft_ll,
-                      DATEDIFF(day, MIN(CASE WHEN a.cohort_start_date > b.lower_limit_date
-                                             THEN a.cohort_start_date END),
-                                    MIN(CASE WHEN a.cohort_start_date > b.lower_limit_date
-                                             THEN a.cohort_end_date END)) AS @prefix_fd_aft_ll,
-                      MAX(CASE WHEN a.cohort_start_date > b.lower_limit_date
-                               THEN a.cohort_start_date END) AS @prefix_ls_aft_ll,
-                      MAX(CASE WHEN a.cohort_start_date > b.lower_limit_date
-                               THEN a.cohort_end_date END) AS @prefix_le_aft_ll,
-                      DATEDIFF(day, MAX(CASE WHEN a.cohort_start_date > b.lower_limit_date
-                                             THEN a.cohort_start_date END),
-                                    MAX(CASE WHEN a.cohort_start_date > b.lower_limit_date
-                                             THEN a.cohort_end_date END)) AS @prefix_ld_aft_ll,
-                      DATEDIFF(day, MIN(CASE WHEN a.cohort_start_date > b.lower_limit_date
-                                             THEN a.cohort_start_date END),
-                                    MAX(CASE WHEN a.cohort_start_date > b.lower_limit_date
-                                             THEN a.cohort_end_date END)) AS @prefix_sn_aft_ll,
-                      COUNT(DISTINCT CASE WHEN a.cohort_start_date > b.lower_limit_date
-                                          THEN a.cohort_start_date END) AS @prefix_ev_aft_ll,
-
-                      MIN(CASE WHEN a.cohort_start_date < b.lower_limit_date
-                               THEN a.cohort_start_date END) AS @prefix_fs_bf_ll,
-                      MIN(CASE WHEN a.cohort_start_date < b.lower_limit_date
-                               THEN a.cohort_end_date END) AS @prefix_fe_bf_ll,
-                      DATEDIFF(day, MIN(CASE WHEN a.cohort_start_date < b.lower_limit_date
-                                             THEN a.cohort_start_date END),
-                                    MIN(CASE WHEN a.cohort_start_date < b.lower_limit_date
-                                             THEN a.cohort_end_date END)) AS @prefix_fd_bf_ll,
-                      MAX(CASE WHEN a.cohort_start_date < b.lower_limit_date
-                               THEN a.cohort_start_date END) AS @prefix_ls_bf_ll,
-                      MAX(CASE WHEN a.cohort_start_date < b.lower_limit_date
-                               THEN a.cohort_end_date END) AS @prefix_le_bf_ll,
-                      DATEDIFF(day, MAX(CASE WHEN a.cohort_start_date < b.lower_limit_date
-                                             THEN a.cohort_start_date END),
-                                    MAX(CASE WHEN a.cohort_start_date < b.lower_limit_date
-                                             THEN a.cohort_end_date END)) AS @prefix_ld_bf_ll,
-                      DATEDIFF(day, MIN(CASE WHEN a.cohort_start_date < b.lower_limit_date
-                                             THEN a.cohort_start_date END),
-                                    MAX(CASE WHEN a.cohort_start_date < b.lower_limit_date
-                                             THEN a.cohort_end_date END)) AS @prefix_sn_bf_ll,
-                      COUNT(DISTINCT CASE WHEN a.cohort_start_date < b.lower_limit_date
-                                          THEN a.cohort_start_date END) AS @prefix_ev_bf_ll
-                      }
-
-                      {@use_upper_limit_date} ? {,
-                          MIN(CASE WHEN a.cohort_start_date = b.upper_limit_date
-                                   THEN a.cohort_start_date END) AS @prefix_fs_on_ul,
-                          MIN(CASE WHEN a.cohort_start_date = b.upper_limit_date
-                                   THEN a.cohort_end_date END) AS @prefix_fe_on_ul,
-                          DATEDIFF(day, MIN(CASE WHEN a.cohort_start_date = b.upper_limit_date
-                                                 THEN a.cohort_start_date END),
-                                        MIN(CASE WHEN a.cohort_start_date = b.upper_limit_date
-                                                 THEN a.cohort_end_date END)) AS @prefix_fd_on_ul,
-                          MAX(CASE WHEN a.cohort_start_date = b.upper_limit_date
-                                   THEN a.cohort_start_date END) AS @prefix_ls_on_ul,
-                          MAX(CASE WHEN a.cohort_start_date = b.upper_limit_date
-                                   THEN a.cohort_end_date END) AS @prefix_le_on_ul,
-                          DATEDIFF(day, MAX(CASE WHEN a.cohort_start_date = b.upper_limit_date
-                                                 THEN a.cohort_start_date END),
-                                        MAX(CASE WHEN a.cohort_start_date = b.upper_limit_date
-                                                 THEN a.cohort_end_date END)) AS @prefix_ld_on_ul,
-                          DATEDIFF(day, MIN(CASE WHEN a.cohort_start_date = b.upper_limit_date
-                                                 THEN a.cohort_start_date END),
-                                        MAX(CASE WHEN a.cohort_start_date = b.upper_limit_date
-                                                 THEN a.cohort_end_date END)) AS @prefix_sn_on_ul,
-                          COUNT(DISTINCT CASE WHEN a.cohort_start_date = b.upper_limit_date
-                                              THEN a.cohort_start_date END) AS @prefix_ev_on_ul,
-
-                          MIN(CASE WHEN a.cohort_start_date < b.upper_limit_date
-                                   THEN a.cohort_start_date END) AS @prefix_fs_bf_ul,
-                          MIN(CASE WHEN a.cohort_start_date < b.upper_limit_date
-                                   THEN a.cohort_end_date END) AS @prefix_fe_bf_ul,
-                          DATEDIFF(day, MIN(CASE WHEN a.cohort_start_date < b.upper_limit_date
-                                                 THEN a.cohort_start_date END),
-                                        MIN(CASE WHEN a.cohort_start_date < b.upper_limit_date
-                                                 THEN a.cohort_end_date END)) AS @prefix_fd_bf_ul,
-                          MAX(CASE WHEN a.cohort_start_date < b.upper_limit_date
-                                   THEN a.cohort_start_date END) AS @prefix_ls_bf_ul,
-                          MAX(CASE WHEN a.cohort_start_date < b.upper_limit_date
-                                   THEN a.cohort_end_date END) AS @prefix_le_bf_ul,
-                          DATEDIFF(day, MAX(CASE WHEN a.cohort_start_date < b.upper_limit_date
-                                                 THEN a.cohort_start_date END),
-                                        MAX(CASE WHEN a.cohort_start_date < b.upper_limit_date
-                                                 THEN a.cohort_end_date END)) AS @prefix_ld_bf_ul,
-                          DATEDIFF(day, MIN(CASE WHEN a.cohort_start_date < b.upper_limit_date
-                                                 THEN a.cohort_start_date END),
-                                        MAX(CASE WHEN a.cohort_start_date < b.upper_limit_date
-                                                 THEN a.cohort_end_date END)) AS @prefix_sn_bf_ul,
-                          COUNT(DISTINCT CASE WHEN a.cohort_start_date < b.upper_limit_date
-                                              THEN a.cohort_start_date END) AS @prefix_ev_bf_ul,
-
-                          MIN(CASE WHEN a.cohort_start_date > b.upper_limit_date
-                                   THEN a.cohort_start_date END) AS @prefix_fs_aft_ul,
-                          MIN(CASE WHEN a.cohort_start_date > b.upper_limit_date
-                                   THEN a.cohort_end_date END) AS @prefix_fe_aft_ul,
-                          DATEDIFF(day, MIN(CASE WHEN a.cohort_start_date < b.upper_limit_date
-                                                 THEN a.cohort_start_date END),
-                                        MIN(CASE WHEN a.cohort_start_date < b.upper_limit_date
-                                                 THEN a.cohort_end_date END)) AS @prefix_fd_aft_ul,
-                          MAX(CASE WHEN a.cohort_start_date > b.upper_limit_date
-                                   THEN a.cohort_start_date END) AS @prefix_ls_aft_ul,
-                          MAX(CASE WHEN a.cohort_start_date < b.upper_limit_date
-                                   THEN a.cohort_end_date END) AS @prefix_le_aft_ul,
-                          DATEDIFF(day, MAX(CASE WHEN a.cohort_start_date > b.upper_limit_date
-                                                 THEN a.cohort_start_date END),
-                                        MAX(CASE WHEN a.cohort_start_date > b.upper_limit_date
-                                                 THEN a.cohort_end_date END)) AS @prefix_ld_aft_ul,
-                          DATEDIFF(day, MIN(CASE WHEN a.cohort_start_date > b.upper_limit_date
-                                                 THEN a.cohort_start_date END),
-                                        MAX(CASE WHEN a.cohort_start_date > b.upper_limit_date
-                                                 THEN a.cohort_end_date END)) AS @prefix_sn_aft_ul,
-                          COUNT(DISTINCT CASE WHEN a.cohort_start_date > b.upper_limit_date
-                                              THEN a.cohort_start_date END) AS @prefix_ev_aft_ul
-
-                      }
-                }
-
-          	FROM {@feature_cohort_table_is_temp} ? {@cohort_table_name} : {@cohort_database_schema.@cohort_table_name} a
-      {@limit_to_subject_dates} ? {
-            LEFT JOIN
-              (
-                  SELECT subject_id
-                  {@use_lower_limit_date} ? {, min(@lower_limit_date) lower_limit_date}
-                  {@use_upper_limit_date} ? {, min(@upper_limit_date) upper_limit_date}
-                  FROM {@subject_table_is_temp} ? {@subject_table_name} : {@subject_table_database_schema.@subject_table_name}
-                  GROUP BY subject_id
-              ) b
-            ON a.subject_id = b.subject_id
-      }
-          	WHERE a.cohort_definition_id = @feature_definition_id
-          	GROUP BY a.subject_id
-      	  ) f
-      	ON a.subject_id = f.subject_id;
-
-  	DROP TABLE IF EXISTS {@subject_table_is_temp} ? {@subject_table_name} : {@subject_table_database_schema.@subject_table_name};
-
-
-  	SELECT a.*
-  	INTO {@subject_table_is_temp} ? {@subject_table_name} : {@subject_table_database_schema.@subject_table_name}
-  	FROM #concatenated_table a
-  	ORDER BY a.subject_id;
-
-  	DROP TABLE IF EXISTS #concatenated_table;
-
-"
+    cohortRelationshipSql <-
+      SqlRender::readSql(
+        sourceFile = system.file(
+          "sql",
+          "sql_server",
+          "ConcatenateFeatureCohort.sql",
+          package = utils::packageName()
+        )
+      )
+    
+    checkIfOneRowPerSubject <-
+      DatabaseConnector::renderTranslateQuerySql(
+        connection = connection,
+        sql = "SELECT subject_id from @cohort_database_schema.@subject_table_name GROUP BY subject_id HAVING COUNT(*) > 1;",
+        cohort_database_schema = subjectTableDatabaseSchema,
+        subject_table_name = subjectTableName,
+        snakeCaseToCamelCase = TRUE,
+        tempEmulationSchema = tempEmulationSchema
+      )
+    if (nrow(checkIfOneRowPerSubject) > 0) {
+      stop(
+        paste0(
+          "Check subject table ",
+          subjectTableDatabaseSchema,
+          ".",
+          subjectTableName,
+          " ; Has more than one record per subjectId."
+        )
+      )
+    }
     
     DatabaseConnector::renderTranslateExecuteSql(
       connection = connection,
@@ -453,4 +173,205 @@ concatenteFeatureCohortSummaryToSubject <-
       use_upper_limit_date = useUpperLimitDate,
       upper_limit_date = subjectEndDate
     )
+    
+    
+    columnsCreated <- dplyr::tibble(
+      columnsCreated = c(
+        '@prefix_fs',
+        '@prefix_fe',
+        '@prefix_fd',
+        '@prefix_ls',
+        '@prefix_le',
+        '@prefix_ld',
+        '@prefix_sn',
+        '@prefix_ev',
+        '@prefix_t',
+        '@prefix_fs_btn',
+        '@prefix_fe_btn',
+        '@prefix_fd_btn',
+        '@prefix_ls_btn',
+        '@prefix_le_btn',
+        '@prefix_ld_btn',
+        '@prefix_sn_btn',
+        '@prefix_ev_btn',
+        '@prefix_t_btn',
+        '@prefix_fs_on_ll',
+        '@prefix_fe_on_ll',
+        '@prefix_fd_on_ll',
+        '@prefix_ls_on_ll',
+        '@prefix_le_on_ll',
+        '@prefix_ld_on_ll',
+        '@prefix_sn_on_ll',
+        '@prefix_ev_on_ll',
+        '@prefix_t_on_ll',
+        '@prefix_fs_aft_ll',
+        '@prefix_fe_aft_ll',
+        '@prefix_fd_aft_ll',
+        '@prefix_ls_aft_ll',
+        '@prefix_le_aft_ll',
+        '@prefix_ld_aft_ll',
+        '@prefix_sn_aft_ll',
+        '@prefix_ev_aft_ll',
+        '@prefix_t_aft_ll',
+        '@prefix_fs_bf_ll',
+        '@prefix_fe_bf_ll',
+        '@prefix_fd_bf_ll',
+        '@prefix_ls_bf_ll',
+        '@prefix_le_bf_ll',
+        '@prefix_ld_bf_ll',
+        '@prefix_sn_bf_ll',
+        '@prefix_ev_bf_ll',
+        '@prefix_t_bf_ll',
+        '@prefix_fs_on_ul',
+        '@prefix_fe_on_ul',
+        '@prefix_fd_on_ul',
+        '@prefix_ls_on_ul',
+        '@prefix_le_on_ul',
+        '@prefix_ld_on_ul',
+        '@prefix_sn_on_ul',
+        '@prefix_ev_on_ul',
+        '@prefix_t_on_ul',
+        '@prefix_fs_bf_ul',
+        '@prefix_fe_bf_ul',
+        '@prefix_fd_bf_ul',
+        '@prefix_ls_bf_ul',
+        '@prefix_le_bf_ul',
+        '@prefix_ld_bf_ul',
+        '@prefix_sn_bf_ul',
+        '@prefix_ev_bf_ul',
+        '@prefix_t_bf_ul',
+        '@prefix_fs_aft_ul',
+        '@prefix_fe_aft_ul',
+        '@prefix_fd_aft_ul',
+        '@prefix_ls_aft_ul',
+        '@prefix_le_aft_ul',
+        '@prefix_ld_aft_ul',
+        '@prefix_sn_aft_ul',
+        '@prefix_ev_aft_ul',
+        '@prefix_t_aft_ul'
+      )
+    )
+    
+    result <- c()
+    for (i in (1:nrow(columnsCreated))) {
+      result[[i]] <-
+        parseColumnText(columnsCreated[i, ]$columnsCreated) |>
+        dplyr::mutate(columnsCreated = columnsCreated[i, ]$columnsCreated)
+    }
+    
+    result <- result |>
+      dplyr::bind_rows()  |> 
+      dplyr::mutate(columnsCreated = stringr::str_replace(
+        string = columnsCreated,
+        pattern = "@prefix",
+        replacement = prefix
+      )) |>
+      dplyr::relocate(columnsCreated)
+    
+    return(result)
   }
+
+
+
+
+#' Parse Column Text
+#'
+#' This function takes a string representing a column name pattern and returns
+#' a tibble with both concise and detailed explanations for each pattern component.
+#' The pattern components are identified by splitting the input text at underscores.
+#'
+#' @param text A string representing the column name pattern.
+#'
+#' @return A tibble with two columns: 'explanation' and 'detailed'.
+#'         Each column contains concatenated explanations for the pattern components.
+#'
+#' @examples
+#' parseColumnText("prefix_fd_btn")
+#' # Returns a tibble with explanations for '_fd' and '_btn' patterns.
+parseColumnText <- function(text) {
+  # Define the column explanations in a tibble
+  columnExplanations <- dplyr::tibble(
+    columnPattern = c(
+      "_fs",
+      "_fe",
+      "_fd",
+      "_ls",
+      "_le",
+      "_ld",
+      "_sn",
+      "_ev",
+      "_t",
+      "_btn",
+      "_ll",
+      "_ul",
+      "_on",
+      "_bf",
+      "_af"
+    ),
+    explanation = c(
+      "first start",
+      "first end",
+      "first days",
+      "last start",
+      "last end",
+      "last days",
+      "days between extremes",
+      "number of events",
+      "occurs",
+      "between",
+      "to lower limit date",
+      "to upper limit date",
+      "matches",
+      "is before",
+      "if after"
+    ),
+    detailed = c(
+      "First Start",
+      "First End",
+      "Days between First Start and First End",
+      "Last Start",
+      "Last End",
+      "Days between Last Start and Last End",
+      "Days between First Start and Last End",
+      "Number of Events",
+      "Occurs (Indicates whether the feature occurs, 0 for no, 1 for yes)",
+      "Between specified lower and upper limit date fields in subject table, both inclusive",
+      "In relation to specified lower limit date fields only in subject table. Upper limit date ignored",
+      "In relation to specified upper limit date fields only in subject table. Lower limit date ignored",
+      "Feature cohort date matches specified date field in subject table",
+      "Feature cohort date is before specified date field in subject table",
+      "Feature cohort date is after specified date field in subject table"
+    )
+  )
+  
+  # Split the input text into its components
+  patterns <- strsplit(text, "_")[[1]]
+  patterns <- patterns[-1] # Remove the first element (prefix)
+  
+  # Find matching concise explanations for each pattern
+  explanations <- sapply(patterns, function(pattern) {
+    explanation <-
+      columnExplanations$explanation[which(columnExplanations$columnPattern == paste0("_", pattern))]
+    if (length(explanation) == 0) {
+      return(NA)
+    }
+    return(explanation)
+  })
+  
+  # Find matching detailed explanations for each pattern
+  detailed <- sapply(patterns, function(pattern) {
+    detailed <-
+      columnExplanations$detailed[which(columnExplanations$columnPattern == paste0("_", pattern))]
+    if (length(detailed) == 0) {
+      return(NA)
+    }
+    return(detailed)
+  })
+  
+  # Concatenate the explanations into a tibble
+  result <- dplyr::tibble(
+    explanation = paste(explanations, collapse = " - "),
+    detailed = paste(detailed, collapse = " - ")
+  )
+  return(result)
+}

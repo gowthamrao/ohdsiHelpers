@@ -15,8 +15,8 @@ getCohortTemporalOverlap(
   covariateCohortIds,
   exitCohortIds = NULL,
   entryCohortIds = NULL,
-  groupingDays = 30,
-  maxDays = 1000,
+  startDays,
+  endDays,
   targetCohortId
 )
 }
@@ -41,10 +41,6 @@ getCohortTemporalOverlap(
 
 \item{entryCohortIds}{Optional vector of entry cohort IDs.}
 
-\item{groupingDays}{The number of days for grouping in the time window (default 30).}
-
-\item{maxDays}{The maximum number of days for the time window range (default 1000).}
-
 \item{targetCohortId}{The ID of the target cohort.}
 }
 \value{
@@ -56,10 +52,6 @@ and multiple covariate cohorts by looking for overlap of covariate cohort
 in a time window in relation to target cohort start date.
 }
 \details{
-The function generates a series of equal time windows based on \code{groupingDays} and
-\code{maxDays}, where \code{groupingDays} defines the length of each time window and
-\code{maxDays} determines the overall period under consideration.
-
 Overlap is calculated using FeatureExtraction.
 }
 \examples{
