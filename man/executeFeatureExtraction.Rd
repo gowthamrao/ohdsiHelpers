@@ -5,8 +5,8 @@
 \title{Execute feature extraction}
 \usage{
 executeFeatureExtraction(
-  connectionDetails,
-  connection,
+  connectionDetails = NULL,
+  connection = NULL,
   cdmDatabaseSchema,
   vocabularyDatabaseSchema = cdmDatabaseSchema,
   cohortDatabaseSchema,

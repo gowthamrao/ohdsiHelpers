@@ -25,8 +25,8 @@
 #'
 #' @export
 executeFeatureExtraction <-
-  function(connectionDetails,
-           connection,
+  function(connectionDetails = NULL,
+           connection = NULL,
            cdmDatabaseSchema,
            vocabularyDatabaseSchema = cdmDatabaseSchema,
            cohortDatabaseSchema,
