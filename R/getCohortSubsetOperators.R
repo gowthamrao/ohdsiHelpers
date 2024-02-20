@@ -74,14 +74,15 @@ getCohortSubsetOperators <- function(subsetCohortIds,
     OnOrBefore = anyTimeBeforeToDay0,
     On = onDay0,
     OnOrAfter = onDay0ToAnytimeAfter,
-    After = day1ToAnytimeAfter
+    After = day1ToAnytimeAfter,
+    AnyTime = anytimeBeforeToAnytimeAfter
   )
   
   # Initialize a list to store results
   results <- list()
   
   # Create and assign cohort subsets to the results list
-  for (period in c("Before", "OnOrBefore", "On", "OnOrAfter", "After")) {
+  for (period in c("Before", "OnOrBefore", "On", "OnOrAfter", "After", "AnyTime")) {
     for (negate in c(FALSE, TRUE)) {
       suffix <- ifelse(negate, "_Negate", "")
       windowVar <- windowVars[[period]]
@@ -91,13 +92,13 @@ getCohortSubsetOperators <- function(subsetCohortIds,
                "_",
                period,
                suffix)
+      noLabel <- ifelse(period == "AnyTime", yes = TRUE, no = FALSE)
       tryCatch({
         results[[objectName]] <- CohortGenerator::createCohortSubset(
           name = paste0(
-            ifelse(negate, "Without ", "With "),
+            ifelse(negate, " - Without ", " - With "),
             baseName,
-            " ",
-            tolower(period)
+            ifelse(noLabel, "", no = paste0(" - ", tolower(period)))
           ),
           cohortIds = subsetCohortIds,
           cohortCombinationOperator = subsetCombinationOperator,
