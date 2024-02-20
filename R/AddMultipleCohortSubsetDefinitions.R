@@ -46,18 +46,29 @@ addMultipleCohortSubsetDefinitions <-
       function(currentOperators, remainingSequences) {
         # Create and add a subset definition if currentOperators is not empty.
         if (length(currentOperators) > 0) {
-          subsetDefinition <- CohortGenerator::createCohortSubsetDefinition(
-            name = prefix,
-            definitionId = definitionId,
-            subsetOperators = currentOperators,
-            operatorNameConcatString = "" #replacing default value of "," with "" because it add unexpected ","
-          )
+          patternToReplaceDefaultValue <- "#####"
+          subsetDefinition <-
+            CohortGenerator::createCohortSubsetDefinition(
+              name = prefix,
+              definitionId = definitionId,
+              subsetOperators = currentOperators,
+              operatorNameConcatString = patternToReplaceDefaultValue #replacing default value of "," because it add unexpected ","
+            )
           
           cohortDefinitionSet <<-
             CohortGenerator::addCohortSubsetDefinition(
               cohortDefinitionSet,
               cohortSubsetDefintion = subsetDefinition,
               targetCohortIds = targetCohortIds
+            )
+          
+          cohortDefinitionSet <- cohortDefinitionSet |>
+            dplyr::mutate(
+              cohortName = stringr::str_replace_all(
+                string = cohortName,
+                pattern = patternToReplaceDefaultValue,
+                replacement = ""
+              )
             )
           
           # Update progress

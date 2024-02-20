@@ -96,7 +96,7 @@ getCohortSubsetOperators <- function(subsetCohortIds,
       tryCatch({
         results[[objectName]] <- CohortGenerator::createCohortSubset(
           name = paste0(
-            ifelse(negate, " - Without ", " - With "),
+            ifelse(negate, "without ", "with "),
             baseName,
             ifelse(noLabel, "", no = paste0(" - ", tolower(period)))
           ),
