@@ -49,7 +49,8 @@ addMultipleCohortSubsetDefinitions <-
           subsetDefinition <- CohortGenerator::createCohortSubsetDefinition(
             name = prefix,
             definitionId = definitionId,
-            subsetOperators = currentOperators
+            subsetOperators = currentOperators,
+            operatorNameConcatString = "" #replacing default value of "," with "" because it add unexpected ","
           )
           
           cohortDefinitionSet <<-
