@@ -42,11 +42,11 @@ addMultipleCohortSubsetDefinitions <-
     # currentOperators: A list of current operators to be included in the subset definition.
     # remainingSequences: A list of remaining operator sequences to be processed.
     
+    patternToReplaceDefaultValue <- "#####"
     addSubsetDefinitions <-
-      function(currentOperators, remainingSequences) {
+      function(currentOperators, remainingSequences, patternToReplaceDefaultValue) {
         # Create and add a subset definition if currentOperators is not empty.
         if (length(currentOperators) > 0) {
-          patternToReplaceDefaultValue <- "#####"
           subsetDefinition <-
             CohortGenerator::createCohortSubsetDefinition(
               name = prefix,
@@ -62,15 +62,6 @@ addMultipleCohortSubsetDefinitions <-
               targetCohortIds = targetCohortIds
             )
           
-          cohortDefinitionSet <- cohortDefinitionSet |>
-            dplyr::mutate(
-              cohortName = stringr::str_replace_all(
-                string = cohortName,
-                pattern = patternToReplaceDefaultValue,
-                replacement = ""
-              )
-            )
-          
           # Update progress
           setTxtProgressBar(pb, definitionId)
           definitionId <<- definitionId + 1
@@ -79,18 +70,35 @@ addMultipleCohortSubsetDefinitions <-
         # Process the next level of operators if remaining sequences are available.
         if (length(remainingSequences) > 0) {
           for (operator in remainingSequences[[1]]) {
-            addSubsetDefinitions(c(currentOperators, operator), remainingSequences[-1])
+            addSubsetDefinitions(
+              currentOperators = c(currentOperators, operator),
+              remainingSequences = remainingSequences[-1],
+              patternToReplaceDefaultValue = patternToReplaceDefaultValue
+            )
           }
         }
       }
     
     # Iterate over each sequence and process them.
     for (i in seq_along(subsetOperatorSequences)) {
-      addSubsetDefinitions(list(), subsetOperatorSequences[i:length(subsetOperatorSequences)])
+      addSubsetDefinitions(
+        currentOperators = list(),
+        remainingSequences = subsetOperatorSequences[i:length(subsetOperatorSequences)],
+        patternToReplaceDefaultValue = patternToReplaceDefaultValue
+      )
     }
     
     # Close the progress bar
     close(pb)
+    
+    cohortDefinitionSet <- cohortDefinitionSet |>
+      dplyr::mutate(
+        cohortName = stringr::str_replace_all(
+          string = cohortName,
+          pattern = patternToReplaceDefaultValue,
+          replacement = ""
+        )
+      )
     
     return(cohortDefinitionSet)
   }
