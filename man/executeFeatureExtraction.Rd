@@ -12,15 +12,17 @@ executeFeatureExtraction(
   cohortDatabaseSchema,
   cohortIds,
   cohortTable,
-  runCohortBasedTemporalCharacterization = TRUE,
+  addCohortBasedTemporalCovariateSettings = TRUE,
   covariateCohortDatabaseSchema = NULL,
   covariateCohortIds = NULL,
   covariateCohortTable = cohortTable,
   covariateCohortDefinitionSet = NULL,
   cohortCovariateAnalysisId = 150,
-  covariateSettings = FeatureExtraction::createDefaultCovariateSettings(),
+  covariateSettings = NULL,
   tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
-  outputFolder
+  outputFolder = NULL,
+  aggregated = TRUE,
+  rowIdField = "subject_id"
 )
 }
 \arguments{

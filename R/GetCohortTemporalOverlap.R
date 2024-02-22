@@ -43,7 +43,7 @@ getCohortTemporalOverlap <- function(connection = NULL,
                                      cohortCovariateAnalysisId = 150,
                                      cohortTable,
                                      covariateCohortDefinitionSet,
-                                     covariateCohortIds,
+                                     covariateCohortIds = NULL,
                                      exitCohortIds = NULL,
                                      entryCohortIds = NULL,
                                      startDays,
@@ -58,24 +58,40 @@ getCohortTemporalOverlap <- function(connection = NULL,
   checkmate::assertIntegerish(covariateCohortIds)
   checkmate::assertIntegerish(exitCohortIds, null.ok = TRUE)
   checkmate::assertIntegerish(entryCohortIds, null.ok = TRUE)
-  checkmate::assertIntegerish(groupingDays, lower = 1)
-  checkmate::assertIntegerish(maxDays, lower = 1)
   checkmate::assertIntegerish(targetCohortId, len = 1)
   
+  if (!is.null(covariateCohortIds)) {
+    covariateCohortDefinitionSet <- covariateCohortDefinitionSet |>
+      dplyr::filter(.data$cohortId %in% c(covariateCohortIds))
+  }
+  
+  cohortBasedTemporalCovariateSettings <-
+    FeatureExtraction::createCohortBasedTemporalCovariateSettings(
+      analysisId = cohortCovariateAnalysisId,
+      covariateCohortDatabaseSchema = cohortDatabaseSchema,
+      covariateCohortTable = cohortTable,
+      covariateCohorts = covariateCohortDefinitionSet,
+      valueType = "binary",
+      temporalStartDays = startDays,
+      temporalEndDays = endDays
+    )
+  
   # Extract covariate data using OHDSI helpers
-  covariateData <- OhdsiHelpers::executeCohortFeatureExtraction(
+  covariateData <- OhdsiHelpers::executeFeatureExtraction(
     connectionDetails = connectionDetails,
-    connection = connection,
     cdmDatabaseSchema = cdmDatabaseSchema,
     cohortDatabaseSchema = cohortDatabaseSchema,
     cohortIds = targetCohortId,
     cohortTable = cohortTable,
     covariateCohortDefinitionSet = covariateCohortDefinitionSet,
+    covariateCohortTable = cohortTable,
     covariateCohortIds = c(covariateCohortIds, exitCohortIds, entryCohortIds),
     cohortCovariateAnalysisId = cohortCovariateAnalysisId,
+    covariateCohortDatabaseSchema = cohortDatabaseSchema,
     aggregated = FALSE,
-    temporalStartDays = startDays,
-    temporalEndDays = endDays
+    covariateSettings = cohortBasedTemporalCovariateSettings,
+    rowIdField = "row_id",
+    addCohortBasedTemporalCovariateSettings = FALSE
   )
   
   if (!is.null(exitCohortIds)) {

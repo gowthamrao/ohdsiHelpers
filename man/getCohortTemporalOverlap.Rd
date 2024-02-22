@@ -12,7 +12,7 @@ getCohortTemporalOverlap(
   cohortCovariateAnalysisId = 150,
   cohortTable,
   covariateCohortDefinitionSet,
-  covariateCohortIds,
+  covariateCohortIds = NULL,
   exitCohortIds = NULL,
   entryCohortIds = NULL,
   startDays,

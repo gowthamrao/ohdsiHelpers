@@ -32,20 +32,30 @@ executeFeatureExtraction <-
            cohortDatabaseSchema,
            cohortIds,
            cohortTable,
-           runCohortBasedTemporalCharacterization = TRUE,
+           addCohortBasedTemporalCovariateSettings = TRUE,
            covariateCohortDatabaseSchema = NULL,
            covariateCohortIds = NULL,
            covariateCohortTable = cohortTable,
            covariateCohortDefinitionSet = NULL,
            cohortCovariateAnalysisId = 150,
-           covariateSettings = FeatureExtraction::createDefaultCovariateSettings(),
+           covariateSettings = NULL,
            tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
-           outputFolder) {
-    if (!file.exists(outputFolder)) {
-      dir.create(outputFolder, recursive = TRUE)
+           outputFolder = NULL,
+           aggregated = TRUE,
+           rowIdField = "subject_id") {
+    if (!is.null(outputFolder)) {
+      if (!file.exists(outputFolder)) {
+        dir.create(outputFolder, recursive = TRUE)
+      }
     }
     
-    if (runCohortBasedTemporalCharacterization) {
+    if (!aggregated) {
+      if (length(cohortIds) > 1) {
+        stop("only one cohort id allowed when doing aggregated = FALSE")
+      }
+    }
+    
+    if (addCohortBasedTemporalCovariateSettings) {
       if (covariateSettings$temporal) {
         if (is.null(covariateCohortDefinitionSet)) {
           stop(
@@ -89,11 +99,16 @@ executeFeatureExtraction <-
               dplyr::filter(.data$cohortId %in% c(covariateCohortIds)),
             valueType = "binary",
             temporalStartDays = temporalStartDays,
-            temporalEndDays = temporalEndDays
+            temporalEndDays = temporalEndDays,
+            includedCovariateIds = covariateCohortIds
           )
         
-        covariateSettings <- list(covariateSettings,
-                                  cohortBasedTemporalCovariateSettings)
+        if (!is.null(covariateSettings)) {
+          covariateSettings <- list(covariateSettings,
+                                    cohortBasedTemporalCovariateSettings)
+        } else {
+          covariateSettings <- cohortBasedTemporalCovariateSettings
+        }
         
       } else {
         stop(
@@ -102,17 +117,48 @@ executeFeatureExtraction <-
       }
     }
     
-    ParallelLogger::addDefaultFileLogger(file.path(outputFolder, "log.txt"))
-    ParallelLogger::addDefaultErrorReportLogger(file.path(outputFolder, "errorReportR.txt"))
-    on.exit(ParallelLogger::unregisterLogger("DEFAULT_FILE_LOGGER", silent = TRUE))
-    on.exit(
-      ParallelLogger::unregisterLogger("DEFAULT_ERRORREPORT_LOGGER", silent = TRUE),
-      add = TRUE
-    )
+    if (!is.null(outputFolder)) {
+      ParallelLogger::addDefaultFileLogger(file.path(outputFolder, "log.txt"))
+      ParallelLogger::addDefaultErrorReportLogger(file.path(outputFolder, "errorReportR.txt"))
+      on.exit(ParallelLogger::unregisterLogger("DEFAULT_FILE_LOGGER", silent = TRUE))
+      on.exit(
+        ParallelLogger::unregisterLogger("DEFAULT_ERRORREPORT_LOGGER", silent = TRUE),
+        add = TRUE
+      )
+    }
     
     if (is.null(connection)) {
       connection <- DatabaseConnector::connect(connectionDetails)
       on.exit(DatabaseConnector::disconnect(connection))
+    }
+    
+    useRowId <- (rowIdField == 'row_id')
+    if (useRowId) {
+      sql <- "
+      DROP TABLE  IF EXISTS #cohort_person;
+
+      SELECT ROW_NUMBER() OVER (ORDER BY subject_id, cohort_start_date) AS row_id,
+              cohort_definition_id,
+              subject_id,
+              cohort_start_date,
+              cohort_end_date
+      INTO #cohort_person
+      FROM @cohort_database_schema.@cohort_table
+      WHERE cohort_definition_id IN (@target_cohort_id);
+
+      "
+      DatabaseConnector::renderTranslateExecuteSql(
+        connection = connection,
+        sql = sql,
+        cohort_database_schema = cohortDatabaseSchema,
+        cohort_table = cohortTable,
+        target_cohort_id = cohortIds,
+        profile = FALSE,
+        progressBar = FALSE,
+        reportOverallTime = FALSE
+      )
+      cohortDatabaseSchema <- NULL
+      cohortTable <- "#cohort_person"
     }
     
     ParallelLogger::logInfo(" - Beginning Feature Extraction")
@@ -126,11 +172,26 @@ executeFeatureExtraction <-
         cohortTable = cohortTable,
         cohortId = cohortIds,
         covariateSettings = covariateSettings,
-        aggregated = TRUE
+        aggregated = aggregated,
+        cohortTableIsTemp = is.null(cohortDatabaseSchema),
+        rowIdField = rowIdField
       )
     
-    FeatureExtraction::saveCovariateData(covariateData = covariateData,
-                                         file = file.path(outputFolder, "covariateData"))
+    if (!is.null(outputFolder)) {
+      FeatureExtraction::saveCovariateData(covariateData = covariateData,
+                                           file = file.path(outputFolder, "covariateData"))
+    }
+    
+    if (useRowId) {
+      sql <- "DROP TABLE  IF EXISTS #cohort_person;"
+      DatabaseConnector::renderTranslateExecuteSql(
+        connection = connection,
+        sql = sql,
+        profile = FALSE,
+        progressBar = FALSE,
+        reportOverallTime = FALSE
+      )
+    }
     
     DatabaseConnector::disconnect(connection = connection)
     
@@ -148,7 +209,7 @@ executeFeatureExtractionInParallel <-
            passwordService = "OHDSI_PASSWORD",
            databaseIds = getListOfDatabaseIds(),
            covariateSettings = CohortDiagnostics::getDefaultCovariateSettings(),
-           runCohortBasedTemporalCharacterization = TRUE,
+           addCohortBasedTemporalCovariateSettings = TRUE,
            covariateCohortIds = NULL,
            covariateCohortTable = cohortTable,
            covariateCohortDefinitionSet = NULL,
@@ -157,7 +218,9 @@ executeFeatureExtractionInParallel <-
            maxCores = parallel::detectCores() /
              3,
            tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
-           outputFolder) {
+           outputFolder,
+           rowIdField = "row_id",
+           aggregated = TRUE) {
     cdmSources <- cdmSources |>
       dplyr::filter(.data$database %in% c(databaseIds)) |>
       dplyr::filter(.data$sequence == !!sequence)
@@ -197,12 +260,14 @@ executeFeatureExtractionInParallel <-
                passwordService,
                tempEmulationSchema,
                covariateSettings,
-               runCohortBasedTemporalCharacterization,
+               addCohortBasedTemporalCovariateSettings,
                covariateCohortIds,
                covariateCohortTable,
                covariateCohortDefinitionSet,
                cohortCovariateAnalysisId,
-               outputFolder) {
+               outputFolder,
+               rowIdField,
+               aggregated) {
         connectionDetails <- DatabaseConnector::createConnectionDetails(
           dbms = x$dbms,
           user = keyring::key_get(userService),
@@ -214,10 +279,6 @@ executeFeatureExtractionInParallel <-
         outputFolder <-
           file.path(outputFolder, x$sourceKey)
         
-        dir.create(path = outputFolder,
-                   showWarnings = FALSE,
-                   recursive = TRUE)
-        
         executeFeatureExtraction(
           connectionDetails = connectionDetails,
           cdmDatabaseSchema = x$cdmDatabaseSchemaFinal,
@@ -226,12 +287,14 @@ executeFeatureExtractionInParallel <-
           cohortTable = cohortTable,
           covariateSettings = covariateSettings,
           outputFolder = outputFolder,
-          runCohortBasedTemporalCharacterization = runCohortBasedTemporalCharacterization,
+          addCohortBasedTemporalCovariateSettings = addCohortBasedTemporalCovariateSettings,
           covariateCohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
           covariateCohortIds = covariateCohortIds,
           covariateCohortTable = covariateCohortTable,
           covariateCohortDefinitionSet = covariateCohortDefinitionSet,
-          cohortCovariateAnalysisId = cohortCovariateAnalysisId
+          cohortCovariateAnalysisId = cohortCovariateAnalysisId,
+          rowIdField = rowIdField,
+          aggregated = aggregated
         )
       }
     
@@ -246,11 +309,13 @@ executeFeatureExtractionInParallel <-
       covariateSettings = covariateSettings,
       tempEmulationSchema = tempEmulationSchema,
       outputFolder = outputFolder,
-      runCohortBasedTemporalCharacterization = runCohortBasedTemporalCharacterization,
+      addCohortBasedTemporalCovariateSettings = addCohortBasedTemporalCovariateSettings,
       covariateCohortIds = covariateCohortIds,
       covariateCohortTable = covariateCohortTable,
       covariateCohortDefinitionSet = covariateCohortDefinitionSet,
-      cohortCovariateAnalysisId = cohortCovariateAnalysisId
+      cohortCovariateAnalysisId = cohortCovariateAnalysisId,
+      rowIdField = rowIdField,
+      aggregated = aggregated
     )
     
     ParallelLogger::stopCluster(cluster = cluster)
