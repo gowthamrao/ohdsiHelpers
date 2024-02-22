@@ -170,7 +170,7 @@ executeFeatureExtraction <-
         cohortDatabaseSchema = cohortDatabaseSchema,
         cdmVersion = 5,
         cohortTable = cohortTable,
-        cohortId = cohortIds,
+        cohortIds = cohortIds,
         covariateSettings = covariateSettings,
         aggregated = aggregated,
         cohortTableIsTemp = is.null(cohortDatabaseSchema),
