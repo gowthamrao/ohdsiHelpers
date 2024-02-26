@@ -36,7 +36,9 @@ cohort analysis by allowing for the creation of various time-bound cohort subset
 }
 \examples{
 # Example usage:
-results <- getCohortSubsetOperators(subsetCohortIds = c(1, 2, 3),
-                                    subsetCombinationOperator = "any",
-                                    baseName = "exampleCohort")
+results <- getCohortSubsetOperators(
+  subsetCohortIds = c(1, 2, 3),
+  subsetCombinationOperator = "any",
+  baseName = "exampleCohort"
+)
 }
