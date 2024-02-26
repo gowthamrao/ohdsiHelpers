@@ -366,10 +366,10 @@ getCovariateCoOccurrence <- function(covariateData,
       tidyr::pivot_wider(
         id_cols = c(id, flag),
         names_prefix = "node",
-        names_from = timeId,
-        values_from = covariateCombination
+        names_from = .data$timeId,
+        values_from = .data$covariateCombination
       ) |>
-      dplyr::group_by(flag, dplyr::across(dplyr::starts_with("node"))) |> # Group by columns starting with "level"
+      dplyr::group_by(.data$flag, dplyr::across(dplyr::starts_with("node"))) |> # Group by columns starting with "level"
       dplyr::summarize(size = dplyr::n(), .groups = "keep") |>
       dplyr::ungroup() |>
       dplyr::arrange(.data$flag, dplyr::desc(.data$size))
@@ -395,13 +395,13 @@ getCovariateCoOccurrence <- function(covariateData,
       tidyr::pivot_wider(
         id_cols = c(id, flag),
         names_prefix = "node",
-        names_from = timeId,
-        values_from = covariateCombination
+        names_from = .data$timeId,
+        values_from = .data$covariateCombination
       ) |>
-      dplyr::group_by(flag, dplyr::across(dplyr::starts_with("node"))) |> # Group by columns starting with "level"
+      dplyr::group_by(.data$flag, dplyr::across(dplyr::starts_with("node"))) |> # Group by columns starting with "level"
       dplyr::summarize(size = dplyr::n(), .groups = "keep") |>
       dplyr::ungroup() |>
-      dplyr::arrange(flag, dplyr::desc(.data$size))
+      dplyr::arrange(.data$flag, dplyr::desc(.data$size))
   }
 
   colPositions <- which(grepl("node", names(ggAlluvialLodeForm)))
