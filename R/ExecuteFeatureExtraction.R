@@ -56,6 +56,9 @@ executeFeatureExtraction <-
     }
     
     if (addCohortBasedTemporalCovariateSettings) {
+      if (is.null(covariateSettings$temporal)) {
+        stop("covariateSettings is not temporal. Cannot add cohort based temporal covariate settings.")
+      }
       if (covariateSettings$temporal) {
         if (is.null(covariateCohortDefinitionSet)) {
           stop(
@@ -219,7 +222,7 @@ executeFeatureExtractionInParallel <-
              3,
            tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
            outputFolder,
-           rowIdField = "row_id",
+           rowIdField = "subject_id",
            aggregated = TRUE) {
     cdmSources <- cdmSources |>
       dplyr::filter(.data$database %in% c(databaseIds)) |>

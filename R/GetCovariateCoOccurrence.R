@@ -124,31 +124,6 @@ getCovariateCoOccurrence <- function(covariateData,
   populationSize <-
     attr(x = covariateData, which = "metaData")$populationSize
   
-  browser()
-  # Process cohort reference for readability
-  covariateRef <- covariateData$covariateRef |>
-    dplyr::collect() |>
-    dplyr::mutate(
-      covariateName = stringr::str_replace(
-        string = covariateName,
-        pattern = "cohort: ",
-        replacement = ""
-      )
-    ) |>
-    dplyr::mutate(cohortId = (covariateId - analysisId) / 1000) |>
-    dplyr::select(cohortId, covariateId, covariateName) |>
-    dplyr::rename(cohortName = covariateName) |>
-    dplyr::distinct() |>
-    dplyr::arrange(cohortId) |>
-    dplyr::left_join(
-      eventCohortsOfInterest |>
-        dplyr::select(covariateId,
-                      newCovariateId,
-                      newCovariateName) |>
-        dplyr::distinct(),
-      by = "covariateId"
-    )
-  
   # Process time reference for readability
   timeRef <- covariateData$timeRef |>
     dplyr::collect() |>
@@ -161,6 +136,45 @@ getCovariateCoOccurrence <- function(covariateData,
     dplyr::collect() |>
     dplyr::ungroup()
   
+  # Process cohort reference for readability
+  covariateRef <- covariateData$covariateRef |>
+    dplyr::collect() |>
+    dplyr::mutate(covariateName = stringr::str_extract(covariateName, "(?<=: )\\w+")) |>
+    dplyr::mutate(cohortId = (covariateId - analysisId) / 1000) |>
+    dplyr::select(cohortId, covariateId, covariateName) |>
+    dplyr::rename(cohortName = covariateName) |>
+    dplyr::distinct() |>
+    dplyr::arrange(cohortId) |>
+    dplyr::inner_join(
+      eventCohortsOfInterest |>
+        dplyr::select(covariateId,
+                      newCovariateId,
+                      newCovariateName) |>
+        dplyr::distinct(),
+      by = "covariateId"
+    )
+  
+  # Filter cohorts if covariate ID group is specified
+  if (!is.null(flagCohortIds)) {
+    flagCovariateIds <-
+      dplyr::tibble(
+        covariateId = convertCohortIdToCovariateId(
+          cohortIds = flagCohortIds,
+          cohortCovariateAnalysisId = analysisRef$analysisId
+        ),
+        flag = "1"
+      )
+    
+    covariateRef <- covariateRef |>
+      dplyr::left_join(flagCovariateIds,
+                       by = "covariateId") |>
+      tidyr::replace_na(replace = list(flag = "0"))
+    
+  } else {
+    covariateRef <- covariateRef |>
+      dplyr::mutate(flag = "1")
+  }
+  
   # Generate combinations of covariates for each person and time
   covariateCoOccurrenceData <- covariateData$covariates |>
     dplyr::select(rowId, covariateId, timeId) |>
@@ -168,8 +182,17 @@ getCovariateCoOccurrence <- function(covariateData,
     dplyr::collect() |>
     dplyr::inner_join(covariateRef,
                       by = "covariateId") |>
+    dplyr::select(id,
+                  timeId,
+                  newCovariateId,
+                  flag) |>
+    dplyr::group_by(id, timeId, newCovariateId) |>
+    dplyr::summarise(flag = max(flag), .groups = "keep") |>
+    dplyr::ungroup() |>
+    dplyr::arrange(id, timeId, newCovariateId) |>
     dplyr::group_by(id, timeId) |>
-    dplyr::summarise(covariateCombinationId = paste(sort(newCovariateId), collapse = ", ")) |>
+    dplyr::summarise(covariateCombinationId = paste(sort(newCovariateId), collapse = ", "),
+                     flag = max(flag)) |>
     dplyr::ungroup() |>
     dplyr::arrange(id, timeId)
   
@@ -187,25 +210,17 @@ getCovariateCoOccurrence <- function(covariateData,
     dplyr::select(timeId, covariateCombinationId, isRare, count) |>
     dplyr::distinct()
   
-  # Filter cohorts if covariate ID group is specified
-  if (!is.null(flagCohortIds)) {
-    flagCovariateIds <-
-      convertCohortIdToCovariateId(cohortIds = flagCohortIds,
-                                   cohortCovariateAnalysisId = analysisRef$analysisId)
-    covariateCoOccurrenceRef <- covariateCoOccurrenceRef |>
-      dplyr::mutate(
-        flag = stringr::str_detect(
-          string = covariateCombinationId,
-          pattern = paste0(" ", flagCohortIds, "|", flagCohortIds, ",", collapse = "|")
-        ) |> as.integer()
-      )
-  }
-  
   # Function to replace ID with covariate name
   replaceWithCovariateName <- function(id) {
-    matchIdx <- which(covariateRef$covariateId == as.numeric(id))
+    covariateRefToMatch <- covariateRef |>
+      dplyr::select(newCovariateId,
+                    newCovariateName) |>
+      dplyr::distinct() |>
+      dplyr::arrange(newCovariateId)
+    matchIdx <-
+      min(which(covariateRefToMatch$newCovariateId == as.numeric(id)))
     if (length(matchIdx) > 0) {
-      return(covariateRef$cohortName[matchIdx])
+      return(covariateRefToMatch$newCovariateName[matchIdx])
     } else {
       return(id)
     }
@@ -299,38 +314,61 @@ getCovariateCoOccurrence <- function(covariateData,
       d3r::d3_nest(value_cols = "size")
   }
   
-  ggAlluvialLodeForm <-
-    covariateCoOccurrence$covariateCoOccurrenceData  |>
-    dplyr::inner_join(
-      covariateCoOccurrence$covariateCoOccurrenceRef |>
-        dplyr::select(
-          timeId,
-          covariateCombinationId,
-          covariateCombinationReduced,
-          flag
-        ) |>
-        dplyr::mutate(flag = as.character(flag)) |>
-        dplyr::rename(covariateCombination = covariateCombinationReduced),
-      by = c("timeId",
-             "covariateCombinationId")
-    ) |>
-    dplyr::arrange(id,
-                   timeId) |>
-    tidyr::pivot_wider(
-      id_cols = c(id, flag),
-      names_prefix = "node",
-      names_from = timeId,
-      values_from = covariateCombination
-    ) |>
-    dplyr::group_by(flag, dplyr::across(dplyr::starts_with("node"))) |>  # Group by columns starting with "level"
-    dplyr::summarize(size = dplyr::n(), .groups = "keep") |>
-    dplyr::ungroup() |>
-    dplyr::arrange(flag, dplyr::desc(size))
+  if (reduced) {
+    ggAlluvialLodeForm <-
+      result$covariateCoOccurrenceData  |>
+      dplyr::inner_join(
+        result$covariateCoOccurrenceRef |>
+          dplyr::select(
+            timeId,
+            covariateCombinationId,
+            covariateCombinationReduced
+          ) |>
+          dplyr::rename(covariateCombination = covariateCombinationReduced),
+        by = c("timeId",
+               "covariateCombinationId")
+      ) |>
+      dplyr::arrange(id,
+                     timeId) |>
+      tidyr::pivot_wider(
+        id_cols = c(id, flag),
+        names_prefix = "node",
+        names_from = timeId,
+        values_from = covariateCombination
+      ) |>
+      dplyr::group_by(flag, dplyr::across(dplyr::starts_with("node"))) |>  # Group by columns starting with "level"
+      dplyr::summarize(size = dplyr::n(), .groups = "keep") |>
+      dplyr::ungroup() |>
+      dplyr::arrange(flag, dplyr::desc(size))
+  } else {
+    ggAlluvialLodeForm <-
+      result$covariateCoOccurrenceData  |>
+      dplyr::inner_join(
+        result$covariateCoOccurrenceRef |>
+          dplyr::select(timeId,
+                        covariateCombinationId,
+                        covariateCombination),
+        by = c("timeId",
+               "covariateCombinationId")
+      ) |>
+      dplyr::arrange(id,
+                     timeId) |>
+      tidyr::pivot_wider(
+        id_cols = c(id, flag),
+        names_prefix = "node",
+        names_from = timeId,
+        values_from = covariateCombination
+      ) |>
+      dplyr::group_by(flag, dplyr::across(dplyr::starts_with("node"))) |>  # Group by columns starting with "level"
+      dplyr::summarize(size = dplyr::n(), .groups = "keep") |>
+      dplyr::ungroup() |>
+      dplyr::arrange(flag, dplyr::desc(size))
+  }
+  
   colPositions <- which(grepl('node', names(ggAlluvialLodeForm)))
   
   result$ggAlluvialLodeForm <- ggAlluvialLodeForm |>
     ggalluvial::to_lodes_form(key = "state", axes = colPositions)
-  
   
   return(result)
 }
