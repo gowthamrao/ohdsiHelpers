@@ -77,7 +77,7 @@ resultsExtractCohortDiagnosticsIncidenceRate <-
     if (!is.null(minIncidenceRate)) {
       cohortDiagnosticsIncidenceRateResult <-
         cohortDiagnosticsIncidenceRateResult |>
-        dplyr::filter(incidenceRate > minIncidenceRate)
+        dplyr::filter(.data$incidenceRate > minIncidenceRate)
     }
     return(cohortDiagnosticsIncidenceRateResult)
   }
@@ -221,7 +221,7 @@ resultsExtractCohortDiagnosticsAll <- function(connection = NULL,
     resultsExtractCohortDiagnosticsConceptsInCohort(
       dataSource = dataSource,
       cohortIds = cohortIds,
-      databaseId = databaseIds
+      databaseIds = databaseIds
     )
 
   ## cd index event breakdown

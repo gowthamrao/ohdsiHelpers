@@ -135,9 +135,9 @@ getCohortPeriods <- function(connectionDetails = NULL,
   ) |>
     dplyr::tibble() |>
     dplyr::arrange(
-      startDate,
-      endDate,
-      type
+      .data$startDate,
+      .data$endDate,
+      .data$type
     )
 
   if ("ageGroup" %in% colnames(periods)) {

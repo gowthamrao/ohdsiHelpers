@@ -94,7 +94,7 @@ addMultipleCohortSubsetDefinitions <-
     cohortDefinitionSet <- cohortDefinitionSet |>
       dplyr::mutate(
         cohortName = stringr::str_replace_all(
-          string = cohortName,
+          string = .data$cohortName,
           pattern = patternToReplaceDefaultValue,
           replacement = ""
         )

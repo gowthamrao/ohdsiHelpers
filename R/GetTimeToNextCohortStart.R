@@ -45,52 +45,52 @@ FROM
 
   output <- c()
   output$daysToNextDistribution <- subjectRecords |>
-    dplyr::group_by(daysToNext) |>
+    dplyr::group_by(.data$daysToNext) |>
     dplyr::summarize(
-      totalRecords = sum(records),
-      uniqueSubjectIds = dplyr::n_distinct(subjectId),
-      minRecords = min(records),
-      maxRecords = max(records),
-      percentile1 = quantile(records, probs = 0.01),
-      percentile5 = quantile(records, probs = 0.05),
-      percentile10 = quantile(records, probs = 0.10),
-      percentile25 = quantile(records, probs = 0.25),
-      medianRecords = median(records),
-      percentile75 = quantile(records, probs = 0.75),
-      percentile90 = quantile(records, probs = 0.90),
-      percentile95 = quantile(records, probs = 0.95),
-      percentile99 = quantile(records, probs = 0.99),
-      meanRecords = mean(records),
-      sdRecords = sd(records),
-      iqrRecords = IQR(records)
+      totalRecords = sum(.data$records),
+      uniqueSubjectIds = dplyr::n_distinct(.data$subjectId),
+      minRecords = min(.data$records),
+      maxRecords = max(.data$records),
+      percentile1 = quantile(.data$records, probs = 0.01),
+      percentile5 = quantile(.data$records, probs = 0.05),
+      percentile10 = quantile(.data$records, probs = 0.10),
+      percentile25 = quantile(.data$records, probs = 0.25),
+      medianRecords = median(.data$records),
+      percentile75 = quantile(.data$records, probs = 0.75),
+      percentile90 = quantile(.data$records, probs = 0.90),
+      percentile95 = quantile(.data$records, probs = 0.95),
+      percentile99 = quantile(.data$records, probs = 0.99),
+      meanRecords = mean(.data$records),
+      sdRecords = sd(.data$records),
+      iqrRecords = IQR(.data$records)
     )
 
   output$daysToNext <- subjectRecords |>
     dplyr::select(
-      subjectId,
-      daysToNext
+      .data$subjectId,
+      .data$daysToNext
     ) |>
-    dplyr::filter(!is.na(daysToNext)) |>
-    dplyr::group_by(subjectId) |>
-    dplyr::summarize(records = dplyr::n_distinct(daysToNext)) |>
+    dplyr::filter(!is.na(.data$daysToNext)) |>
+    dplyr::group_by(.data$subjectId) |>
+    dplyr::summarize(records = dplyr::n_distinct(.data$daysToNext)) |>
     dplyr::ungroup() |>
     dplyr::summarize(
-      totalRecords = sum(records),
-      uniqueSubjectIds = dplyr::n_distinct(subjectId),
-      minRecords = min(records),
-      maxRecords = max(records),
-      percentile1 = quantile(records, probs = 0.01),
-      percentile5 = quantile(records, probs = 0.05),
-      percentile10 = quantile(records, probs = 0.10),
-      percentile25 = quantile(records, probs = 0.25),
-      medianRecords = median(records),
-      percentile75 = quantile(records, probs = 0.75),
-      percentile90 = quantile(records, probs = 0.90),
-      percentile95 = quantile(records, probs = 0.95),
-      percentile99 = quantile(records, probs = 0.99),
-      meanRecords = mean(records),
-      sdRecords = sd(records),
-      iqrRecords = IQR(records)
+      totalRecords = sum(.data$records),
+      uniqueSubjectIds = dplyr::n_distinct(.data$subjectId),
+      minRecords = min(.data$records),
+      maxRecords = max(.data$records),
+      percentile1 = quantile(.data$records, probs = 0.01),
+      percentile5 = quantile(.data$records, probs = 0.05),
+      percentile10 = quantile(.data$records, probs = 0.10),
+      percentile25 = quantile(.data$records, probs = 0.25),
+      medianRecords = median(.data$records),
+      percentile75 = quantile(.data$records, probs = 0.75),
+      percentile90 = quantile(.data$records, probs = 0.90),
+      percentile95 = quantile(.data$records, probs = 0.95),
+      percentile99 = quantile(.data$records, probs = 0.99),
+      meanRecords = mean(.data$records),
+      sdRecords = sd(.data$records),
+      iqrRecords = IQR(.data$records)
     ) |>
     dplyr::mutate(daysToNext = -1)
 
@@ -98,7 +98,7 @@ FROM
     output$daysToNextDistribution,
     output$daysToNext
   ) |>
-    dplyr::arrange(daysToNext)
+    dplyr::arrange(.data$daysToNext)
 
   return(output)
 }

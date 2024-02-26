@@ -27,30 +27,30 @@ updateUsCensusEstimatesUsingApiCall <-
 
     censusUsEstimatePlot <- censusUsEstimate |>
       dplyr::group_by(
-        year,
-        SEX,
-        AGEGROUP
+        .data$year,
+        .data$SEX,
+        .data$AGEGROUP
       ) |>
-      dplyr::summarise(count = sum(value)) |>
+      dplyr::summarise(count = sum(.data$value)) |>
       dplyr::ungroup() |>
       dplyr::rename(
-        sex = SEX,
-        ageGroup = AGEGROUP
+        sex = .data$SEX,
+        ageGroup = .data$AGEGROUP
       ) |>
       dplyr::filter(
-        sex %in% c("Female", "Male"),
-        year == 2020
+        .data$sex %in% c("Female", "Male"),
+        .data$year == 2020
       ) |>
       dplyr::mutate(
         ageGroup = stringr::str_replace(
-          string = ageGroup,
+          string = .data$ageGroup,
           pattern = "Age|years|and|older",
           replacement = ""
         ) |> stringr::str_squish()
       ) |>
       dplyr::mutate(
         ageGroup = stringr::str_replace(
-          string = ageGroup,
+          string = .data$ageGroup,
           pattern = "years",
           replacement = ""
         ) |> stringr::str_squish()

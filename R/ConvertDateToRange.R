@@ -31,16 +31,15 @@ convertDateToRange <- function(dates) {
   ) |>
     dplyr::distinct() |>
     dplyr::arrange(
-      type,
-      startDate,
-      endDate
+      .data$type,
+      .data$startDate,
+      .data$endDate
     ) |>
     dplyr::select(
-      type,
-      startDate,
-      endDate
+      .data$type,
+      .data$startDate,
+      .data$endDate
     )
-
-
+  
   return(calendarRange)
 }

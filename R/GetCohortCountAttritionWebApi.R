@@ -3,25 +3,20 @@ getCohortCountAttritionWebApiGetCohortResultsOutput <-
   function(getCohortResultsOutput,
            cdmSources,
            modeId = 1) {
-    sequenceSourceKey <- cohortCountsFromWebApi$summary |>
-      dplyr::filter(mode == modeId) |>
-      dplyr::select(
-        sourceKey,
-        finalCount
-      ) |>
-      dplyr::arrange(dplyr::desc(finalCount)) |>
-      dplyr::select(sourceKey) |>
+    sequenceSourceKey <- getCohortResultsOutput$summary |>
+      dplyr::filter(.data$mode == modeId) |>
+      dplyr::select(.data$sourceKey,
+                    .data$finalCount) |>
+      dplyr::arrange(dplyr::desc(.data$finalCount)) |>
+      dplyr::select(.data$sourceKey) |>
       dplyr::mutate(sequenceSourceKey = dplyr::row_number())
-
-
+    
     summary <-
-      cohortCountsFromWebApi$summary |>
-      dplyr::filter(mode == modeId) |>
-      dplyr::select(
-        sourceKey,
-        baseCount,
-        percentMatched
-      ) |>
+      getCohortResultsOutput$summary |>
+      dplyr::filter(.data$mode == modeId) |>
+      dplyr::select(.data$sourceKey,
+                    .data$baseCount,
+                    .data$percentMatched) |>
       dplyr::mutate(
         id = 0,
         name = "base",
@@ -30,50 +25,44 @@ getCohortCountAttritionWebApiGetCohortResultsOutput <-
       ) |>
       dplyr::mutate(report = OhdsiHelpers::formatCountPercent(percent = percentExcluded, count = countSatisfying)) |>
       dplyr::inner_join(cdmSources |>
-        dplyr::select(
-          sourceKey,
-          database
-        )) |>
-      dplyr::select(
-        database,
-        sourceKey,
-        id,
-        name,
-        report
-      )
-
+                          dplyr::select(.data$sourceKey,
+                                        .data$database)) |>
+      dplyr::select(.data$database,
+                    .data$sourceKey,
+                    .data$id,
+                    .data$name,
+                    .data$report)
+    
     inclusionRule <-
-      cohortCountsFromWebApi$inclusionRuleStats |>
-      dplyr::mutate(id = id + 1) |>
-      dplyr::filter(mode == modeId) |>
-      dplyr::mutate(report = OhdsiHelpers::formatCountPercent(percent = percentExcluded, count = countSatisfying)) |>
-      dplyr::inner_join(cdmSources |>
-        dplyr::select(
-          sourceKey,
-          database
-        )) |>
-      dplyr::select(
-        database,
-        sourceKey,
-        id,
-        name,
-        report
-      )
-
-    bothCombined <- dplyr::bind_rows(
-      summary,
-      inclusionRule
-    ) |>
-      dplyr::inner_join(sequenceSourceKey,
-        by = "sourceKey"
+      getCohortResultsOutput$inclusionRuleStats |>
+      dplyr::mutate(id = .data$id + 1) |>
+      dplyr::filter(.data$mode == modeId) |>
+      dplyr::mutate(
+        report = OhdsiHelpers::formatCountPercent(
+          percent = .data$percentExcluded,
+          count = .data$countSatisfying
+        )
       ) |>
-      dplyr::arrange(sequenceSourceKey) |>
+      dplyr::inner_join(cdmSources |>
+                          dplyr::select(.data$sourceKey,
+                                        .data$database)) |>
+      dplyr::select(.data$database,
+                    .data$sourceKey,
+                    .data$id,
+                    .data$name,
+                    .data$report)
+    
+    bothCombined <- dplyr::bind_rows(.data$summary,
+                                     .data$inclusionRule) |>
+      dplyr::inner_join(sequenceSourceKey,
+                        by = "sourceKey") |>
+      dplyr::arrange(.data$sequenceSourceKey) |>
       tidyr::pivot_wider(
-        id_cols = c(id, name),
+        id_cols = c(.data$id, .data$name),
         names_from = database,
         values_from = report
       ) |>
-      dplyr::arrange(id)
-
+      dplyr::arrange(.data$id)
+    
     return(bothCombined)
   }

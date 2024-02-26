@@ -2,7 +2,8 @@
 checkFilterTemporalCovariateDataByTimeIdCohortId <-
   function(covariateData,
            cohortId,
-           timeId) {
+           timeId,
+           multipleCohortId) {
     if (FeatureExtraction::isTemporalCovariateData(covariateData)) {
       if (is.null(timeId)) {
         stop("one of given covariateData is temporal. its corresponding timeId is NULL")
@@ -30,7 +31,7 @@ checkFilterTemporalCovariateDataByTimeIdCohortId <-
       }
     } else {
       covariateData$covariates <- covariateData$covariates |>
-        dplyr::filter(cohortDefinitionId == !!cohortId)
+        dplyr::filter(.data$cohortDefinitionId == !!cohortId)
     }
     return(covariateData)
   }
@@ -93,7 +94,8 @@ CreateTable1FromCovariateData <- function(covariateData1,
     checkFilterTemporalCovariateDataByTimeIdCohortId(
       covariateData = covariateData1,
       cohortId = cohortId1,
-      timeId = timeId1
+      timeId = timeId1,
+      multipleCohortId = multipleCohortId
     )
   populationSizeCovariateData1 <-
     attributes(covariateData1)$metaData$populationSize |> as.numeric()
@@ -103,7 +105,8 @@ CreateTable1FromCovariateData <- function(covariateData1,
       checkFilterTemporalCovariateDataByTimeIdCohortId(
         covariateData = covariateData2,
         cohortId = cohortId2,
-        timeId = timeId2
+        timeId = timeId2,
+        multipleCohortId = multipleCohortId
       )
     populationSizeCovariateData2 <-
       attributes(covariateData2)$metaData$populationSize |> as.numeric()
@@ -114,22 +117,22 @@ CreateTable1FromCovariateData <- function(covariateData1,
                                    rangeHighPercent) {
     filteringCovariateIdsThatHaveMinThreshold <-
       covariateData$covariates |>
-      dplyr::filter(averageValue >= !!rangeLowPercent) |>
-      dplyr::filter(averageValue <= !!rangeHighPercent) |>
+      dplyr::filter(.data$averageValue >= !!rangeLowPercent) |>
+      dplyr::filter(.data$averageValue <= !!rangeHighPercent) |>
       dplyr::select(
-        covariateId,
-        averageValue
+        "covariateId",
+        "averageValue"
       ) |>
-      dplyr::arrange(dplyr::desc(averageValue)) |>
+      dplyr::arrange(dplyr::desc(.data$averageValue)) |>
       dplyr::mutate(rn = dplyr::row_number()) |>
-      dplyr::select(covariateId, rn) |>
+      dplyr::select("covariateId", "rn") |>
       dplyr::distinct() |>
       dplyr::inner_join(
         covariateData$covariateRef |>
           dplyr::select(
-            covariateId,
-            analysisId,
-            conceptId
+            "covariateId",
+            "analysisId",
+            "conceptId"
           ) |>
           dplyr::distinct(),
         by = "covariateId"
@@ -137,14 +140,14 @@ CreateTable1FromCovariateData <- function(covariateData1,
       dplyr::inner_join(
         covariateData$analysisRef |>
           dplyr::select(
-            analysisId,
-            analysisName
+            "analysisId",
+            "analysisName"
           ) |>
           dplyr::distinct() #|> dplyr::collect()
         ,
         by = "analysisId"
       ) |>
-      dplyr::arrange(rn) |>
+      dplyr::arrange(.data$rn) |>
       dplyr::collect()
 
     return(filteringCovariateIdsThatHaveMinThreshold)
@@ -195,10 +198,10 @@ CreateTable1FromCovariateData <- function(covariateData1,
         analysisNames[[i]]
       covariateIds <- filteringCovariateIdsThatHaveMinThreshold |>
         dplyr::filter(analysisName %in% !!analysisName) |>
-        dplyr::select(covariateId) |>
+        dplyr::select(.data$covariateId) |>
         dplyr::distinct() |>
         dplyr::collect() |>
-        dplyr::pull(covariateId) # dont sort
+        dplyr::pull(.data$covariateId) # dont sort
 
       analysisIds <- filteringCovariateIdsThatHaveMinThreshold |>
         dplyr::filter(analysisName %in% !!analysisName) |>

@@ -22,13 +22,13 @@ generateCombinationsDataFrame <-
     resultDF <- dplyr::bind_rows(resultDF)
     allSubId <- resultDF |>
       dplyr::select(
-        combinationSubId,
-        combinationSize
+        .data$combinationSubId,
+        .data$combinationSize
       ) |>
       dplyr::distinct() |>
       dplyr::arrange(
-        combinationSubId,
-        combinationSize
+        .data$combinationSubId,
+        .data$combinationSize
       ) |>
       dplyr::mutate(combinationId = dplyr::row_number())
 
@@ -40,15 +40,15 @@ generateCombinationsDataFrame <-
         )
       ) |>
       dplyr::relocate(
-        combinationId,
-        combinationSubId,
-        combinationSize
+        .data$combinationId,
+        .data$combinationSubId,
+        .data$combinationSize
       ) |>
       dplyr::tibble() |>
       dplyr::arrange(
-        combinationId,
-        combinationSubId,
-        combinationSize
+        .data$combinationId,
+        .data$combinationSubId,
+        .data$combinationSize
       )
     return(resultDF)
   }

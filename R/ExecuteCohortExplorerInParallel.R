@@ -62,7 +62,7 @@ executeCohortExplorerInParallel <-
 
       if (!is.null(cohortIds)) {
         cohortDefinitionSet <- cohortDefinitionSet |>
-          dplyr::filter(cohortId %in% cohortIds)
+          dplyr::filter(.data$cohortId %in% cohortIds)
       }
 
       for (i in (1:nrow(cohortDefinitionSet))) {

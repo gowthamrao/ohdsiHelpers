@@ -15,12 +15,12 @@ reportOnConceptRecordCount <-
 
     sourceKey <- cdmSources |>
       dplyr::select(
-        sourceKey,
-        databaseShortName
+        .data$sourceKey,
+        .data$databaseShortName
       ) |>
-      dplyr::rename(database = databaseShortName) |>
+      dplyr::rename(database = .data$databaseShortName) |>
       dplyr::mutate(
-        database = database |>
+        database = .data$database |>
           SqlRender::snakeCaseToCamelCase() |>
           SqlRender::camelCaseToTitleCase()
       )
@@ -62,31 +62,31 @@ reportOnConceptRecordCount <-
 
     conceptSetByDataSource <- personsWithConceptSet |>
       dplyr::select(
-        sourceKey,
-        subjectCount,
-        minDate,
-        maxDate,
-        ageAvg
+        .data$sourceKey,
+        .data$subjectCount,
+        .data$minDate,
+        .data$maxDate,
+        .data$ageAvg
       ) |>
       dplyr::left_join(
         malesWithExposure |>
           dplyr::select(
-            sourceKey,
-            subjectCount
+            .data$sourceKey,
+            .data$subjectCount
           ) |>
-          dplyr::rename(maleCount = subjectCount)
+          dplyr::rename(maleCount = .data$subjectCount)
       ) |>
-      dplyr::mutate(male = maleCount / subjectCount) |>
+      dplyr::mutate(male = .data$maleCount / .data$subjectCount) |>
       dplyr::inner_join(sourceKey) |>
       dplyr::select(
-        database,
-        subjectCount,
-        ageAvg,
-        male,
-        minDate,
-        maxDate
+        .data$database,
+        .data$subjectCount,
+        .data$ageAvg,
+        .data$male,
+        .data$minDate,
+        .data$maxDate
       ) |>
-      dplyr::arrange(dplyr::desc(subjectCount))
+      dplyr::arrange(dplyr::desc(.data$subjectCount))
 
     # table 2: concepts by data source ----
     standardConceptsByDataSource <-
@@ -108,29 +108,29 @@ reportOnConceptRecordCount <-
         )
       ) |>
       dplyr::select(
-        conceptName,
-        conceptClassId,
-        sourceKey,
-        subjectCount
+        .data$conceptName,
+        .data$conceptClassId,
+        .data$sourceKey,
+        .data$subjectCount
       ) |>
       dplyr::inner_join(sourceKey) |>
       dplyr::select(
-        database,
-        conceptName,
-        conceptClassId,
-        subjectCount
+        .data$database,
+        .data$conceptName,
+        .data$conceptClassId,
+        .data$subjectCount
       ) |>
       dplyr::group_by(
-        database,
-        conceptName,
-        conceptClassId
+        .data$database,
+        .data$conceptName,
+        .data$conceptClassId
       ) |>
-      dplyr::summarise(subjectCount = max(subjectCount)) |>
+      dplyr::summarise(subjectCount = max(.data$subjectCount)) |>
       dplyr::ungroup() |>
       tidyr::pivot_wider(
         id_cols = c(
-          conceptName,
-          conceptClassId
+          .data$conceptName,
+          .data$conceptClassId
         ),
         names_from = database,
         values_fill = 0,
@@ -158,20 +158,20 @@ reportOnConceptRecordCount <-
     conceptSetTrendByMonth <- conceptSetTrendByMonth |>
       dplyr::mutate(
         date = as.Date(paste0(
-          calendarYear,
+          .data$calendarYear,
           "-",
-          calendarMonth,
+          .data$calendarMonth,
           "-",
           1
         )),
-        count = subjectCount
+        count = .data$subjectCount
       ) |>
       dplyr::select(
-        date,
-        count,
-        database
+        .data$date,
+        .data$count,
+        .data$database
       ) |>
-      dplyr::arrange(date) |>
+      dplyr::arrange(.data$date) |>
       OhdsiPlots::renderTrendGraph(
         groupBy = "database",
         smoothLines = TRUE,
@@ -263,11 +263,11 @@ reportOnConceptRecordCount <-
       ) |>
       dplyr::filter(genderConceptId %in% c(8507, 8532)) |>
       dplyr::select(
-        ageGroup,
-        genderConceptId,
-        calendarYear,
-        subjectCount,
-        sourceKey
+        .data$ageGroup,
+        .data$genderConceptId,
+        .data$calendarYear,
+        .data$subjectCount,
+        .data$sourceKey
       ) |>
       dplyr::mutate(
         ageGroup = paste0(
@@ -286,10 +286,10 @@ reportOnConceptRecordCount <-
       ) |>
       dplyr::inner_join(sourceKey) |>
       dplyr::select(
-        database,
-        ageGroup,
-        sex,
-        count
+        .data$database,
+        .data$ageGroup,
+        .data$sex,
+        .data$count
       )
 
     dataSources <-
@@ -301,7 +301,7 @@ reportOnConceptRecordCount <-
     for (j in (1:length(dataSources))) {
       dataSource <- dataSources[[j]]
       data <- report$populationPyramidDataEntirePeriodData |>
-        dplyr::filter(database == dataSource)
+        dplyr::filter(database == !!dataSource)
       populationPyramidDataEntirePeriodDataPlots[[dataSource]] <-
         OhdsiPlots::createPopulationPyramid(data = data, title = dataSource)
     }

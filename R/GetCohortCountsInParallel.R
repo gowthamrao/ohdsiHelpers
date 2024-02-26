@@ -53,19 +53,19 @@ getCohortCountsInParallel <- function(cdmSources = NULL,
 
   results <- c()
   results$cohortCounts <- cohortCounts |>
-    dplyr::rename(cohortId = cohortDefinitionId) |>
+    dplyr::rename(cohortId = .data$cohortDefinitionId) |>
     dplyr::arrange(
-      cohortId,
-      databaseKey
+      .data$cohortId,
+      .data$databaseKey
     ) |>
-    dplyr::rename(sourceKey = databaseKey)
+    dplyr::rename(sourceKey = .data$databaseKey)
 
   results$databaseId$cohortSubjects <-
     results$cohortCounts |>
     dplyr::select(
-      cohortId,
-      cohortSubjects,
-      databaseId
+      .data$cohortId,
+      .data$cohortSubjects,
+      .data$databaseId
     ) |>
     tidyr::pivot_wider(
       id_cols = c("cohortId"),
@@ -73,14 +73,14 @@ getCohortCountsInParallel <- function(cdmSources = NULL,
       values_from = "cohortSubjects",
       values_fill = 0
     ) |>
-    dplyr::arrange(cohortId)
+    dplyr::arrange(.data$cohortId)
 
   results$databaseId$cohortEntries <-
     results$cohortCounts |>
     dplyr::select(
-      cohortId,
-      cohortEntries,
-      databaseId
+      .data$cohortId,
+      .data$cohortEntries,
+      .data$databaseId
     ) |>
     tidyr::pivot_wider(
       id_cols = c("cohortId"),
@@ -88,14 +88,14 @@ getCohortCountsInParallel <- function(cdmSources = NULL,
       values_from = "cohortEntries",
       values_fill = 0
     ) |>
-    dplyr::arrange(cohortId)
+    dplyr::arrange(.data$cohortId)
 
   results$sourceKey$cohortSubjects <-
     results$cohortCounts |>
     dplyr::select(
-      cohortId,
-      cohortSubjects,
-      sourceKey
+      .data$cohortId,
+      .data$cohortSubjects,
+      .data$sourceKey
     ) |>
     tidyr::pivot_wider(
       id_cols = c("cohortId"),
@@ -103,14 +103,14 @@ getCohortCountsInParallel <- function(cdmSources = NULL,
       values_from = "cohortSubjects",
       values_fill = 0
     ) |>
-    dplyr::arrange(cohortId)
+    dplyr::arrange(.data$cohortId)
 
   results$sourceKey$cohortEntries <-
     results$cohortCounts |>
     dplyr::select(
-      cohortId,
-      cohortEntries,
-      sourceKey
+      .data$cohortId,
+      .data$cohortEntries,
+      .data$sourceKey
     ) |>
     tidyr::pivot_wider(
       id_cols = c("cohortId"),
@@ -118,7 +118,7 @@ getCohortCountsInParallel <- function(cdmSources = NULL,
       values_from = "cohortEntries",
       values_fill = 0
     ) |>
-    dplyr::arrange(cohortId)
+    dplyr::arrange(.data$cohortId)
 
   return(results)
 }

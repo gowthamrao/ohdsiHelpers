@@ -118,7 +118,7 @@ renderTranslateQuerySqlInParallel <- function(cdmSources,
   if (length(filesToRead) > 0) {
     df <-
       dplyr::tibble(fileNames = filesToRead) |>
-      dplyr::filter(stringr::str_detect(string = fileNames, pattern = sourceKeys))
+      dplyr::filter(stringr::str_detect(string = .data$fileNames, pattern = sourceKeys))
 
     # Read and combine all outputData data
     outputData <- c()

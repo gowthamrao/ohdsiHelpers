@@ -40,13 +40,13 @@ editCohortGeneratorIncrementalLog <- function(incrementalFolder,
   # If there are cohort IDs specified for deletion, filter them out
   if (!is.null(deleteCohortIds)) {
     cohortGenerator <- cohortGenerator |>
-      dplyr::filter(!cohortId %in% deleteCohortIds)
+      dplyr::filter(!.data$cohortId %in% deleteCohortIds)
   }
 
   # If there are cohort IDs specified for keep
   if (!is.null(keepCohortIds)) {
     cohortGenerator <- cohortGenerator |>
-      dplyr::filter(cohortId %in% keepCohortIds)
+      dplyr::filter(.data$cohortId %in% keepCohortIds)
   }
 
   # Write the updated data frame back to the CSV file

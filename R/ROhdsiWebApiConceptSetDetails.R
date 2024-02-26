@@ -47,7 +47,7 @@ rOhdsiWebApiConceptSetDetails <- function(baseUrl,
   output$concepts <-
     conceptIdDetails |>
     dplyr::distinct() |>
-    dplyr::arrange(conceptId)
+    dplyr::arrange(.data$conceptId)
   output$resolved <- resolveConceptSets |>
     unique() |>
     sort()

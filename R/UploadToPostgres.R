@@ -21,7 +21,7 @@ uploadToPostgres <- function(pathWithZipFiles,
     # reading the tables in cohort diagnostics results data model
     tablesInResultsDataModel <-
       resultsModelSpecifications |>
-      dplyr::select(tableName) |>
+      dplyr::select(.data$tableName) |>
       dplyr::distinct() |>
       dplyr::arrange() |>
       dplyr::pull()

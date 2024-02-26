@@ -67,7 +67,7 @@ prettyReportKabbleTable <- function(dataFrame,
           full_width = FALSE,
           position = "center"
         ) |>
-        kableExtra::add_header_above(c(" " = ncol(dfFormatted), . = captionStyle))
+        kableExtra::add_header_above(c(" " = ncol(.data$dfFormatted), . = captionStyle))
     } else {
       # For other styles, assume it's a CSS class for HTML output
       table <- table |>

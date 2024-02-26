@@ -41,7 +41,9 @@ getCovariateCoOccurrence <- function(covariateData,
                                      eventCohortsOfInterest,
                                      returnPersonLevelData = FALSE,
                                      reduced = TRUE,
-                                     flagCohortIds = NULL) {
+                                     flagCohortIds = NULL,
+                                     covariateCohortAnalysisId = 150,
+                                     maxFeatures = 10) {
   # Asserting input validity
   checkmate::assertIntegerish(exitCohortIds, null.ok = TRUE)
   checkmate::assertIntegerish(entryCohortIds, null.ok = TRUE)
@@ -59,16 +61,16 @@ getCovariateCoOccurrence <- function(covariateData,
 
     # Determine the maximum time ID for each row ID in exit cohorts
     rowIdMaxTimeId <- covariateData$covariates |>
-      dplyr::filter(covariateId %in% exitCovariateIds) |>
-      dplyr::group_by(rowId) |>
-      dplyr::summarise(maxTimeId = min(timeId, na.rm = TRUE)) |>
+      dplyr::filter(.data$covariateId %in% exitCovariateIds) |>
+      dplyr::group_by(.data$rowId) |>
+      dplyr::summarise(maxTimeId = min(.data$timeId, na.rm = TRUE)) |>
       dplyr::ungroup()
 
     # Filter covariates based on time ID constraints
     covariateData$covariates <- covariateData$covariates |>
       dplyr::left_join(rowIdMaxTimeId, by = "rowId") |>
-      dplyr::filter(timeId < maxTimeId | is.na(maxTimeId)) |>
-      dplyr::select(-maxTimeId)
+      dplyr::filter(.data$timeId < .data$maxTimeId | is.na(.data$maxTimeId)) |>
+      dplyr::select(-.data$maxTimeId)
 
     # Remove unwanted cohort IDs
     cohortIdsToRemove <-
@@ -77,15 +79,15 @@ getCovariateCoOccurrence <- function(covariateData,
     covariateCohortIdsToRemove <-
       convertCohortIdToCovariateId(
         cohortIds = cohortIdsToRemove,
-        cohortCovariateAnalysisId = analysisId
+        cohortCovariateAnalysisId = covariateCohortAnalysisId
       )
 
     # Filter out the unwanted cohorts from covariates and covariate reference
     covariateData$covariates <- covariateData$covariates |>
-      dplyr::filter(!covariateId %in% covariateCohortIdsToRemove)
+      dplyr::filter(!.data$covariateId %in% covariateCohortIdsToRemove)
 
     covariateData$covariateRef <- covariateData$covariateRef |>
-      dplyr::filter(!covariateId %in% covariateCohortIdsToRemove)
+      dplyr::filter(!.data$covariateId %in% covariateCohortIdsToRemove)
   }
 
   # Handling entry cohorts
@@ -93,21 +95,21 @@ getCovariateCoOccurrence <- function(covariateData,
     entryCovariateIds <-
       convertCohortIdToCovariateId(
         cohortIds = entryCohortIds,
-        cohortCovariateAnalysisId = analysisId
+        cohortCovariateAnalysisId = covariateCohortAnalysisId
       )
 
     # Determine the minimum time ID for each row ID in entry cohorts
     rowIdMinTimeId <- covariateData$covariates |>
-      dplyr::filter(covariateId %in% entryCovariateIds) |>
-      dplyr::group_by(rowId) |>
-      dplyr::summarise(minTimeId = min(timeId, na.rm = TRUE)) |>
+      dplyr::filter(.data$covariateId %in% entryCovariateIds) |>
+      dplyr::group_by(.data$rowId) |>
+      dplyr::summarise(minTimeId = min(.data$timeId, na.rm = TRUE)) |>
       dplyr::ungroup()
 
     # Filter covariates based on time ID constraints for entry cohorts
     covariateData$covariates <- covariateData$covariates |>
       dplyr::left_join(rowIdMinTimeId, by = "rowId") |>
-      dplyr::filter(timeId >= minTimeId) |>
-      dplyr::select(-minTimeId)
+      dplyr::filter(.data$timeId >= .data$minTimeId) |>
+      dplyr::select(-.data$minTimeId)
 
     # Remove unwanted cohort IDs for entry cohorts
     cohortIdsToRemove <-
@@ -116,14 +118,14 @@ getCovariateCoOccurrence <- function(covariateData,
     covariateCohortIdsToRemove <-
       convertCohortIdToCovariateId(
         cohortIds = entryCohortIds,
-        cohortCovariateAnalysisId = analysisId
+        cohortCovariateAnalysisId = covariateCohortAnalysisId
       )
 
     covariateData$covariates <- covariateData$covariates |>
-      dplyr::filter(!covariateId %in% covariateCohortIdsToRemove)
+      dplyr::filter(!.data$covariateId %in% covariateCohortIdsToRemove)
 
     covariateData$covariateRef <- covariateData$covariateRef |>
-      dplyr::filter(!covariateId %in% covariateCohortIdsToRemove)
+      dplyr::filter(!.data$covariateId %in% covariateCohortIdsToRemove)
   }
 
   # Extract population size from metadata
@@ -133,8 +135,8 @@ getCovariateCoOccurrence <- function(covariateData,
   # Process time reference for readability
   timeRef <- covariateData$timeRef |>
     dplyr::collect() |>
-    dplyr::mutate(timeLabel = paste0(startDay, "d to ", endDay, "d")) |>
-    dplyr::select(timeId, timeLabel) |>
+    dplyr::mutate(timeLabel = paste0(.data$startDay, "d to ", .data$endDay, "d")) |>
+    dplyr::select(.data$timeId, .data$timeLabel) |>
     dplyr::ungroup()
 
   # Collect analysis reference
@@ -145,18 +147,18 @@ getCovariateCoOccurrence <- function(covariateData,
   # Process cohort reference for readability
   covariateRef <- covariateData$covariateRef |>
     dplyr::collect() |>
-    dplyr::mutate(covariateName = stringr::str_extract(covariateName, "(?<=: )\\w+")) |>
-    dplyr::mutate(cohortId = (covariateId - analysisId) / 1000) |>
-    dplyr::select(cohortId, covariateId, covariateName) |>
-    dplyr::rename(cohortName = covariateName) |>
+    dplyr::mutate(covariateName = stringr::str_extract(.data$covariateName, "(?<=: )\\w+")) |>
+    dplyr::mutate(cohortId = (.data$covariateId - .data$analysisId) / 1000) |>
+    dplyr::select(.data$cohortId, .data$covariateId, .data$covariateName) |>
+    dplyr::rename(cohortName = .data$covariateName) |>
     dplyr::distinct() |>
-    dplyr::arrange(cohortId) |>
+    dplyr::arrange(.data$cohortId) |>
     dplyr::inner_join(
       eventCohortsOfInterest |>
         dplyr::select(
-          covariateId,
-          newCovariateId,
-          newCovariateName
+          .data$covariateId,
+          .data$newCovariateId,
+          .data$newCovariateName
         ) |>
         dplyr::distinct(),
       by = "covariateId"
@@ -185,53 +187,53 @@ getCovariateCoOccurrence <- function(covariateData,
 
   # Generate combinations of covariates for each person and time
   covariateCoOccurrenceData <- covariateData$covariates |>
-    dplyr::select(rowId, covariateId, timeId) |>
-    dplyr::rename(id = rowId) |>
+    dplyr::select(.data$rowId, .data$covariateId, .data$timeId) |>
+    dplyr::rename(id = .data$rowId) |>
     dplyr::collect() |>
     dplyr::inner_join(covariateRef,
       by = "covariateId"
     ) |>
     dplyr::select(
-      id,
-      timeId,
-      newCovariateId,
-      flag
+      .data$id,
+      .data$timeId,
+      .data$newCovariateId,
+      .data$flag
     ) |>
-    dplyr::group_by(id, timeId, newCovariateId) |>
-    dplyr::summarise(flag = max(flag), .groups = "keep") |>
+    dplyr::group_by(.data$id, .data$timeId, .data$newCovariateId) |>
+    dplyr::summarise(flag = max(.data$flag), .groups = "keep") |>
     dplyr::ungroup() |>
-    dplyr::arrange(id, timeId, newCovariateId) |>
-    dplyr::group_by(id, timeId) |>
+    dplyr::arrange(.data$id, .data$timeId, .data$newCovariateId) |>
+    dplyr::group_by(.data$id, .data$timeId) |>
     dplyr::summarise(
-      covariateCombinationId = paste(sort(newCovariateId), collapse = ", "),
-      flag = max(flag)
+      covariateCombinationId = paste(sort(.data$newCovariateId), collapse = ", "),
+      flag = max(.data$flag)
     ) |>
     dplyr::ungroup() |>
-    dplyr::arrange(id, timeId)
+    dplyr::arrange(.data$id, .data$timeId)
 
   # Aggregate and identify rare covariate combinations
   covariateCoOccurrenceRef <- covariateCoOccurrenceData |>
-    dplyr::group_by(timeId, covariateCombinationId) |>
-    dplyr::summarise(count = dplyr::n_distinct(id)) |>
-    dplyr::arrange(dplyr::desc(count)) |>
+    dplyr::group_by(.data$timeId, .data$covariateCombinationId) |>
+    dplyr::summarise(count = dplyr::n_distinct(.data$id)) |>
+    dplyr::arrange(dplyr::desc(.data$count)) |>
     dplyr::mutate(rn = dplyr::row_number()) |>
     dplyr::mutate(isRare = dplyr::if_else(
-      condition = (rn <= (maxFeatures - 1)),
+      condition = (.data$rn <= (maxFeatures - 1)),
       true = 0,
       false = 1
     )) |>
-    dplyr::select(timeId, covariateCombinationId, isRare, count) |>
+    dplyr::select(.data$timeId, .data$covariateCombinationId, .data$isRare, .data$count) |>
     dplyr::distinct()
 
   # Function to replace ID with covariate name
   replaceWithCovariateName <- function(id) {
     covariateRefToMatch <- covariateRef |>
       dplyr::select(
-        newCovariateId,
-        newCovariateName
+        .data$newCovariateId,
+        .data$newCovariateName
       ) |>
       dplyr::distinct() |>
-      dplyr::arrange(newCovariateId)
+      dplyr::arrange(.data$newCovariateId)
     matchIdx <-
       min(which(covariateRefToMatch$newCovariateId == as.numeric(id)))
     if (length(matchIdx) > 0) {
@@ -269,9 +271,9 @@ getCovariateCoOccurrence <- function(covariateData,
   if (returnPersonLevelData) {
     result$covariateCoOccurrenceData <- covariateCoOccurrenceData |>
       dplyr::arrange(
-        id,
-        timeId,
-        covariateCombinationId
+        .data$id,
+        .data$timeId,
+        .data$covariateCombinationId
       )
   }
   result$covariateRef <- covariateRef
@@ -285,39 +287,39 @@ getCovariateCoOccurrence <- function(covariateData,
       dplyr::inner_join(
         result$covariateCoOccurrenceRef |>
           dplyr::select(
-            timeId,
-            covariateCombinationId,
-            covariateCombinationReduced
+            .data$timeId,
+            .data$covariateCombinationId,
+            .data$covariateCombinationReduced
           ) |>
-          dplyr::rename(covariateCombination = covariateCombinationReduced),
+          dplyr::rename(covariateCombination = .data$covariateCombinationReduced),
         by = c(
           "timeId",
           "covariateCombinationId"
         )
       ) |>
       dplyr::arrange(
-        id,
-        timeId
+        .data$id,
+        .data$timeId
       ) |>
       tidyr::pivot_wider(
         id_cols = c(id),
         names_prefix = "node",
-        names_from = timeId,
-        values_from = covariateCombination
+        names_from = .data$timeId,
+        values_from = .data$covariateCombination
       ) |>
       dplyr::group_by(dplyr::across(dplyr::starts_with("node"))) |> # Group by columns starting with "level"
       dplyr::summarize(size = dplyr::n(), .groups = "keep") |>
       dplyr::ungroup() |>
-      dplyr::arrange(dplyr::desc(size)) |>
+      dplyr::arrange(dplyr::desc(.data$size)) |>
       d3r::d3_nest(value_cols = "size")
   } else {
     result$sunburstRData <- covariateCoOccurrenceData |>
       dplyr::inner_join(
         result$covariateCoOccurrenceRef |>
           dplyr::select(
-            timeId,
-            covariateCombinationId,
-            covariateCombination
+            .data$timeId,
+            .data$covariateCombinationId,
+            .data$covariateCombination
           ),
         by = c(
           "timeId",
@@ -325,19 +327,19 @@ getCovariateCoOccurrence <- function(covariateData,
         )
       ) |>
       dplyr::arrange(
-        id,
-        timeId
+        .data$id,
+        .data$timeId
       ) |>
       tidyr::pivot_wider(
         id_cols = c(id),
         names_prefix = "node",
-        names_from = timeId,
-        values_from = covariateCombination
+        names_from = .data$timeId,
+        values_from = .data$covariateCombination
       ) |>
       dplyr::group_by(dplyr::across(dplyr::starts_with("node"))) |> # Group by columns starting with "level"
       dplyr::summarize(size = dplyr::n(), .groups = "keep") |>
       dplyr::ungroup() |>
-      dplyr::arrange(dplyr::desc(size)) |>
+      dplyr::arrange(dplyr::desc(.data$size)) |>
       d3r::d3_nest(value_cols = "size")
   }
 
@@ -347,19 +349,19 @@ getCovariateCoOccurrence <- function(covariateData,
       dplyr::inner_join(
         result$covariateCoOccurrenceRef |>
           dplyr::select(
-            timeId,
-            covariateCombinationId,
-            covariateCombinationReduced
+            .data$timeId,
+            .data$covariateCombinationId,
+            .data$covariateCombinationReduced
           ) |>
-          dplyr::rename(covariateCombination = covariateCombinationReduced),
+          dplyr::rename(covariateCombination = .data$covariateCombinationReduced),
         by = c(
           "timeId",
           "covariateCombinationId"
         )
       ) |>
       dplyr::arrange(
-        id,
-        timeId
+        .data$id,
+        .data$timeId
       ) |>
       tidyr::pivot_wider(
         id_cols = c(id, flag),
@@ -370,16 +372,16 @@ getCovariateCoOccurrence <- function(covariateData,
       dplyr::group_by(flag, dplyr::across(dplyr::starts_with("node"))) |> # Group by columns starting with "level"
       dplyr::summarize(size = dplyr::n(), .groups = "keep") |>
       dplyr::ungroup() |>
-      dplyr::arrange(flag, dplyr::desc(size))
+      dplyr::arrange(.data$flag, dplyr::desc(.data$size))
   } else {
     ggAlluvialLodeForm <-
       result$covariateCoOccurrenceData |>
       dplyr::inner_join(
         result$covariateCoOccurrenceRef |>
           dplyr::select(
-            timeId,
-            covariateCombinationId,
-            covariateCombination
+            .data$timeId,
+            .data$covariateCombinationId,
+            .data$covariateCombination
           ),
         by = c(
           "timeId",
@@ -387,8 +389,8 @@ getCovariateCoOccurrence <- function(covariateData,
         )
       ) |>
       dplyr::arrange(
-        id,
-        timeId
+        .data$id,
+        .data$timeId
       ) |>
       tidyr::pivot_wider(
         id_cols = c(id, flag),
@@ -399,7 +401,7 @@ getCovariateCoOccurrence <- function(covariateData,
       dplyr::group_by(flag, dplyr::across(dplyr::starts_with("node"))) |> # Group by columns starting with "level"
       dplyr::summarize(size = dplyr::n(), .groups = "keep") |>
       dplyr::ungroup() |>
-      dplyr::arrange(flag, dplyr::desc(size))
+      dplyr::arrange(flag, dplyr::desc(.data$size))
   }
 
   colPositions <- which(grepl("node", names(ggAlluvialLodeForm)))

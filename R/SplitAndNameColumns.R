@@ -73,7 +73,7 @@ splitAndNameColumns <-
 
         dataFrame <- dataFrame |>
           dplyr::select(-columnNames) |>
-          dplyr::mutate(newColumn = stringr::str_trim(string = newColumn, side = "right"))
+          dplyr::mutate(newColumn = stringr::str_trim(string = .data$newColumn, side = "right"))
 
         return(dataFrame)
       }

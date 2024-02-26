@@ -2,8 +2,9 @@
 deleteInstantiatedCohortsInParrallel <- function(cdmSources = NULL,
                                                  cohortIdsToKeep = NULL,
                                                  cohortIdsToDelete = NULL,
-                                                 cohort_table_name) {
-  if (!is.null(cohortIdsToKeep) && !is.njull(cohortIdsToDelete)) {
+                                                 cohortTableNames,
+                                                 databaseIds) {
+  if (!is.null(cohortIdsToKeep) && !is.null(cohortIdsToDelete)) {
     stop("pick one - either delete or keep. cant do both")
   }
 

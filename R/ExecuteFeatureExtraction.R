@@ -68,7 +68,7 @@ executeFeatureExtraction <-
 
         if (!is.null(covariateCohortIds)) {
           covariateCohortDefinitionSet <- covariateCohortDefinitionSet |>
-            dplyr::filter(cohortId %in% covariateCohortIds)
+            dplyr::filter(.data$cohortId %in% covariateCohortIds)
         }
 
         if (is.null(covariateCohortTable)) {

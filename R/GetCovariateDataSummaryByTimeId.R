@@ -33,14 +33,14 @@ getCovaraiteDataSummaryByTimeId <- function(covariateData,
 
   # Select covariates and exclude covariateValue
   covariates <- covariateData$covariates |>
-    dplyr::select(-covariateValue)
+    dplyr::select(-.data$covariateValue)
 
   # Filter covariates based on startDay, if provided
   if (!is.null(startDay)) {
     covariates <-
       covariates |> dplyr::inner_join(
         covariateData$timeRef |>
-          dplyr::filter(startDay >= 0),
+          dplyr::filter(.data$startDay >= 0),
         by = "timeId"
       )
   } else {
@@ -54,71 +54,71 @@ getCovaraiteDataSummaryByTimeId <- function(covariateData,
       filterCovariateIds <-
         ((cohortDefinitionSet$cohortId * 1000) + cohortCovariateAnalysisId) |> unique()
       covariates <- covariates |>
-        dplyr::filter(covariateId %in% filterCovariateIds)
+        dplyr::filter(.data$covariateId %in% filterCovariateIds)
     }
   }
 
   covariates <- covariates |>
-    dplyr::filter(covariateId > 0)
+    dplyr::filter(.data$covariateId > 0)
 
   # Calculate summary statistics for covariates
   outputAll <- suppressWarnings(
     covariates |>
-      dplyr::select(-timeId) |>
-      dplyr::group_by(rowId, covariateId) |>
+      dplyr::select(-.data$timeId) |>
+      dplyr::group_by(.data$rowId, .data$covariateId) |>
       dplyr::summarise(
-        startDay = min(startDay),
-        endDay = min(endDay),
+        startDay = min(.data$startDay),
+        endDay = min(.data$endDay),
         .groups = "drop"
       ) |>
       dplyr::distinct() |>
-      dplyr::arrange(startDay, endDay, covariateId) |>
-      dplyr::group_by(startDay, endDay, covariateId) |>
-      dplyr::summarise(rowCount = dplyr::n_distinct(rowId)) |>
+      dplyr::arrange(.data$startDay, .data$endDay, .data$covariateId) |>
+      dplyr::group_by(.data$startDay, .data$endDay, .data$covariateId) |>
+      dplyr::summarise(rowCount = dplyr::n_distinct(.data$rowId)) |>
       dplyr::ungroup() |>
-      dplyr::group_by(covariateId) |>
-      dplyr::mutate(cumulativeSum = cumsum(rowCount)) |>
+      dplyr::group_by(.data$covariateId) |>
+      dplyr::mutate(cumulativeSum = cumsum(.data$rowCount)) |>
       dplyr::ungroup() |>
-      dplyr::arrange(startDay, endDay, covariateId) |>
+      dplyr::arrange(.data$startDay, .data$endDay, .data$covariateId) |>
       dplyr::mutate(
-        proportion = round((rowCount / populationSize), 2),
-        cumulativeProportion = round((cumulativeSum / populationSize), 2)
+        proportion = round((.data$rowCount / .data$populationSize), 2),
+        cumulativeProportion = round((.data$cumulativeSum / .data$populationSize), 2)
       ) |>
       dplyr::arrange(
-        covariateId,
-        startDay,
-        endDay
+        .data$covariateId,
+        .data$startDay,
+        .data$endDay
       ) |>
       dplyr::collect()
   )
 
   outputAggegated <- suppressWarnings(
     covariates |>
-      dplyr::select(-timeId) |>
-      dplyr::group_by(rowId) |>
+      dplyr::select(-.data$timeId) |>
+      dplyr::group_by(.data$rowId) |>
       dplyr::summarise(
-        startDay = min(startDay),
-        endDay = min(endDay),
+        startDay = min(.data$startDay),
+        endDay = min(.data$endDay),
         .groups = "drop"
       ) |>
       dplyr::distinct() |>
-      dplyr::arrange(startDay, endDay) |>
-      dplyr::group_by(startDay, endDay) |>
-      dplyr::summarise(rowCount = dplyr::n_distinct(rowId)) |>
+      dplyr::arrange(.data$startDay, .data$endDay) |>
+      dplyr::group_by(.data$startDay, .data$endDay) |>
+      dplyr::summarise(rowCount = dplyr::n_distinct(.data$rowId)) |>
       dplyr::ungroup() |>
-      dplyr::mutate(cumulativeSum = cumsum(rowCount)) |>
+      dplyr::mutate(cumulativeSum = cumsum(.data$rowCount)) |>
       dplyr::ungroup() |>
-      dplyr::arrange(startDay, endDay) |>
+      dplyr::arrange(.data$startDay, .data$endDay) |>
       dplyr::mutate(
-        proportion = round((rowCount / populationSize), 2),
-        cumulativeProportion = round((cumulativeSum / populationSize), 2)
+        proportion = round((.data$rowCount / .data$populationSize), 2),
+        cumulativeProportion = round((.data$cumulativeSum / .data$populationSize), 2)
       ) |>
       dplyr::arrange(
-        startDay,
-        endDay
+        .data$startDay,
+        .data$endDay
       ) |>
       dplyr::collect() |>
-      dplyr::mutate(covariateId = (1000 + cohortCovariateAnalysisId))
+      dplyr::mutate(covariateId = (1000 + .data$cohortCovariateAnalysisId))
   )
 
   output <- dplyr::bind_rows(
@@ -126,29 +126,29 @@ getCovaraiteDataSummaryByTimeId <- function(covariateData,
     outputAggegated
   ) |>
     dplyr::arrange(
-      covariateId,
-      startDay,
-      endDay
+      .data$covariateId,
+      .data$startDay,
+      .data$endDay
     ) |>
     dplyr::relocate(
-      covariateId,
-      startDay,
-      endDay
+      .data$covariateId,
+      .data$startDay,
+      .data$endDay
     )
 
   if (!is.null(minProportion)) {
     output <- output |>
-      dplyr::filter(proportion > minProportion)
+      dplyr::filter(.data$proportion > minProportion)
   }
   if (!is.null(minCount)) {
     output <- output |>
-      dplyr::filter(rowCount > minCount)
+      dplyr::filter(.data$rowCount > minCount)
   }
 
   if (getCohortId) {
     output <- output |>
-      dplyr::mutate(cohortId = (covariateId - cohortCovariateAnalysisId) / 1000) |>
-      dplyr::relocate(cohortId)
+      dplyr::mutate(cohortId = (.data$covariateId - .data$cohortCovariateAnalysisId) / 1000) |>
+      dplyr::relocate(.data$cohortId)
   }
 
   if (!is.null(cohortDefinitionSet)) {
