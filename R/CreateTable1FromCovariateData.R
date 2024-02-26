@@ -129,7 +129,7 @@ CreateTable1FromCovariateData <- function(covariateData1,
   }
   
   
-  if (!is.null(table1Specifications)) {
+  if (is.null(table1Specifications)) {
     filteringCovariateIdsThatHaveMinThreshold <-
       processCovariateData(
         covariateData = covariateData,
@@ -170,7 +170,7 @@ CreateTable1FromCovariateData <- function(covariateData1,
     
     for (i in (1:length(analysisNames))) {
       analysisName <-
-        analysisNames[[i]] |> SqlRender::camelCaseToTitleCase()
+        analysisNames[[i]]
       covariateIds <- filteringCovariateIdsThatHaveMinThreshold |>
         dplyr::filter(analysisName %in% !!analysisName) |>
         dplyr::select(covariateId) |>
@@ -195,7 +195,7 @@ CreateTable1FromCovariateData <- function(covariateData1,
           analysisId = analysisIds,
           conceptIds = NULL,
           covariateIds = covariateIds,
-          label = analysisName
+          label = analysisName |> SqlRender::camelCaseToTitleCase() |> stringr::str_trim() |> stringr::str_squish()
         )
     }
     table1AnalysisSpecifications <-
