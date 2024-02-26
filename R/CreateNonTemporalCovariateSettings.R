@@ -80,7 +80,7 @@ createNonTemporalCovariateSettings <-
       addDescendantsToExclude = addDescendantsToExclude,
       includedCovariateIds = c(includedCovariateIds)
     )
-    
+
     if (!(is.null(startDayWindow2))) {
       covariateSettings2 <- FeatureExtraction::createCovariateSettings(
         useConditionGroupEraShortTerm = useConditionGroupEra,
@@ -108,7 +108,7 @@ createNonTemporalCovariateSettings <-
         includedCovariateIds = c(includedCovariateIds)
       )
     }
-    
+
     if (!(is.null(startDayWindow3))) {
       covariateSettings3 <- FeatureExtraction::createCovariateSettings(
         useConditionGroupEraMediumTerm = useConditionGroupEra,
@@ -136,24 +136,26 @@ createNonTemporalCovariateSettings <-
         includedCovariateIds = c(includedCovariateIds)
       )
     }
-    
+
     if (is.null(startDayWindow1)) {
       stop("The first time window must not be null")
     } else if (is.null(startDayWindow2) &
-               is.null(startDayWindow3)) {
+      is.null(startDayWindow3)) {
       covariateSettings <- list(covariateSettings1)
     } else if (!(is.null(startDayWindow2)) &
-               is.null(startDayWindow3)) {
+      is.null(startDayWindow3)) {
       covariateSettings <- list(covariateSettings1, covariateSettings2)
     } else if (!(is.null(startDayWindow3)) &
-               is.null(startDayWindow2)) {
+      is.null(startDayWindow2)) {
       covariateSettings <- list(covariateSettings1, covariateSettings3)
     } else {
       covariateSettings <-
-        list(covariateSettings1,
-             covariateSettings2,
-             covariateSettings3)
+        list(
+          covariateSettings1,
+          covariateSettings2,
+          covariateSettings3
+        )
     }
-    
+
     return(covariateSettings)
   }

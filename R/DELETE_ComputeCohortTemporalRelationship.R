@@ -17,7 +17,7 @@
 #'       stop("No connection or connectionDetails provided.")
 #'     }
 #'   }
-#'   
+#'
 #'   sql <-
 #'     SqlRender::loadRenderTranslateSql(
 #'       sqlFilename = "ComputeCohortTemporalRelationship.sql",
@@ -38,6 +38,6 @@
 #'       snakeCaseToCamelCase = TRUE
 #'     ) |>
 #'     dplyr::tibble()
-#'   
+#'
 #'   return(results)
 #' }

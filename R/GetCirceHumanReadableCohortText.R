@@ -21,24 +21,28 @@ getCirceHumanReadableCohortText <- function(cohortDefinition,
                                             includeConceptSets = FALSE,
                                             addUsefulHeaders = TRUE) {
   cohortJson <-
-    RJSONIO::toJSON(x = cohortDefinition,
-                    digits = 23,
-                    pretty = TRUE)
+    RJSONIO::toJSON(
+      x = cohortDefinition,
+      digits = 23,
+      pretty = TRUE
+    )
   circeExpression <-
     CirceR::cohortExpressionFromJson(expressionJson = cohortJson)
   circeExpressionMarkdown <-
     CirceR::cohortPrintFriendly(circeExpression)
   circeConceptSetListmarkdown <-
     CirceR::conceptSetListPrintFriendly(circeExpression$conceptSets)
-  
+
   if (addUsefulHeaders) {
     circeExpressionMarkdown <-
-      paste0("# ",
-             cohortName,
-             "\r\n\r\n",
-             circeExpressionMarkdown)
+      paste0(
+        "# ",
+        cohortName,
+        "\r\n\r\n",
+        circeExpressionMarkdown
+      )
   }
-  
+
   if (includeConceptSets) {
     circeExpressionMarkdown <-
       paste0(
@@ -50,7 +54,7 @@ getCirceHumanReadableCohortText <- function(cohortDefinition,
         circeConceptSetListmarkdown
       )
   }
-  
+
   htmlExpressionCohort <-
     markdown::renderMarkdown(text = circeExpressionMarkdown)
   htmlExpressionConceptSetExpression <-

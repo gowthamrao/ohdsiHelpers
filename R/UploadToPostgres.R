@@ -10,13 +10,13 @@ uploadToPostgres <- function(pathWithZipFiles,
                              ignoreCombined = TRUE,
                              readOnlyAccountToGrant = Sys.getenv("ohdaResultsReadOnlyUser")) {
   if (outputModel == "CohortDiagnostics") {
-    resultsModelSpecifications = CohortDiagnostics::getResultsDataModelSpecifications()
-    additionalTables = c(
-      'annotation',
-      'annotation_attributes',
-      'annotation_link',
-      'migration',
-      'package_version'
+    resultsModelSpecifications <- CohortDiagnostics::getResultsDataModelSpecifications()
+    additionalTables <- c(
+      "annotation",
+      "annotation_attributes",
+      "annotation_link",
+      "migration",
+      "package_version"
     )
     # reading the tables in cohort diagnostics results data model
     tablesInResultsDataModel <-
@@ -25,15 +25,17 @@ uploadToPostgres <- function(pathWithZipFiles,
       dplyr::distinct() |>
       dplyr::arrange() |>
       dplyr::pull()
-    tablesInResultsDataModel <- c(tablesInResultsDataModel,
-                                  additionalTables)
+    tablesInResultsDataModel <- c(
+      tablesInResultsDataModel,
+      additionalTables
+    )
   } else {
     stop("Only Cohort Diagnostics supported")
   }
-  
+
   connection <-
     DatabaseConnector::connect(connectionDetails = connectionDetails)
-  
+
   if (createSchemaIfNotExists) {
     DatabaseConnector::renderTranslateExecuteSql(
       connection = connection,
@@ -41,7 +43,7 @@ uploadToPostgres <- function(pathWithZipFiles,
       results_database_schema = resultsDatabaseSchema
     )
   }
-  
+
   if (dropOldTables) {
     for (i in (1:length(tablesInResultsDataModel))) {
       writeLines(paste0("Dropping table ", tablesInResultsDataModel[[i]]))
@@ -54,7 +56,7 @@ uploadToPostgres <- function(pathWithZipFiles,
       )
     }
   }
-  
+
   if (createTables) {
     CohortDiagnostics::createResultsDataModel(
       connectionDetails = connectionDetails,
@@ -62,7 +64,7 @@ uploadToPostgres <- function(pathWithZipFiles,
       tablePrefix = tablePrefix
     )
   }
-  
+
   listOfZipFilesToUpload <-
     list.files(
       path = pathWithZipFiles,
@@ -70,19 +72,23 @@ uploadToPostgres <- function(pathWithZipFiles,
       full.names = TRUE,
       recursive = TRUE
     )
-  
+
   if (ignoreCombined) {
     listOfZipFilesToUpload <-
-      listOfZipFilesToUpload[stringr::str_detect(string = listOfZipFilesToUpload,
-                                                 pattern = "Combined",
-                                                 negate = TRUE)]
+      listOfZipFilesToUpload[stringr::str_detect(
+        string = listOfZipFilesToUpload,
+        pattern = "Combined",
+        negate = TRUE
+      )]
   }
-  
+
   for (i in (1:length(listOfZipFilesToUpload))) {
     tempLocation <- file.path(tempdir(), basename(tempfile()))
-    unlink(x = tempLocation,
-           recursive = TRUE,
-           force = TRUE)
+    unlink(
+      x = tempLocation,
+      recursive = TRUE,
+      force = TRUE
+    )
     dir.create(tempLocation)
     if (outputModel == "CohortDiagnostics") {
       CohortDiagnostics::uploadResults(
@@ -94,11 +100,13 @@ uploadToPostgres <- function(pathWithZipFiles,
         tablePrefix = tablePrefix
       )
     }
-    unlink(x = tempLocation,
-           recursive = TRUE,
-           force = TRUE)
+    unlink(
+      x = tempLocation,
+      recursive = TRUE,
+      force = TRUE
+    )
   }
-  
+
   if (!is.null(readOnlyAccountToGrant)) {
     sqlGrant <-
       " GRANT SELECT ON ALL TABLES IN SCHEMA @results_database_schema to @read_only_account;
@@ -111,10 +119,12 @@ uploadToPostgres <- function(pathWithZipFiles,
         results_database_schema = resultsDatabaseSchema,
         read_only_account = readOnlyAccountToGrant
       )
-    DatabaseConnector::executeSql(connection = connection,
-                                  sql = sqlGrant)
+    DatabaseConnector::executeSql(
+      connection = connection,
+      sql = sqlGrant
+    )
   }
-  
+
   # Maintenance
   for (i in (1:length(tablesInResultsDataModel))) {
     # vacuum
@@ -131,6 +141,6 @@ uploadToPostgres <- function(pathWithZipFiles,
       )
     })
   }
-  
+
   DatabaseConnector::disconnect(connection = connection)
 }

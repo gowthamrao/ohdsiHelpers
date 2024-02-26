@@ -19,20 +19,22 @@ createObservedPersonsCohortInParallel <-
     cdmSources <- cdmSources |>
       dplyr::filter(.data$database %in% c(databaseIds)) |>
       dplyr::filter(.data$sequence == !!sequence)
-    
+
     x <- list()
     for (i in 1:nrow(cdmSources)) {
-      x[[i]] <- cdmSources[i,]
+      x[[i]] <- cdmSources[i, ]
     }
-    
+
     # use Parallel Logger to run in parallel
     cluster <-
-      ParallelLogger::makeCluster(numberOfThreads = min(as.integer(trunc(
-        parallel::detectCores() /
-          2
-      )),
-      length(x)))
-    
+      ParallelLogger::makeCluster(numberOfThreads = min(
+        as.integer(trunc(
+          parallel::detectCores() /
+            2
+        )),
+        length(x)
+      ))
+
     createObservedPersonsCohortX <- function(x,
                                              cohortTableName,
                                              startYear,
@@ -53,7 +55,7 @@ createObservedPersonsCohortInParallel <-
       )
       connection <-
         DatabaseConnector::connect(connectionDetails = connectionDetails)
-      
+
       createObservedPersonsCohort(
         connection = connection,
         cohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
@@ -69,9 +71,8 @@ createObservedPersonsCohortInParallel <-
         endDateStrategy = endDateStrategy,
         unit = unit
       )
-      
     }
-    
+
     ParallelLogger::clusterApply(
       cluster = cluster,
       x = x,
@@ -108,26 +109,26 @@ createObservedPersonsCohort <- function(connection,
                                         endDateStrategy = "cohort_start_date",
                                         unit = "day") {
   if (is.null(cohortIdStart)) {
-    cohortIdStart = startYear
+    cohortIdStart <- startYear
   }
-  
+
   endDaysToAdd <- 0
-  
+
   if (endYear < startYear) {
     stop("end year < start year")
   }
-  
+
   if (endDateStrategy == "cohort_start_date") {
-    exitStrategy = "cohort_start_date "
+    exitStrategy <- "cohort_start_date "
   } else if (endDateStrategy == "observation_period_end_date") {
-    exitStrategy = "observation_period_end_date "
+    exitStrategy <- "observation_period_end_date "
   } else if (is.integer(as.integer(endDateStrategy))) {
     endDaysToAdd <- as.integer(endDateStrategy)
     if (is.null(unit)) {
       stop("unit should be day, or year, or month")
     }
-    
-    exitStrategy = paste0(
+
+    exitStrategy <- paste0(
       "CASE WHEN observation_period_end_date >= DATEADD(",
       unit,
       ", ",
@@ -139,7 +140,7 @@ createObservedPersonsCohort <- function(connection,
   } else {
     stop(paste0(endDateStrategy, " is not supported."))
   }
-  
+
   calendarYearSequence <- rep(x = startYear:endYear)
   cohortDefinitionIds <-
     seq(
@@ -147,7 +148,7 @@ createObservedPersonsCohort <- function(connection,
       by = 1,
       length.out = length(calendarYearSequence)
     )
-  
+
   if (!overRide) {
     cohortCounts <- CohortGenerator::getCohortCounts(
       connection = connection,
@@ -155,7 +156,7 @@ createObservedPersonsCohort <- function(connection,
       cohortTable = cohortTableName,
       cohortIds = cohortDefinitionIds
     )
-    
+
     if (nrow(cohortCounts) > 0) {
       stop(
         paste0(
@@ -165,12 +166,13 @@ createObservedPersonsCohort <- function(connection,
           cohortTableName,
           ": ",
           paste0(cohortCounts$cohortId |> sort() |> unique(),
-                 collapse = ", ")
+            collapse = ", "
+          )
         )
       )
     }
   }
-  
+
   sql <- "
 
   DELETE FROM @cohort_database_schema.@cohort_table_name
@@ -210,7 +212,7 @@ createObservedPersonsCohort <- function(connection,
 
   UPDATE STATISTICS @cohort_database_schema.@cohort_table_name;
 "
-  
+
   DatabaseConnector::renderTranslateExecuteSql(
     connection = connection,
     sql = sql,
@@ -226,7 +228,7 @@ createObservedPersonsCohort <- function(connection,
     exit_strategy_sql = exitStrategy,
     cdm_database_schema = cdmdatabaseSchema
   )
-  
+
   cohortDefinitionset <-
     dplyr::tibble(
       cohortId = cohortDefinitionIds,
@@ -242,6 +244,6 @@ createObservedPersonsCohort <- function(connection,
         " prior observation days"
       )
     )
-  
+
   return(invisible(cohortDefinitionset))
 }

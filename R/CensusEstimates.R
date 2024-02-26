@@ -1,17 +1,21 @@
 #' @export
 getUsCensusEstimates <- function() {
-  readRDS(file.path("rds",
-                    "usCensusEstimatesAgeGroupSexCalendarYear.RDS"))
+  readRDS(file.path(
+    "rds",
+    "usCensusEstimatesAgeGroupSexCalendarYear.RDS"
+  ))
 }
 
 
 
 updateUsCensusEstimatesUsingApiCall <-
   function(censusApiKey = Sys.getenv("CENSUS_API_KEY")) {
-    tidycensus::census_api_key(key = censusApiKey,
-                               overwrite = TRUE,
-                               install = FALSE)
-    
+    tidycensus::census_api_key(
+      key = censusApiKey,
+      overwrite = TRUE,
+      install = FALSE
+    )
+
     censusUsEstimate <-
       tidycensus::get_estimates(
         geography = "state",
@@ -20,17 +24,23 @@ updateUsCensusEstimatesUsingApiCall <-
         breakdown_labels = TRUE,
         time_series = TRUE
       )
-    
+
     censusUsEstimatePlot <- censusUsEstimate |>
-      dplyr::group_by(year,
-                      SEX,
-                      AGEGROUP) |>
+      dplyr::group_by(
+        year,
+        SEX,
+        AGEGROUP
+      ) |>
       dplyr::summarise(count = sum(value)) |>
       dplyr::ungroup() |>
-      dplyr::rename(sex = SEX,
-                    ageGroup = AGEGROUP) |>
-      dplyr::filter(sex %in% c("Female", "Male"),
-                    year == 2020) |>
+      dplyr::rename(
+        sex = SEX,
+        ageGroup = AGEGROUP
+      ) |>
+      dplyr::filter(
+        sex %in% c("Female", "Male"),
+        year == 2020
+      ) |>
       dplyr::mutate(
         ageGroup = stringr::str_replace(
           string = ageGroup,

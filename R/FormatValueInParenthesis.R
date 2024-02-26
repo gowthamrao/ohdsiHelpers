@@ -32,18 +32,16 @@ formatPercent <- function(x,
 formatDecimalWithComma <- function(number, decimalPlaces = 1, round = TRUE) {
   integerPart <- floor(number)
   decimalPart <- number - integerPart
-  
+
   if (round) {
     decimalPart <- round(decimalPart, decimalPlaces)
   } else {
     decimalPart <- trunc(decimalPart * 10^decimalPlaces) / 10^decimalPlaces
   }
-  
+
   formattedIntegerPart <- formatC(integerPart, format = "d", big.mark = ",")
   decimalPartAsString <- formatC(decimalPart, format = "f", digits = decimalPlaces)
   formattedDecimalPart <- substr(decimalPartAsString, 3, nchar(decimalPartAsString))
-  
+
   return(paste(formattedIntegerPart, formattedDecimalPart, sep = "."))
 }
-
-

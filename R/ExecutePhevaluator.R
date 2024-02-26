@@ -32,7 +32,7 @@
 #'         "_",
 #'         cohortName
 #'       ))
-#' 
+#'
 #'     # Create analysis settings ----------------------------------------------------------------------------------------
 #'     covSettings <-
 #'       PheValuator::createDefaultCovariateSettings(
@@ -47,7 +47,7 @@
 #'         startDayWindow3 = startDayWindow3,
 #'         endDayWindow3 = endDayWindow3
 #'       )
-#' 
+#'
 #'     cohortArgsAcute <-
 #'       PheValuator::createCreateEvaluationCohortArgs(
 #'         xSpecCohortId = xSpecCohortId,
@@ -64,9 +64,9 @@
 #'         excludeModelFromEvaluation = FALSE,
 #'         falsePositiveNegativeSubjects = falsePositiveNegativeSubjects
 #'       )
-#' 
+#'
 #'     pheValuatorAnalysisList <- c()
-#' 
+#'
 #'     for (i in (1:nrow(cohortDefinitionSet))) {
 #'       conditionAlgTestArgs <-
 #'         PheValuator::createTestPhenotypeAlgorithmArgs(
@@ -88,7 +88,7 @@
 #'             cohortDefinitionSet[i, ]$splayPost
 #'           }
 #'         )
-#' 
+#'
 #'       analysis <-
 #'         PheValuator::createPheValuatorAnalysis(
 #'           analysisId = i,
@@ -98,29 +98,29 @@
 #'         )
 #'       pheValuatorAnalysisList[[i]] <- analysis
 #'     }
-#' 
+#'
 #'     PheValuator::savePheValuatorAnalysisList(
 #'       pheValuatorAnalysisList =
 #'         pheValuatorAnalysisList,
 #'       file =
 #'         file.path(outputFolder, "pheValuatorAnalysisSettings.json")
 #'     )
-#' 
+#'
 #'     pheValuatorAnalysisList <-
 #'       PheValuator::loadPheValuatorAnalysisList(file.path(outputFolder, "pheValuatorAnalysisSettings.json"))
-#' 
+#'
 #'     return(pheValuatorAnalysisList)
 #'   }
-#' 
+#'
 #' #'
 #' #' @export
 #' getPheValuatorAnalysisTable <- function(pheValuatorAnalysisList) {
 #'   data <- PheValuator:::createReferenceTable(pheValuatorAnalysisList)
 #'   return(data)
 #' }
-#' 
-#' 
-#' 
+#'
+#'
+#'
 #' #'
 #' #' @export
 #' executePheValuatorInParallel <- function(cdmSources,
@@ -185,16 +185,16 @@
 #'       cohortDefinitionSet = cohortDefinitionSet,
 #'       outputFolder = outputFolder
 #'     )
-#' 
+#'
 #'   cdmSources <- cdmSources |>
 #'     dplyr::filter(database %in% c(databaseIds)) |>
 #'     dplyr::filter(sequence == !!sequence)
-#' 
+#'
 #'   x <- list()
 #'   for (i in 1:nrow(cdmSources)) {
 #'     x[[i]] <- cdmSources[i, ]
 #'   }
-#' 
+#'
 #'   # use Parallel Logger to run in parallel
 #'   cluster <-
 #'     ParallelLogger::makeCluster(
@@ -207,7 +207,7 @@
 #'       ),
 #'       maxCores
 #'     )
-#' 
+#'
 #'   ## file logger
 #'   loggerName <-
 #'     paste0(
@@ -218,10 +218,10 @@
 #'         replacement = ""
 #'       )
 #'     )
-#'   
+#'
 #'   ParallelLogger::addDefaultFileLogger(fileName = file.path(outputFolder, paste0(loggerName, ".txt")))
-#' 
-#' 
+#'
+#'
 #'   executePheValuatorX <- function(x,
 #'                                   phenotype,
 #'                                   analysisName,
@@ -231,7 +231,7 @@
 #'                                   pheValuatorAnalysisList,
 #'                                   tempEmulationSchema) {
 #'     cohortTableName <- cohortTableNames$cohortTable
-#' 
+#'
 #'     connectionDetails <- DatabaseConnector::createConnectionDetails(
 #'       dbms = x$dbms,
 #'       user = keyring::key_get(userService),
@@ -239,16 +239,16 @@
 #'       server = x$serverFinal,
 #'       port = x$port
 #'     )
-#' 
+#'
 #'     pheValuatorOutputFolder <-
 #'       file.path(outputFolder, x$sourceKey)
-#' 
+#'
 #'     dir.create(
 #'       path = pheValuatorOutputFolder,
 #'       showWarnings = FALSE,
 #'       recursive = TRUE
 #'     )
-#' 
+#'
 #'     PheValuator::runPheValuatorAnalyses(
 #'       connectionDetails = connectionDetails,
 #'       phenotype = phenotype,
@@ -262,7 +262,7 @@
 #'       tempEmulationSchema = tempEmulationSchema,
 #'       pheValuatorAnalysisList = pheValuatorAnalysisList
 #'     )
-#' 
+#'
 #'     if (file.exists(file.path(
 #'       pheValuatorOutputFolder,
 #'       "exportFolder",
@@ -270,7 +270,7 @@
 #'     ))) {
 #'       connection <-
 #'         DatabaseConnector::connect(connectionDetails = connectionDetails)
-#' 
+#'
 #'       cohortDataToUpload <-
 #'         readr::read_csv(
 #'           file = file.path(
@@ -300,12 +300,12 @@
 #'           cohortStartDate,
 #'           cohortEndDate
 #'         )
-#' 
+#'
 #'       ParallelLogger::logInfo("Uploading Probabilistic cohorts.")
-#' 
+#'
 #'       tempTableName <-
 #'         paste0("#t", (as.numeric(as.POSIXlt(Sys.time()))) * 100000)
-#' 
+#'
 #'       DatabaseConnector::insertTable(
 #'         connection = connection,
 #'         tableName = tempTableName,
@@ -318,13 +318,13 @@
 #'         progressBar = TRUE,
 #'         createTable = TRUE
 #'       )
-#' 
+#'
 #'       cohortDefinitionSetWithProablisticCohort <-
 #'         dplyr::tibble(
 #'           cohortName = paste0(paste0(phenotype, " "), c("TP", "FP", "TN", "FN")),
 #'           cohortDefinitionId = c(1, 2, 3, 4)
 #'         )
-#' 
+#'
 #'       CohortExplorerOutputFolder <- file.path(outputFolder |> dirname(), "CohortExplorer")
 #'       for (j in (1:nrow(cohortDefinitionSetWithProablisticCohort))) {
 #'         CohortExplorer::createCohortExplorerApp(
@@ -345,7 +345,7 @@
 #'           assignNewId = FALSE
 #'         )
 #'       }
-#' 
+#'
 #'       DatabaseConnector::renderTranslateExecuteSql(
 #'         connection = connection,
 #'         sql = "DROP TABLE IF EXISTS @temp_table;",
@@ -355,9 +355,9 @@
 #'         tempEmulationSchema = tempEmulationSchema,
 #'         temp_table = tempTableName
 #'       )
-#' 
+#'
 #'       CohortExplorer::exportCohortExplorerAppFiles(file.path(CohortExplorerOutputFolder, "Combined"))
-#' 
+#'
 #'       cohortExplorerOutput <-
 #'         list.files(
 #'           path = CohortExplorerOutputFolder,
@@ -366,7 +366,7 @@
 #'           full.names = TRUE,
 #'           recursive = TRUE
 #'         )
-#' 
+#'
 #'       for (i in (1:length(cohortExplorerOutput))) {
 #'         unlink(
 #'           x = file.path(CohortExplorerOutputFolder, "data", basename(cohortExplorerOutput[[i]])),
@@ -384,9 +384,9 @@
 #'       }
 #'     }
 #'   }
-#' 
+#'
 #'   cohortTableName <- cohortTableNames$cohortTable
-#' 
+#'
 #'   ParallelLogger::clusterApply(
 #'     cluster = cluster,
 #'     x = x,
@@ -399,9 +399,9 @@
 #'     fun = executePheValuatorX,
 #'     stopOnError = FALSE
 #'   )
-#' 
+#'
 #'   ParallelLogger::stopCluster(cluster = cluster)
-#' 
+#'
 #'   filesWithResults <-
 #'     list.files(
 #'       path = outputFolder,
@@ -409,7 +409,7 @@
 #'       full.names = TRUE,
 #'       recursive = TRUE
 #'     )
-#' 
+#'
 #'   collectOutput <- c()
 #'   if (length(filesWithResults) > 0) {
 #'     for (i in (1:length(filesWithResults))) {
@@ -419,7 +419,7 @@
 #'     collectOutput <- dplyr::bind_rows(collectOutput)
 #'     collectOutput <-
 #'       SqlRender::snakeCaseToCamelCaseNames(collectOutput)
-#' 
+#'
 #'     collectOutput <- collectOutput |>
 #'       dplyr::left_join(
 #'         cohortDefinitionSet |>
@@ -435,7 +435,7 @@
 #'         cohortId,
 #'         cohortName
 #'       )
-#' 
+#'
 #'     unlink(
 #'       file.path(
 #'         outputFolder,
@@ -446,7 +446,7 @@
 #'       recursive = TRUE,
 #'       force = TRUE
 #'     )
-#' 
+#'
 #'     readr::write_excel_csv(
 #'       x = collectOutput,
 #'       file = file.path(

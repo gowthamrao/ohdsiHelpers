@@ -12,17 +12,19 @@ reportOnConceptRecordCount <-
     if (nrow(conceptSetDefinition) > 1) {
       stop("more than one concept set definition")
     }
-    
+
     sourceKey <- cdmSources |>
-      dplyr::select(sourceKey,
-                    databaseShortName) |>
+      dplyr::select(
+        sourceKey,
+        databaseShortName
+      ) |>
       dplyr::rename(database = databaseShortName) |>
       dplyr::mutate(
         database = database |>
           SqlRender::snakeCaseToCamelCase() |>
           SqlRender::camelCaseToTitleCase()
       )
-    
+
     # table 1: concept set by data source ----
     conceptSetId <-
       conceptSetDefinition$conceptSetId |> as.numeric()
@@ -41,7 +43,7 @@ reportOnConceptRecordCount <-
         domainTable == !!domainTable,
         domainField == !!domainField
       )
-    
+
     malesWithExposure <-
       OhdsiHelpers::filterDataFrame(
         data = conceptRecordCount,
@@ -57,29 +59,35 @@ reportOnConceptRecordCount <-
         domainTable == !!domainTable,
         domainField == !!domainField
       )
-    
+
     conceptSetByDataSource <- personsWithConceptSet |>
-      dplyr::select(sourceKey,
-                    subjectCount,
-                    minDate,
-                    maxDate,
-                    ageAvg) |>
+      dplyr::select(
+        sourceKey,
+        subjectCount,
+        minDate,
+        maxDate,
+        ageAvg
+      ) |>
       dplyr::left_join(
         malesWithExposure |>
-          dplyr::select(sourceKey,
-                        subjectCount) |>
+          dplyr::select(
+            sourceKey,
+            subjectCount
+          ) |>
           dplyr::rename(maleCount = subjectCount)
       ) |>
       dplyr::mutate(male = maleCount / subjectCount) |>
       dplyr::inner_join(sourceKey) |>
-      dplyr::select(database,
-                    subjectCount,
-                    ageAvg,
-                    male,
-                    minDate,
-                    maxDate) |>
+      dplyr::select(
+        database,
+        subjectCount,
+        ageAvg,
+        male,
+        minDate,
+        maxDate
+      ) |>
       dplyr::arrange(dplyr::desc(subjectCount))
-    
+
     # table 2: concepts by data source ----
     standardConceptsByDataSource <-
       conceptIdDetails |>
@@ -99,30 +107,38 @@ reportOnConceptRecordCount <-
           domainField == "drug_concept_id"
         )
       ) |>
-      dplyr::select(conceptName,
-                    conceptClassId,
-                    sourceKey,
-                    subjectCount) |>
+      dplyr::select(
+        conceptName,
+        conceptClassId,
+        sourceKey,
+        subjectCount
+      ) |>
       dplyr::inner_join(sourceKey) |>
-      dplyr::select(database,
-                    conceptName,
-                    conceptClassId,
-                    subjectCount) |>
-      dplyr::group_by(database,
-                      conceptName,
-                      conceptClassId) |>
+      dplyr::select(
+        database,
+        conceptName,
+        conceptClassId,
+        subjectCount
+      ) |>
+      dplyr::group_by(
+        database,
+        conceptName,
+        conceptClassId
+      ) |>
       dplyr::summarise(subjectCount = max(subjectCount)) |>
       dplyr::ungroup() |>
       tidyr::pivot_wider(
-        id_cols = c(conceptName,
-                    conceptClassId),
+        id_cols = c(
+          conceptName,
+          conceptClassId
+        ),
         names_from = database,
         values_fill = 0,
         values_from = subjectCount
       )
-    
+
     # plot 3: concept set temporal trend ----
-    
+
     conceptSetTrendByMonth <-
       OhdsiHelpers::filterDataFrame(
         data = conceptRecordCount,
@@ -138,25 +154,33 @@ reportOnConceptRecordCount <-
         domainTable == "drug_exposure",
         domainField == "drug_concept_id"
       )
-    
+
     conceptSetTrendByMonth <- conceptSetTrendByMonth |>
-      dplyr::mutate(date = as.Date(paste0(calendarYear,
-                                          "-",
-                                          calendarMonth,
-                                          "-",
-                                          1)),
-                    count = subjectCount) |>
-      dplyr::select(date,
-                    count,
-                    database) |>
+      dplyr::mutate(
+        date = as.Date(paste0(
+          calendarYear,
+          "-",
+          calendarMonth,
+          "-",
+          1
+        )),
+        count = subjectCount
+      ) |>
+      dplyr::select(
+        date,
+        count,
+        database
+      ) |>
       dplyr::arrange(date) |>
-      OhdsiPlots::renderTrendGraph(groupBy = "database",
-                                   smoothLines = TRUE,
-                                   showRawValues = TRUE)
-    
-    
+      OhdsiPlots::renderTrendGraph(
+        groupBy = "database",
+        smoothLines = TRUE,
+        showRawValues = TRUE
+      )
+
+
     # plot 4: concept set temporal trend ----
-    
+
     # conceptSetTrendByQuarter <-
     #   OhdsiHelpers::filterDataFrame(
     #     data = conceptRecordCount,
@@ -189,9 +213,9 @@ reportOnConceptRecordCount <-
     #   OhdsiPlots::renderTrendGraph(groupBy = "database",
     #                                smoothLines = TRUE,
     #                                showRawValues = TRUE)
-    
+
     report <- c()
-    
+
     report$table1ConceptSetData <- conceptSetByDataSource
     report$table1ConceptSetPretty <- conceptSetByDataSource |>
       OhdsiHelpers::prettyReportKabbleTable(
@@ -206,17 +230,21 @@ reportOnConceptRecordCount <-
     report$table2StandardConceptsByDataSourcePretty <-
       standardConceptsByDataSource |>
       dplyr::arrange(dplyr::desc(standardConceptsByDataSource[[3]])) |>
-      OhdsiHelpers::prettyReportKabbleTable(align = "l",
-                                            formatAsInteger = setdiff(
-                                              colnames(standardConceptsByDataSource),
-                                              c("conceptName",
-                                                "conceptClassId")
-                                            ))
+      OhdsiHelpers::prettyReportKabbleTable(
+        align = "l",
+        formatAsInteger = setdiff(
+          colnames(standardConceptsByDataSource),
+          c(
+            "conceptName",
+            "conceptClassId"
+          )
+        )
+      )
     report$plot3ConceptSetTrendByCalendarMonth <-
       conceptSetTrendByMonth
     # report$plot4ConceptSetTrendByCalendarQuarter <-
     #   conceptSetTrendByQuarter
-    
+
     report$populationPyramidDataEntirePeriodData <-
       OhdsiHelpers::filterDataFrame(
         data = conceptRecordCount,
@@ -234,17 +262,21 @@ reportOnConceptRecordCount <-
         domainField == "drug_concept_id"
       ) |>
       dplyr::filter(genderConceptId %in% c(8507, 8532)) |>
-      dplyr::select(ageGroup,
-                    genderConceptId,
-                    calendarYear,
-                    subjectCount,
-                    sourceKey) |>
+      dplyr::select(
+        ageGroup,
+        genderConceptId,
+        calendarYear,
+        subjectCount,
+        sourceKey
+      ) |>
       dplyr::mutate(
-        ageGroup = paste0(as.character(ageGroup * 10),
-                          "-",
-                          as.character(((
-                            ageGroup + 1
-                          ) * 10) - 1)),
+        ageGroup = paste0(
+          as.character(ageGroup * 10),
+          "-",
+          as.character(((
+            ageGroup + 1
+          ) * 10) - 1)
+        ),
         sex = dplyr::if_else(
           condition = (genderConceptId == 8507),
           true = "Male",
@@ -253,14 +285,18 @@ reportOnConceptRecordCount <-
         count = subjectCount
       ) |>
       dplyr::inner_join(sourceKey) |>
-      dplyr::select(database,
-                    ageGroup,
-                    sex,
-                    count)
-    
+      dplyr::select(
+        database,
+        ageGroup,
+        sex,
+        count
+      )
+
     dataSources <-
-      report$populationPyramidDataEntirePeriodData$database |> unique() |> sort()
-    
+      report$populationPyramidDataEntirePeriodData$database |>
+      unique() |>
+      sort()
+
     populationPyramidDataEntirePeriodDataPlots <- c()
     for (j in (1:length(dataSources))) {
       dataSource <- dataSources[[j]]
@@ -271,10 +307,12 @@ reportOnConceptRecordCount <-
     }
     report$populationPyramidDataEntirePeriodDataPlots <-
       populationPyramidDataEntirePeriodDataPlots
-    
+
     report$populationPyramidDataEntirePeriodDataPlotsTrellis <-
-      OhdsiPlots::createTrellis(ggplotArray = populationPyramidDataEntirePeriodDataPlots,
-                                maxColumns = 3)
-    
+      OhdsiPlots::createTrellis(
+        ggplotArray = populationPyramidDataEntirePeriodDataPlots,
+        maxColumns = 3
+      )
+
     return(report)
   }

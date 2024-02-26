@@ -6,6 +6,6 @@
 #'     filters = !!filters,
 #'     name = "FeatureExtraction"
 #'   )
-#' 
+#'
 #'   return(output)
 #' }

@@ -11,12 +11,12 @@ getCohortCountsInParallel <- function(cdmSources = NULL,
     cdmSources <- cdmSources |>
       dplyr::filter(.data$sequence %in% c(sequence))
   }
-  
+
   if (!is.null(databaseIds)) {
     cdmSources <- cdmSources |>
       dplyr::filter(.data$database %in% c(databaseIds))
   }
-  
+
   if (!is.null(cohortIds)) {
     sql <- "
         SELECT  cohort_definition_id,
@@ -25,7 +25,7 @@ getCohortCountsInParallel <- function(cdmSources = NULL,
         FROM @cohort_database_schema.@cohort_table_name
         WHERE cohort_definition_id IN (@cohort_ids)
         GROUP BY cohort_definition_id;"
-    
+
     cohortCounts <-
       OhdsiHelpers::renderTranslateQuerySqlInParallel(
         cdmSources = cdmSources,
@@ -34,7 +34,6 @@ getCohortCountsInParallel <- function(cdmSources = NULL,
         cohort_table_name = cohortTableName,
         database_id = databaseIds
       )
-    
   } else {
     sql <- "
         SELECT  cohort_definition_id,
@@ -42,7 +41,7 @@ getCohortCountsInParallel <- function(cdmSources = NULL,
                 count(DISTINCT subject_id) cohort_subjects
         FROM @cohort_database_schema.@cohort_table_name
         GROUP BY cohort_definition_id;"
-    
+
     cohortCounts <-
       OhdsiHelpers::renderTranslateQuerySqlInParallel(
         cdmSources = cdmSources,
@@ -51,18 +50,23 @@ getCohortCountsInParallel <- function(cdmSources = NULL,
         databaseIds = databaseIds
       )
   }
-  
+
   results <- c()
   results$cohortCounts <- cohortCounts |>
     dplyr::rename(cohortId = cohortDefinitionId) |>
-    dplyr::arrange(cohortId,
-                   databaseKey) |>
+    dplyr::arrange(
+      cohortId,
+      databaseKey
+    ) |>
     dplyr::rename(sourceKey = databaseKey)
-  
+
   results$databaseId$cohortSubjects <-
-    results$cohortCounts |> dplyr::select(cohortId,
-                                          cohortSubjects,
-                                          databaseId) |>
+    results$cohortCounts |>
+    dplyr::select(
+      cohortId,
+      cohortSubjects,
+      databaseId
+    ) |>
     tidyr::pivot_wider(
       id_cols = c("cohortId"),
       names_from = "databaseId",
@@ -70,11 +74,14 @@ getCohortCountsInParallel <- function(cdmSources = NULL,
       values_fill = 0
     ) |>
     dplyr::arrange(cohortId)
-  
+
   results$databaseId$cohortEntries <-
-    results$cohortCounts |> dplyr::select(cohortId,
-                                          cohortEntries,
-                                          databaseId) |>
+    results$cohortCounts |>
+    dplyr::select(
+      cohortId,
+      cohortEntries,
+      databaseId
+    ) |>
     tidyr::pivot_wider(
       id_cols = c("cohortId"),
       names_from = "databaseId",
@@ -82,11 +89,14 @@ getCohortCountsInParallel <- function(cdmSources = NULL,
       values_fill = 0
     ) |>
     dplyr::arrange(cohortId)
-  
+
   results$sourceKey$cohortSubjects <-
-    results$cohortCounts |> dplyr::select(cohortId,
-                                          cohortSubjects,
-                                          sourceKey) |>
+    results$cohortCounts |>
+    dplyr::select(
+      cohortId,
+      cohortSubjects,
+      sourceKey
+    ) |>
     tidyr::pivot_wider(
       id_cols = c("cohortId"),
       names_from = "sourceKey",
@@ -94,11 +104,14 @@ getCohortCountsInParallel <- function(cdmSources = NULL,
       values_fill = 0
     ) |>
     dplyr::arrange(cohortId)
-  
+
   results$sourceKey$cohortEntries <-
-    results$cohortCounts |> dplyr::select(cohortId,
-                                          cohortEntries,
-                                          sourceKey) |>
+    results$cohortCounts |>
+    dplyr::select(
+      cohortId,
+      cohortEntries,
+      sourceKey
+    ) |>
     tidyr::pivot_wider(
       id_cols = c("cohortId"),
       names_from = "sourceKey",
@@ -106,6 +119,6 @@ getCohortCountsInParallel <- function(cdmSources = NULL,
       values_fill = 0
     ) |>
     dplyr::arrange(cohortId)
-  
+
   return(results)
 }

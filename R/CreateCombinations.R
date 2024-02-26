@@ -10,16 +10,19 @@
 #' @export
 createCombinations <- function(array) {
   # Check if 'tibble' package is installed and load it
-  if (!requireNamespace("tibble", quietly = TRUE))
+  if (!requireNamespace("tibble", quietly = TRUE)) {
     install.packages("tibble")
-  
+  }
+
   # Convert array elements to character type, get unique and sort for consistent processing
-  array <- as.character(array) |> unique() |> sort()
-  
+  array <- as.character(array) |>
+    unique() |>
+    sort()
+
   # Initialize an empty tibble to store combinations
   resultDataFrame <-
     tibble::tibble(array = character(), combinations = character())
-  
+
   # Loop over the length of the array to generate all possible combinations
   for (i in 1:length(array)) {
     # Generate combinations of size i
@@ -28,7 +31,7 @@ createCombinations <- function(array) {
     sortedCombinations <- lapply(combinations, function(x) {
       paste(sort(x), collapse = ",")
     })
-    
+
     # Loop over each combination
     for (comb in sortedCombinations) {
       # Loop over each element in the array
@@ -48,7 +51,7 @@ createCombinations <- function(array) {
       }
     }
   }
-  
+
   resultDataFrame <- resultDataFrame |>
     dplyr::inner_join(
       resultDataFrame |>
@@ -59,10 +62,12 @@ createCombinations <- function(array) {
       by = "combinations"
     ) |>
     dplyr::arrange(id) |>
-    dplyr::relocate(id,
-                    combinations,
-                    array)
-  
+    dplyr::relocate(
+      id,
+      combinations,
+      array
+    )
+
   # Return the result data frame
   return(resultDataFrame)
 }

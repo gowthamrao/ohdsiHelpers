@@ -26,9 +26,9 @@
 #'       connection <- DatabaseConnector::connect(connectionDetails)
 #'       on.exit(DatabaseConnector::disconnect(connection))
 #'     }
-#'     
+#'
 #'     output <- list()
-#'     
+#'
 #'     sqlQuery <-
 #'       "with temporal_rel AS
 #'         ( SELECT t.cohort_definition_id target_cohort_definition_id,
@@ -88,10 +88,10 @@
 #'                   a.feature_cohort_end_date,
 #'                   ISNULL(closest,0) DESC,
 #'                   a.@output_name;"
-#'     
+#'
 #'     tableAndDates <-
 #'       dplyr::tibble(tableFields = c("ts", "te", "fs", "fe"))
-#'     
+#'
 #'     tableAndDatesCombinations <- tableAndDates |>
 #'       tidyr::crossing(tableFields2 = tableFields) |>
 #'       dplyr::filter(tableFields != tableFields2) |>
@@ -111,7 +111,7 @@
 #'         )
 #'       ) |>
 #'       dplyr::filter(alias1 != alias2)
-#'     
+#'
 #'     tableAndDatesCombinations <-
 #'       dplyr::bind_rows(
 #'         tableAndDatesCombinations |>
@@ -123,7 +123,7 @@
 #'                                 "_P")
 #'           )
 #'       )
-#'     
+#'
 #'     targetCohort <- DatabaseConnector::renderTranslateQuerySql(
 #'       connection = connection,
 #'       sql = "SELECT cohort_definition_id target_cohort_definition_id,
@@ -139,7 +139,7 @@
 #'       target_cohort_id = targetCohortId
 #'     ) |>
 #'       dplyr::tibble()
-#'     
+#'
 #'     for (i in (1:nrow(tableAndDatesCombinations))) {
 #'       data <- DatabaseConnector::renderTranslateQuerySql(
 #'         connection = connection,
@@ -159,23 +159,23 @@
 #'         limit_to_positive = tableAndDatesCombinations[i, ]$limitToPositive
 #'       ) |>
 #'         dplyr::tibble()
-#'       
+#'
 #'       suppressMessages(targetCohort <- targetCohort |>
 #'                          dplyr::left_join(data))
 #'     }
-#'     
+#'
 #'     cohortVars <-
 #'       tableAndDatesCombinations$outputName |> SqlRender::snakeCaseToCamelCase() |>
 #'       unique() |>
 #'       sort()
-#'     
+#'
 #'     groupVars <-
 #'       c("targetCohortDefinitionId", "featureCohortDefinitionId")
-#'     
+#'
 #'     for (var in cohortVars) {
 #'       data <- targetCohort |>
 #'         dplyr::filter(!!rlang::sym(paste0(substr(var, 1, 4), "Closest")) == 1)
-#'       
+#'
 #'       # Sending the minVar to summarizeCohortNumbers function
 #'       output[[var]] <-
 #'         summarizeNumber(
@@ -185,16 +185,16 @@
 #'           countDistinctOccurrencesOf = "subjectId"
 #'         )
 #'     }
-#'     
+#'
 #'     # Ensure each element in output[cohortVars] is a data frame
 #'     cohortDataFrames <-
 #'       lapply(cohortVars, function(var)
 #'         output[[var]])
-#'     
+#'
 #'     # Use purrr::reduce to iteratively left join these data frames
 #'     summary <-
 #'       purrr::reduce(cohortDataFrames, dplyr::left_join, by = groupVars)
-#'     
+#'
 #'     output <- c()
 #'     if (returnCohortData) {
 #'       output$targetCohort <- targetCohort
@@ -202,6 +202,6 @@
 #'     } else {
 #'       output <- summary
 #'     }
-#'     
+#'
 #'     return(output)
 #'   }

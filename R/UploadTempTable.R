@@ -6,7 +6,7 @@ uploadTempTable <- function(connection,
                             dropTableIfExists = TRUE) {
   tempTableName <-
     paste0("#", ConceptSetDiagnostics:::getUniqueString())
-  
+
   invisible(utils::capture.output(
     DatabaseConnector::insertTable(
       connection = connection,
@@ -22,6 +22,6 @@ uploadTempTable <- function(connection,
     ),
     file = nullfile()
   ))
-  
+
   return(tempTableName)
 }

@@ -2,9 +2,11 @@
 rOhdsiWebApiConceptSetDetails <- function(baseUrl,
                                           conceptSetId) {
   conceptSetExpression <-
-    ROhdsiWebApi::getConceptSetDefinition(conceptSetId = conceptSetId,
-                                          baseUrl = baseUrl)
-  
+    ROhdsiWebApi::getConceptSetDefinition(
+      conceptSetId = conceptSetId,
+      baseUrl = baseUrl
+    )
+
   conceptSetExpressionTable <-
     ROhdsiWebApi::convertConceptSetDefinitionToTable(conceptSetExpression) |>
     dplyr::select(
@@ -15,16 +17,20 @@ rOhdsiWebApiConceptSetDetails <- function(baseUrl,
       "standardConcept",
       "includeDescendants"
     )
-  
+
   # resolve concepts
   resolveConceptSets <-
-    ROhdsiWebApi::resolveConceptSet(conceptSetDefinition = conceptSetExpression,
-                                    baseUrl = baseUrl)
+    ROhdsiWebApi::resolveConceptSet(
+      conceptSetDefinition = conceptSetExpression,
+      baseUrl = baseUrl
+    )
   # mapped concept set expression
   sourceConcepts <-
-    ROhdsiWebApi::getSourceConcepts(conceptIds = resolveConceptSets,
-                                    baseUrl = baseUrl)
-  
+    ROhdsiWebApi::getSourceConcepts(
+      conceptIds = resolveConceptSets,
+      baseUrl = baseUrl
+    )
+
   # conceptIdDetails
   conceptIdDetails <-
     ROhdsiWebApi::getConcepts(
@@ -36,14 +42,20 @@ rOhdsiWebApiConceptSetDetails <- function(baseUrl,
         unique(),
       baseUrl = baseUrl
     )
-  
+
   output <- c()
   output$concepts <-
-    conceptIdDetails |> dplyr::distinct() |> dplyr::arrange(conceptId)
-  output$resolved <- resolveConceptSets |> unique() |> sort()
-  output$mapped <- sourceConcepts$conceptId |> unique() |> sort()
+    conceptIdDetails |>
+    dplyr::distinct() |>
+    dplyr::arrange(conceptId)
+  output$resolved <- resolveConceptSets |>
+    unique() |>
+    sort()
+  output$mapped <- sourceConcepts$conceptId |>
+    unique() |>
+    sort()
   output$expression <- conceptSetExpression
   output$expressionTable <- conceptSetExpressionTable
-  
+
   return(output)
 }

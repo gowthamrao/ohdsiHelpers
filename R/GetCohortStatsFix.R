@@ -28,7 +28,7 @@ getCohortStatsFix <- function(connectionDetails,
     )
   )
   results <- list()
-  
+
   for (table in outputTables) {
     # The cohortInclusionTable does not hold database
     # specific information so the databaseId

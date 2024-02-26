@@ -32,16 +32,16 @@ addMultipleCohortSubsetDefinitions <-
     totalDefinitions <-
       Reduce("*", lapply(subsetOperatorSequences, length))
     definitionId <- 1
-    
+
     writeLines(paste0(" - adding ", totalDefinitions, " definitions."))
-    
+
     # Initialize the progress bar
     pb <- txtProgressBar(min = 0, max = totalDefinitions, style = 3)
-    
+
     # Internal recursive function to add subset definitions.
     # currentOperators: A list of current operators to be included in the subset definition.
     # remainingSequences: A list of remaining operator sequences to be processed.
-    
+
     patternToReplaceDefaultValue <- "#####"
     addSubsetDefinitions <-
       function(currentOperators, remainingSequences, patternToReplaceDefaultValue) {
@@ -52,21 +52,21 @@ addMultipleCohortSubsetDefinitions <-
               name = prefix,
               definitionId = definitionId,
               subsetOperators = currentOperators,
-              operatorNameConcatString = patternToReplaceDefaultValue #replacing default value of "," because it add unexpected ","
+              operatorNameConcatString = patternToReplaceDefaultValue # replacing default value of "," because it add unexpected ","
             )
-          
+
           cohortDefinitionSet <<-
             CohortGenerator::addCohortSubsetDefinition(
               cohortDefinitionSet,
               cohortSubsetDefintion = subsetDefinition,
               targetCohortIds = targetCohortIds
             )
-          
+
           # Update progress
           setTxtProgressBar(pb, definitionId)
           definitionId <<- definitionId + 1
         }
-        
+
         # Process the next level of operators if remaining sequences are available.
         if (length(remainingSequences) > 0) {
           for (operator in remainingSequences[[1]]) {
@@ -78,7 +78,7 @@ addMultipleCohortSubsetDefinitions <-
           }
         }
       }
-    
+
     # Iterate over each sequence and process them.
     for (i in seq_along(subsetOperatorSequences)) {
       addSubsetDefinitions(
@@ -87,10 +87,10 @@ addMultipleCohortSubsetDefinitions <-
         patternToReplaceDefaultValue = patternToReplaceDefaultValue
       )
     }
-    
+
     # Close the progress bar
     close(pb)
-    
+
     cohortDefinitionSet <- cohortDefinitionSet |>
       dplyr::mutate(
         cohortName = stringr::str_replace_all(
@@ -99,6 +99,6 @@ addMultipleCohortSubsetDefinitions <-
           replacement = ""
         )
       )
-    
+
     return(cohortDefinitionSet)
   }

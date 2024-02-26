@@ -25,26 +25,28 @@ renderTranslateQuerySqlInParallel <- function(cdmSources,
   cdmSources <- cdmSources |>
     dplyr::filter(.data$database %in% c(databaseIds)) |>
     dplyr::filter(.data$sequence == !!sequence)
-  
+
   # Convert the filtered cdmSources to a list for parallel processing
   x <- list()
   for (i in 1:nrow(cdmSources)) {
-    x[[i]] <- cdmSources[i,]
+    x[[i]] <- cdmSources[i, ]
   }
-  
+
   # Create a temporary directory for storing output files
   outputLocation <-
     file.path(tempfile(), paste0("c", sample(1:1000, 1)))
-  dir.create(path = outputLocation,
-             showWarnings = FALSE,
-             recursive = TRUE)
-  
+  dir.create(
+    path = outputLocation,
+    showWarnings = FALSE,
+    recursive = TRUE
+  )
+
   # Initialize a cluster for parallel execution
   cluster <-
     ParallelLogger::makeCluster(numberOfThreads = min(as.integer(trunc(
       parallel::detectCores() / 2
     )), length(x)))
-  
+
   # Inner function to render and translate SQL for each CDM source
   renderTranslateQuerySqlX <-
     function(x,
@@ -63,7 +65,7 @@ renderTranslateQuerySqlInParallel <- function(cdmSources,
         )
       connection <-
         DatabaseConnector::connect(connectionDetails = connectionDetails)
-      
+
       # Render and translate SQL for the CDM source
       output <- DatabaseConnector::renderTranslateQuerySql(
         connection = connection,
@@ -75,14 +77,18 @@ renderTranslateQuerySqlInParallel <- function(cdmSources,
         ...
       ) |>
         dplyr::tibble() |>
-        dplyr::tibble(databaseKey = x$sourceKey,
-                      databaseId = x$database)
-      
+        dplyr::tibble(
+          databaseKey = x$sourceKey,
+          databaseId = x$database
+        )
+
       # Save the output to the specified location
-      saveRDS(object = output,
-              file = file.path(outputLocation, paste0(x$sourceKey, ".RDS")))
+      saveRDS(
+        object = output,
+        file = file.path(outputLocation, paste0(x$sourceKey, ".RDS"))
+      )
     }
-  
+
   # Apply the rendering function in parallel across the cluster
   ParallelLogger::clusterApply(
     cluster = cluster,
@@ -92,10 +98,10 @@ renderTranslateQuerySqlInParallel <- function(cdmSources,
     outputLocation = outputLocation,
     ...
   )
-  
+
   # Stop the cluster after execution
   ParallelLogger::stopCluster(cluster = cluster)
-  
+
   # Aggregate results from all CDM sources
   sourceKeys <- cdmSources$sourceKey
   filesToRead <-
@@ -108,20 +114,20 @@ renderTranslateQuerySqlInParallel <- function(cdmSources,
       ignore.case = TRUE,
       include.dirs = TRUE
     )
-  
+
   if (length(filesToRead) > 0) {
     df <-
-      dplyr::tibble(fileNames = filesToRead) |> 
+      dplyr::tibble(fileNames = filesToRead) |>
       dplyr::filter(stringr::str_detect(string = fileNames, pattern = sourceKeys))
-    
+
     # Read and combine all outputData data
     outputData <- c()
     for (i in (1:nrow(df))) {
-      outputData[[i]] <- readRDS(df[i,]$fileNames)
+      outputData[[i]] <- readRDS(df[i, ]$fileNames)
     }
-    
+
     outputData <- dplyr::bind_rows(outputData)
-    
+
     return(outputData)
   }
 }

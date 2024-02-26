@@ -17,29 +17,35 @@ getCohortPeriods <- function(connectionDetails = NULL,
     connection <- DatabaseConnector::connect(connectionDetails)
     on.exit(DatabaseConnector::disconnect(connection))
   }
-  
+
   if (!is.null(cohortDatabaseSchema)) {
     if (is.null(cohortDefinitionId)) {
       stop("cohortDatabaseSchema is not NULL, but cohortDefinitionId is NULL")
     }
   }
-  
-  if (any(stratifyByGender,
-          stratfiyByAgeGroup,
-          isObservationTable)) {
+
+  if (any(
+    stratifyByGender,
+    stratfiyByAgeGroup,
+    isObservationTable
+  )) {
     if (is.null(cdmDatabaseSchema)) {
       stop("cdmDatabaseSchema is missing.")
     }
   }
-  
-  if (intersect(colnames(cohortTableName),
-                c("startDate",
-                  "endDate",
-                  "type")) |>
-      length() > 0) {
+
+  if (intersect(
+    colnames(cohortTableName),
+    c(
+      "startDate",
+      "endDate",
+      "type"
+    )
+  ) |>
+    length() > 0) {
     stop("Please check calendarTable.")
   }
-  
+
   tempTableName <- uploadTempTable(
     connection = connection,
     tempEmulationSchema = tempEmulationSchema,
@@ -47,20 +53,20 @@ getCohortPeriods <- function(connectionDetails = NULL,
     data = calendarTable,
     camelCaseToSnakeCase = TRUE
   )
-  
+
   if (isObservationTable) {
-    cohortStartDate = "observation_period_start_date"
-    cohortEndDate = "observation_period_end_date"
-    personId = "person_id"
-    cohortTableName = "observation_period"
-    cohortDatabaseSchema = cdmDatabaseSchema
-    cohortDefinitionId = NULL
+    cohortStartDate <- "observation_period_start_date"
+    cohortEndDate <- "observation_period_end_date"
+    personId <- "person_id"
+    cohortTableName <- "observation_period"
+    cohortDatabaseSchema <- cdmDatabaseSchema
+    cohortDefinitionId <- NULL
   } else {
-    cohortStartDate = "cohort_start_date"
-    cohortEndDate = "cohort_end_date"
-    personId = "subject_id"
+    cohortStartDate <- "cohort_start_date"
+    cohortEndDate <- "cohort_end_date"
+    personId <- "subject_id"
   }
-  
+
   sql <- "
           SELECT  start_date,
                   end_date,
@@ -104,7 +110,7 @@ getCohortPeriods <- function(connectionDetails = NULL,
                   end_date,
                   type;
                 "
-  
+
   periods <- DatabaseConnector::renderTranslateQuerySql(
     connection = connection,
     sql = sql,
@@ -119,27 +125,31 @@ getCohortPeriods <- function(connectionDetails = NULL,
     cohort_end_date = cohortEndDate,
     snakeCaseToCamelCase = TRUE,
     tempEmulationSchema = tempEmulationSchema,
-    stratify_by_gender_or_age = any(stratifyByGender,
-                                    stratfiyByAgeGroup),
+    stratify_by_gender_or_age = any(
+      stratifyByGender,
+      stratfiyByAgeGroup
+    ),
     stratify_by_gender = stratifyByGender,
     stratify_by_age_group = stratfiyByAgeGroup,
     age_group_strata = ageGroupStrata
   ) |>
     dplyr::tibble() |>
-    dplyr::arrange(startDate,
-                   endDate,
-                   type)
-  
-  if ('ageGroup' %in% colnames(periods)) {
-    periods <- periods |> 
+    dplyr::arrange(
+      startDate,
+      endDate,
+      type
+    )
+
+  if ("ageGroup" %in% colnames(periods)) {
+    periods <- periods |>
       dplyr::mutate(ageGroup = paste(
         ageGroupStrata * .data$ageGroup,
         (ageGroupStrata * .data$ageGroup) + (ageGroupStrata - 1),
         sep = "-"
       ))
   }
-  
-  if ('genderConceptId' %in% colnames(periods)) {
+
+  if ("genderConceptId" %in% colnames(periods)) {
     periods <- periods |>
       dplyr::mutate(
         sex = dplyr::case_when(
@@ -149,7 +159,7 @@ getCohortPeriods <- function(connectionDetails = NULL,
         )
       )
   }
-  
-  
+
+
   return(periods)
 }

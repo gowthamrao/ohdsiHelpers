@@ -10,13 +10,13 @@ getTimeToNextCohortStart <- function(connectionDetails = NULL,
     connection <- DatabaseConnector::connect(connectionDetails)
     on.exit(DatabaseConnector::disconnect(connection))
   }
-  
+
   if (!is.null(cohortDatabaseSchema)) {
     if (is.null(cohortDefinitionId)) {
       stop("cohortDatabaseSchema is not NULL, but cohortDefinitionId is NULL")
     }
   }
-  
+
   sql <- "
   SELECT
     subject_id,
@@ -42,7 +42,7 @@ FROM
     cohort_table_name = cohortTableName,
     cohort_definition_id = cohortDefinitionId
   )
-  
+
   output <- c()
   output$daysToNextDistribution <- subjectRecords |>
     dplyr::group_by(daysToNext) |>
@@ -64,10 +64,12 @@ FROM
       sdRecords = sd(records),
       iqrRecords = IQR(records)
     )
-  
+
   output$daysToNext <- subjectRecords |>
-    dplyr::select(subjectId,
-                  daysToNext) |>
+    dplyr::select(
+      subjectId,
+      daysToNext
+    ) |>
     dplyr::filter(!is.na(daysToNext)) |>
     dplyr::group_by(subjectId) |>
     dplyr::summarize(records = dplyr::n_distinct(daysToNext)) |>
@@ -89,14 +91,14 @@ FROM
       meanRecords = mean(records),
       sdRecords = sd(records),
       iqrRecords = IQR(records)
-    ) |> 
+    ) |>
     dplyr::mutate(daysToNext = -1)
-  
+
   output <- dplyr::bind_rows(
     output$daysToNextDistribution,
     output$daysToNext
-  ) |> 
+  ) |>
     dplyr::arrange(daysToNext)
-  
+
   return(output)
 }

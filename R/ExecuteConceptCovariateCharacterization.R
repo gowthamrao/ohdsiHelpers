@@ -175,7 +175,7 @@ executeConceptCovariateCharacterizationInParallel <-
           replacement = ""
         )
       )
-    
+
     ParallelLogger::addDefaultFileLogger(fileName = file.path(outputFolder, paste0(loggerName, ".txt")))
 
     executeCohortCovariateCharacterizationX <-

@@ -25,18 +25,18 @@ renderTranslateExecuteSqlInParallel <- function(cdmSources,
   cdmSources <- cdmSources |>
     dplyr::filter(.data$database %in% c(databaseIds)) |>
     dplyr::filter(.data$sequence == !!sequence)
-  
+
   # Convert the filtered cdmSources to a list for parallel processing
   x <- list()
   for (i in 1:nrow(cdmSources)) {
     x[[i]] <- cdmSources[i, ]
   }
-  
+
   # Initialize a cluster for parallel execution
   cluster <- ParallelLogger::makeCluster(numberOfThreads = min(as.integer(trunc(
     parallel::detectCores() / 2
   )), length(x)))
-  
+
   # Inner function to render, translate, and execute SQL for each CDM source
   renderTranslateExecuteSqlX <-
     function(x, sql, tempEmulationSchema, ...) {
@@ -50,7 +50,7 @@ renderTranslateExecuteSqlInParallel <- function(cdmSources,
       )
       connection <-
         DatabaseConnector::connect(connectionDetails = connectionDetails)
-      
+
       # Render, translate, and execute SQL for the CDM source
       DatabaseConnector::renderTranslateExecuteSql(
         connection = connection,
@@ -64,7 +64,7 @@ renderTranslateExecuteSqlInParallel <- function(cdmSources,
         ...
       )
     }
-  
+
   # Apply the SQL execution function in parallel across the cluster
   ParallelLogger::clusterApply(
     cluster = cluster,
@@ -73,7 +73,7 @@ renderTranslateExecuteSqlInParallel <- function(cdmSources,
     sql = sql,
     ...
   )
-  
+
   # Stop the cluster after execution
   ParallelLogger::stopCluster(cluster = cluster)
 }

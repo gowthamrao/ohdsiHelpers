@@ -16,9 +16,11 @@
 #'
 #' @examples
 #' # Example usage:
-#' results <- getCohortSubsetOperators(subsetCohortIds = c(1, 2, 3),
-#'                                     subsetCombinationOperator = "any",
-#'                                     baseName = "exampleCohort")
+#' results <- getCohortSubsetOperators(
+#'   subsetCohortIds = c(1, 2, 3),
+#'   subsetCombinationOperator = "any",
+#'   baseName = "exampleCohort"
+#' )
 getCohortSubsetOperators <- function(subsetCohortIds,
                                      subsetCombinationOperator = "any",
                                      baseName,
@@ -26,13 +28,13 @@ getCohortSubsetOperators <- function(subsetCohortIds,
                                      timeEnd = 9999,
                                      targetAnchor = "cohortStart") {
   if (targetAnchor == "cohortStart") {
-    targetAnchorName = "Starts"
+    targetAnchorName <- "Starts"
   } else if (targetAnchor == "cohortEnd") {
-    targetAnchorName = "Ends"
+    targetAnchorName <- "Ends"
   } else {
     stop("targetAnchor should be either cohortStart or cohortEnd.")
   }
-  
+
   # Validate input parameters
   if (timeStart > timeEnd) {
     stop("timeStart > timeEnd")
@@ -49,18 +51,23 @@ getCohortSubsetOperators <- function(subsetCohortIds,
   if (!is.character(baseName)) {
     stop("baseName must be a character string.")
   }
-  
+
   # Helper function to create subset cohort window
   createWindow <- function(startDay, endDay) {
-    tryCatch({
-      CohortGenerator::createSubsetCohortWindow(startDay = startDay,
-                                                endDay = endDay,
-                                                targetAnchor = targetAnchor)
-    }, error = function(e) {
-      stop("Error in creating subset cohort window: ", e$message)
-    })
+    tryCatch(
+      {
+        CohortGenerator::createSubsetCohortWindow(
+          startDay = startDay,
+          endDay = endDay,
+          targetAnchor = targetAnchor
+        )
+      },
+      error = function(e) {
+        stop("Error in creating subset cohort window: ", e$message)
+      }
+    )
   }
-  
+
   # Define cohort subset windows
   anytimeBeforeToAnytimeAfter <- createWindow(timeStart, timeEnd)
   anytimeBeforeTo1DayBefore <- createWindow(timeStart, -1)
@@ -68,7 +75,7 @@ getCohortSubsetOperators <- function(subsetCohortIds,
   onDay0 <- createWindow(0, 0)
   onDay0ToAnytimeAfter <- createWindow(0, timeEnd)
   day1ToAnytimeAfter <- createWindow(1, timeEnd)
-  
+
   windowVars <- list(
     Before = anytimeBeforeTo1DayBefore,
     OnOrBefore = anyTimeBeforeToDay0,
@@ -77,40 +84,45 @@ getCohortSubsetOperators <- function(subsetCohortIds,
     After = day1ToAnytimeAfter,
     AnyTime = anytimeBeforeToAnytimeAfter
   )
-  
+
   # Initialize a list to store results
   results <- list()
-  
+
   # Create and assign cohort subsets to the results list
   for (period in c("Before", "OnOrBefore", "On", "OnOrAfter", "After", "AnyTime")) {
     for (negate in c(FALSE, TRUE)) {
       suffix <- ifelse(negate, "_Negate", "")
       windowVar <- windowVars[[period]]
       objectName <-
-        paste0("limitWhenSubsetCohort_",
-               targetAnchorName,
-               "_",
-               period,
-               suffix)
-      noLabel <- ifelse(period == "AnyTime", yes = TRUE, no = FALSE)
-      tryCatch({
-        results[[objectName]] <- CohortGenerator::createCohortSubset(
-          name = paste0(
-            ifelse(negate, " - without ", " - with "),
-            baseName,
-            ifelse(noLabel, "", no = paste0(" - ", tolower(period)))
-          ),
-          cohortIds = subsetCohortIds,
-          cohortCombinationOperator = subsetCombinationOperator,
-          negate = negate,
-          startWindow = windowVar,
-          endWindow = anytimeBeforeToAnytimeAfter
+        paste0(
+          "limitWhenSubsetCohort_",
+          targetAnchorName,
+          "_",
+          period,
+          suffix
         )
-      }, error = function(e) {
-        stop("Error in creating cohort subset: ", e$message)
-      })
+      noLabel <- ifelse(period == "AnyTime", yes = TRUE, no = FALSE)
+      tryCatch(
+        {
+          results[[objectName]] <- CohortGenerator::createCohortSubset(
+            name = paste0(
+              ifelse(negate, " - without ", " - with "),
+              baseName,
+              ifelse(noLabel, "", no = paste0(" - ", tolower(period)))
+            ),
+            cohortIds = subsetCohortIds,
+            cohortCombinationOperator = subsetCombinationOperator,
+            negate = negate,
+            startWindow = windowVar,
+            endWindow = anytimeBeforeToAnytimeAfter
+          )
+        },
+        error = function(e) {
+          stop("Error in creating cohort subset: ", e$message)
+        }
+      )
     }
   }
-  
+
   return(results)
 }

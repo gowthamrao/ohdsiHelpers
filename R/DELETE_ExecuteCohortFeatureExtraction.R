@@ -47,19 +47,19 @@
 #'            tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
 #'            outputFolder = NULL,
 #'            rowIdField = "subject_id") {
-#'     
+#'
 #'     if (!aggregated) {
 #'       if (!length(cohortIds) == 1) {
 #'         stop("When aggregate = FALSE, only calculation is done one cohort at a time.")
 #'       }
 #'     }
-#'     
+#'
 #'     if (!is.null(outputFolder)) {
 #'       if (!file.exists(outputFolder)) {
 #'         dir.create(outputFolder, recursive = TRUE)
 #'       }
 #'     }
-#'     
+#'
 #'     cohortDomainSettings <-
 #'       FeatureExtraction::createCohortBasedTemporalCovariateSettings(
 #'         analysisId = cohortCovariateAnalysisId,
@@ -73,12 +73,12 @@
 #'         temporalStartDays = temporalStartDays,
 #'         temporalEndDays = temporalEndDays
 #'       )
-#'     
+#'
 #'     if (is.null(connection)) {
 #'       connection <- DatabaseConnector::connect(connectionDetails)
 #'       on.exit(DatabaseConnector::disconnect(connection))
 #'     }
-#' 
+#'
 #'     featureExtractionOutput <-
 #'       FeatureExtraction::getDbCovariateData(
 #'         connection = connection,
@@ -88,13 +88,13 @@
 #'         covariateSettings = cohortDomainSettings,
 #'         aggregated = aggregated,
 #'         cohortTable = cohortTable,
-#'         cohortDatabaseSchema = cohortDatabaseSchema, 
-#'         cohortTableIsTemp = is.null(cohortDatabaseSchema), 
+#'         cohortDatabaseSchema = cohortDatabaseSchema,
+#'         cohortTableIsTemp = is.null(cohortDatabaseSchema),
 #'         rowIdField = rowIdField
 #'       )
-#'     
+#'
 #'     DatabaseConnector::disconnect(connection = connection)
-#'     
+#'
 #'     if (!is.null(outputFolder)) {
 #'       unlink(
 #'         file.path(outputFolder, "covariateData"),
@@ -107,8 +107,8 @@
 #'       return(featureExtractionOutput)
 #'     }
 #'   }
-#' 
-#' 
+#'
+#'
 #' #'
 #' #' @export
 #' executeCohortFeatureExtractionInParallel <-
@@ -136,12 +136,12 @@
 #'     cdmSources <- cdmSources |>
 #'       dplyr::filter(.data$database %in% c(databaseIds)) |>
 #'       dplyr::filter(.data$sequence == !!sequence)
-#'     
+#'
 #'     x <- list()
 #'     for (i in 1:nrow(cdmSources)) {
 #'       x[[i]] <- cdmSources[i,]
 #'     }
-#'     
+#'
 #'     # use Parallel Logger to run in parallel
 #'     cluster <-
 #'       ParallelLogger::makeCluster(numberOfThreads = min(as.integer(trunc(
@@ -150,7 +150,7 @@
 #'       )),
 #'       nrow(cdmSources)),
 #'       maxCores)
-#'     
+#'
 #'     ## file logger
 #'     loggerName <-
 #'       paste0(
@@ -161,9 +161,9 @@
 #'           replacement = ""
 #'         )
 #'       )
-#'     
+#'
 #'     ParallelLogger::addDefaultFileLogger(fileName = file.path(outputFolder, paste0(loggerName, ".txt")))
-#'     
+#'
 #'     executeCohortFeatureExtractionX <-
 #'       function(x,
 #'                cohortIds,
@@ -190,14 +190,14 @@
 #'           server = x$serverFinal,
 #'           port = x$port
 #'         )
-#'         
+#'
 #'         outputFolder <-
 #'           file.path(outputFolder, x$sourceKey)
-#'         
+#'
 #'         dir.create(path = outputFolder,
 #'                    showWarnings = FALSE,
 #'                    recursive = TRUE)
-#'         
+#'
 #'         executeCohortFeatureExtraction(
 #'           connectionDetails = connectionDetails,
 #'           cdmDatabaseSchema = x$cdmDatabaseSchemaFinal,
@@ -217,7 +217,7 @@
 #'           rowIdField = rowIdField
 #'         )
 #'       }
-#'     
+#'
 #'     ParallelLogger::clusterApply(
 #'       cluster = cluster,
 #'       x = x,
@@ -239,6 +239,6 @@
 #'       aggregated = aggregated,
 #'       rowIdField = rowIdField
 #'     )
-#'     
+#'
 #'     ParallelLogger::stopCluster(cluster = cluster)
 #'   }

@@ -70,7 +70,7 @@
 #'     if (!file.exists(outputFolder)) {
 #'       dir.create(outputFolder, recursive = TRUE)
 #'     }
-#' 
+#'
 #'     metaData <- dplyr::tibble(
 #'       startDate = Sys.Date() |> as.character(),
 #'       startTime = Sys.time() |> as.character(),
@@ -79,7 +79,7 @@
 #'       minCellCount = !!minCellCount,
 #'       minCharacterizationMean = !!minCharacterizationMean
 #'     )
-#' 
+#'
 #'     if (!is.null(databaseId)) {
 #'       metaData <- metaData |>
 #'         dplyr::mutate(
@@ -92,7 +92,7 @@
 #'           notes = !!notes
 #'         )
 #'     }
-#' 
+#'
 #'     readr::write_excel_csv(
 #'       x = metaData,
 #'       file = file.path(
@@ -100,7 +100,7 @@
 #'         "metaData.csv"
 #'       )
 #'     )
-#' 
+#'
 #'     ParallelLogger::addDefaultFileLogger(file.path(outputFolder, "log.txt"))
 #'     ParallelLogger::addDefaultErrorReportLogger(file.path(outputFolder, "errorReportR.txt"))
 #'     on.exit(ParallelLogger::unregisterLogger("DEFAULT_FILE_LOGGER", silent = TRUE))
@@ -108,16 +108,16 @@
 #'       ParallelLogger::unregisterLogger("DEFAULT_ERRORREPORT_LOGGER", silent = TRUE),
 #'       add = TRUE
 #'     )
-#' 
+#'
 #'     connection <-
 #'       DatabaseConnector::connect(connectionDetails = connectionDetails)
-#' 
+#'
 #'     ParallelLogger::logInfo("Running Feature Extraction using Covariate Cohorts")
-#' 
+#'
 #'     if (unionCovariateCohorts) {
 #'       randomTableNameForUnionCohort <-
 #'         paste0("#", generateRandomString())
-#' 
+#'
 #'       ParallelLogger::logInfo(" - Creating union of covariate cohorts")
 #'       CohortAlgebra::unionCohorts(
 #'         connection = connection,
@@ -132,8 +132,8 @@
 #'         ),
 #'         tempEmulationSchema = tempEmulationSchema
 #'       )
-#' 
-#' 
+#'
+#'
 #'       randomTableNameForCovariateCohort <-
 #'         paste0("#", generateRandomString())
 #'       ParallelLogger::logInfo(" - Copying covariate cohorts")
@@ -150,10 +150,10 @@
 #'         isTempTable = TRUE,
 #'         tempEmulationSchema = tempEmulationSchema
 #'       )
-#' 
+#'
 #'       finalTempTable <-
 #'         paste0("#", generateRandomString())
-#' 
+#'
 #'       ParallelLogger::logInfo(" - Setting up covariate cohorts")
 #'       CohortAlgebra::appendCohortTables(
 #'         connection = connection,
@@ -168,7 +168,7 @@
 #'         targetCohortTable = finalTempTable,
 #'         isTempTable = TRUE
 #'       )
-#' 
+#'
 #'       covariateCohortDefinitionSet <-
 #'         dplyr::bind_rows(
 #'           covariateCohortDefinitionSet,
@@ -177,7 +177,7 @@
 #'             cohortName = "Composite"
 #'           )
 #'         )
-#' 
+#'
 #'       cohortDomainSettings <-
 #'         FeatureExtraction::createCohortBasedTemporalCovariateSettings(
 #'           analysisId = cohortCovariateAnalysisId,
@@ -213,7 +213,7 @@
 #'         covariateSettings = cohortDomainSettings,
 #'         exportFolder = outputFolder
 #'       )
-#' 
+#'
 #'     featureExtractionOutputFinal <- c()
 #'     for (i in (1:length(names(featureExtractionOutput)))) {
 #'       name <- names(featureExtractionOutput)[[i]]
@@ -233,18 +233,18 @@
 #'           dplyr::filter(.data$mean >= minCharacterizationMean)
 #'       }
 #'     }
-#' 
+#'
 #'     saveRDS(
 #'       object = featureExtractionOutputFinal,
 #'       file = file.path(outputFolder, "FeatureExtraction.RDS")
 #'     )
-#' 
+#'
 #'     DatabaseConnector::disconnect(connection = connection)
-#' 
+#'
 #'     return(featureExtractionOutputFinal)
 #'   }
-#' 
-#' 
+#'
+#'
 #' #'
 #' #' @export
 #' executeCohortCovariateCharacterizationInParallel <-
@@ -274,12 +274,12 @@
 #'     cdmSources <- cdmSources |>
 #'       dplyr::filter(.data$database %in% c(databaseIds)) |>
 #'       dplyr::filter(.data$sequence == !!sequence)
-#' 
+#'
 #'     x <- list()
 #'     for (i in 1:nrow(cdmSources)) {
 #'       x[[i]] <- cdmSources[i, ]
 #'     }
-#' 
+#'
 #'     # use Parallel Logger to run in parallel
 #'     cluster <-
 #'       ParallelLogger::makeCluster(
@@ -292,7 +292,7 @@
 #'         ),
 #'         maxCores
 #'       )
-#' 
+#'
 #'     ## file logger
 #'     loggerName <-
 #'       paste0(
@@ -303,11 +303,11 @@
 #'           replacement = ""
 #'         )
 #'       )
-#' 
+#'
 #'     dir.create(path = outputFolder, showWarnings = FALSE, recursive = TRUE)
-#'     
+#'
 #'     ParallelLogger::addDefaultFileLogger(fileName = file.path(outputFolder, paste0(loggerName, ".txt")))
-#' 
+#'
 #'     executeCohortCovariateCharacterizationX <-
 #'       function(x,
 #'                targetCohortIds,
@@ -336,31 +336,31 @@
 #'           server = x$serverFinal,
 #'           port = x$port
 #'         )
-#' 
+#'
 #'         cohortCovariateCharacterizationOutputFolder <-
 #'           file.path(outputFolder, x$sourceKey)
-#' 
+#'
 #'         dir.create(
 #'           path = cohortCovariateCharacterizationOutputFolder,
 #'           showWarnings = FALSE,
 #'           recursive = TRUE
 #'         )
-#' 
+#'
 #'         if (is.null(targetCohortDatabaseSchema)) {
 #'           targetCohortDatabaseSchema <- x$cohortDatabaseSchemaFinal
 #'         }
-#' 
+#'
 #'         if (is.null(covariateCohortDatabaseSchema)) {
 #'           covariateCohortDatabaseSchema <- targetCohortDatabaseSchema
 #'         }
-#' 
+#'
 #'         if (is.null(covariateCohortTableName)) {
 #'           covariateCohortTableName <- paste0(
 #'             "pl_",
 #'             x$sourceKey
 #'           )
 #'         }
-#' 
+#'
 #'         featureExtractionOutput <-
 #'           executeCohortCovariateCharacterization(
 #'             connectionDetails = connectionDetails,
@@ -383,7 +383,7 @@
 #'           )
 #'         rm("featureExtractionOutput")
 #'       }
-#' 
+#'
 #'     ParallelLogger::clusterApply(
 #'       cluster = cluster,
 #'       x = x,
@@ -408,6 +408,6 @@
 #'       minCharacterizationMean = minCharacterizationMean,
 #'       notes = notes
 #'     )
-#' 
+#'
 #'     ParallelLogger::stopCluster(cluster = cluster)
 #'   }

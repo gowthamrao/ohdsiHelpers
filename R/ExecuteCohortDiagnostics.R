@@ -127,7 +127,7 @@ executeCohortDiagnosticsInParallel <-
           replacement = ""
         )
       )
-    
+
     ParallelLogger::addDefaultFileLogger(fileName = file.path(outputFolder, paste0(loggerName, ".txt")))
 
     executeCohortDiagnosticsX <- function(x,
@@ -310,15 +310,17 @@ executeCohortDiagnosticsInParallel <-
     )
 
     ParallelLogger::stopCluster(cluster = cluster)
-    
+
     if (createMergedFile) {
       dir.create(
-        path = file.path(outputFolder,
-                         "Combined"),
+        path = file.path(
+          outputFolder,
+          "Combined"
+        ),
         showWarnings = FALSE,
         recursive = TRUE
       )
-      
+
       # create sqlite db merged file
       CohortDiagnostics::createMergedResultsFile(
         dataFolder = outputFolder,
@@ -329,11 +331,13 @@ executeCohortDiagnosticsInParallel <-
           "MergedCohortDiagnosticsData.sqlite"
         )
       )
-      
+
       CohortDiagnostics::createDiagnosticsExplorerZip(
-        outputZipfile = file.path(outputFolder,
-                                  "Combined",
-                                  "DiagnosticsExplorer.zip"),
+        outputZipfile = file.path(
+          outputFolder,
+          "Combined",
+          "DiagnosticsExplorer.zip"
+        ),
         sqliteDbPath = file.path(
           outputFolder,
           "Combined",
@@ -341,7 +345,7 @@ executeCohortDiagnosticsInParallel <-
         ),
         overwrite = TRUE
       )
-      
+
       unlink(
         x = file.path(
           outputFolder,
@@ -351,15 +355,19 @@ executeCohortDiagnosticsInParallel <-
         recursive = TRUE,
         force = TRUE
       )
-      
+
       zip::unzip(
-        zipfile = file.path(outputFolder,
-                            "Combined",
-                            "DiagnosticsExplorer.zip"),
+        zipfile = file.path(
+          outputFolder,
+          "Combined",
+          "DiagnosticsExplorer.zip"
+        ),
         overwrite = TRUE,
         junkpaths = FALSE,
-        exdir = file.path(outputFolder,
-                          "Combined")
+        exdir = file.path(
+          outputFolder,
+          "Combined"
+        )
       )
     }
 

@@ -7,39 +7,40 @@ convertDateToRange <- function(dates) {
         endDate = max(date),
         type = "x"
       ),
-    
     dates |>
       dplyr::mutate(
         startDate = lubridate::floor_date(date, "month"),
         endDate = lubridate::ceiling_date(date, "month") - 1,
-        type = 'm'
+        type = "m"
       ) |>
       dplyr::distinct(),
-    
     dates |>
       dplyr::mutate(
         startDate = lubridate::floor_date(date, "quarter"),
         endDate = lubridate::ceiling_date(date, "quarter") - 1,
-        type = 'q'
+        type = "q"
       ) |>
       dplyr::distinct(),
-    
     dates |>
       dplyr::mutate(
         startDate = lubridate::floor_date(date, "year"),
         endDate = lubridate::ceiling_date(date, "year") - 1,
-        type = 'y'
+        type = "y"
       ) |>
       dplyr::distinct()
   ) |>
     dplyr::distinct() |>
-    dplyr::arrange(type,
-                   startDate,
-                   endDate) |>
-    dplyr::select(type,
-                  startDate,
-                  endDate)
-  
-  
+    dplyr::arrange(
+      type,
+      startDate,
+      endDate
+    ) |>
+    dplyr::select(
+      type,
+      startDate,
+      endDate
+    )
+
+
   return(calendarRange)
 }

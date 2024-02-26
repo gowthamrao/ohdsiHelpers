@@ -48,13 +48,13 @@ executeFeatureExtraction <-
         dir.create(outputFolder, recursive = TRUE)
       }
     }
-    
+
     if (!aggregated) {
       if (length(cohortIds) > 1) {
         stop("only one cohort id allowed when doing aggregated = FALSE")
       }
     }
-    
+
     if (addCohortBasedTemporalCovariateSettings) {
       if (is.null(covariateSettings$temporal)) {
         stop("covariateSettings is not temporal. Cannot add cohort based temporal covariate settings.")
@@ -65,12 +65,12 @@ executeFeatureExtraction <-
             "covariateCohortDefinitionSet is NULL. cannot run cohort temporal characterization"
           )
         }
-        
+
         if (!is.null(covariateCohortIds)) {
           covariateCohortDefinitionSet <- covariateCohortDefinitionSet |>
             dplyr::filter(cohortId %in% covariateCohortIds)
         }
-        
+
         if (is.null(covariateCohortTable)) {
           stop("covariateCohortTable is NULL. cannot run cohort temporal characterization")
         }
@@ -84,15 +84,17 @@ executeFeatureExtraction <-
             "cohortCovariateAnalysisId is NULL. cannot run cohort temporal characterization"
           )
         }
-        
+
         temporalStartDays <- covariateSettings$temporalStartDays
         temporalEndDays <- covariateSettings$temporalEndDays
-        
+
         if (is.null(covariateCohortIds)) {
           covariateCohortIds <-
-            covariateCohortDefinitionSet$cohortId |> unique() |> sort()
+            covariateCohortDefinitionSet$cohortId |>
+            unique() |>
+            sort()
         }
-        
+
         cohortBasedTemporalCovariateSettings <-
           FeatureExtraction::createCohortBasedTemporalCovariateSettings(
             analysisId = cohortCovariateAnalysisId,
@@ -105,21 +107,22 @@ executeFeatureExtraction <-
             temporalEndDays = temporalEndDays,
             includedCovariateIds = covariateCohortIds
           )
-        
+
         if (!is.null(covariateSettings)) {
-          covariateSettings <- list(covariateSettings,
-                                    cohortBasedTemporalCovariateSettings)
+          covariateSettings <- list(
+            covariateSettings,
+            cohortBasedTemporalCovariateSettings
+          )
         } else {
           covariateSettings <- cohortBasedTemporalCovariateSettings
         }
-        
       } else {
         stop(
           "Cant run cohort based temporal characterization because covariate setting is not temporal"
         )
       }
     }
-    
+
     if (!is.null(outputFolder)) {
       ParallelLogger::addDefaultFileLogger(file.path(outputFolder, "log.txt"))
       ParallelLogger::addDefaultErrorReportLogger(file.path(outputFolder, "errorReportR.txt"))
@@ -129,13 +132,13 @@ executeFeatureExtraction <-
         add = TRUE
       )
     }
-    
+
     if (is.null(connection)) {
       connection <- DatabaseConnector::connect(connectionDetails)
       on.exit(DatabaseConnector::disconnect(connection))
     }
-    
-    useRowId <- (rowIdField == 'row_id')
+
+    useRowId <- (rowIdField == "row_id")
     if (useRowId) {
       sql <- "
       DROP TABLE  IF EXISTS #cohort_person;
@@ -163,7 +166,7 @@ executeFeatureExtraction <-
       cohortDatabaseSchema <- NULL
       cohortTable <- "#cohort_person"
     }
-    
+
     ParallelLogger::logInfo(" - Beginning Feature Extraction")
     covariateData <-
       FeatureExtraction::getDbCovariateData(
@@ -179,12 +182,14 @@ executeFeatureExtraction <-
         cohortTableIsTemp = is.null(cohortDatabaseSchema),
         rowIdField = rowIdField
       )
-    
+
     if (!is.null(outputFolder)) {
-      FeatureExtraction::saveCovariateData(covariateData = covariateData,
-                                           file = file.path(outputFolder, "covariateData"))
+      FeatureExtraction::saveCovariateData(
+        covariateData = covariateData,
+        file = file.path(outputFolder, "covariateData")
+      )
     }
-    
+
     if (useRowId) {
       sql <- "DROP TABLE  IF EXISTS #cohort_person;"
       DatabaseConnector::renderTranslateExecuteSql(
@@ -195,9 +200,9 @@ executeFeatureExtraction <-
         reportOverallTime = FALSE
       )
     }
-    
+
     DatabaseConnector::disconnect(connection = connection)
-    
+
     return(covariateData)
   }
 
@@ -227,21 +232,25 @@ executeFeatureExtractionInParallel <-
     cdmSources <- cdmSources |>
       dplyr::filter(.data$database %in% c(databaseIds)) |>
       dplyr::filter(.data$sequence == !!sequence)
-    
+
     x <- list()
     for (i in 1:nrow(cdmSources)) {
       x[[i]] <- cdmSources[i, ]
     }
-    
+
     # use Parallel Logger to run in parallel
     cluster <-
-      ParallelLogger::makeCluster(numberOfThreads = min(as.integer(trunc(
-        parallel::detectCores() /
-          2
-      )),
-      nrow(cdmSources)),
-      maxCores)
-    
+      ParallelLogger::makeCluster(
+        numberOfThreads = min(
+          as.integer(trunc(
+            parallel::detectCores() /
+              2
+          )),
+          nrow(cdmSources)
+        ),
+        maxCores
+      )
+
     ## file logger
     loggerName <-
       paste0(
@@ -252,9 +261,9 @@ executeFeatureExtractionInParallel <-
           replacement = ""
         )
       )
-    
+
     ParallelLogger::addDefaultFileLogger(fileName = file.path(outputFolder, paste0(loggerName, ".txt")))
-    
+
     executeFeatureExtractionX <-
       function(x,
                cohortIds,
@@ -278,10 +287,10 @@ executeFeatureExtractionInParallel <-
           server = x$serverFinal,
           port = x$port
         )
-        
+
         outputFolder <-
           file.path(outputFolder, x$sourceKey)
-        
+
         executeFeatureExtraction(
           connectionDetails = connectionDetails,
           cdmDatabaseSchema = x$cdmDatabaseSchemaFinal,
@@ -300,7 +309,7 @@ executeFeatureExtractionInParallel <-
           aggregated = aggregated
         )
       }
-    
+
     ParallelLogger::clusterApply(
       cluster = cluster,
       x = x,
@@ -320,6 +329,6 @@ executeFeatureExtractionInParallel <-
       rowIdField = rowIdField,
       aggregated = aggregated
     )
-    
+
     ParallelLogger::stopCluster(cluster = cluster)
   }

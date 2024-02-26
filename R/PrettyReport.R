@@ -9,19 +9,23 @@ prettyReportKabbleTable <- function(dataFrame,
   colnamesInDataFrame <- colnames(dataFrame)
   # Format columns as integers with commas
   if (!is.null(formatAsInteger)) {
-    formatAsInteger <- intersect(colnamesInDataFrame,
-                                 formatAsInteger)
+    formatAsInteger <- intersect(
+      colnamesInDataFrame,
+      formatAsInteger
+    )
     if (length(formatAsInteger) > 0) {
       for (col in formatAsInteger) {
         dataFrame[[col]] <- scales::label_comma()(dataFrame[[col]])
       }
     }
   }
-  
+
   # Format columns as decimals
   if (!is.null(formatAsDecimals)) {
-    formatAsDecimals <- intersect(colnamesInDataFrame,
-                                  formatAsDecimals)
+    formatAsDecimals <- intersect(
+      colnamesInDataFrame,
+      formatAsDecimals
+    )
     if (length(formatAsDecimals) > 0) {
       for (col in formatAsDecimals) {
         dataFrame[[col]] <-
@@ -29,11 +33,13 @@ prettyReportKabbleTable <- function(dataFrame,
       }
     }
   }
-  
+
   # Format columns as integers with commas
   if (!is.null(formatAsPercent)) {
-    formatAsPercent <- intersect(colnamesInDataFrame,
-                                 formatAsPercent)
+    formatAsPercent <- intersect(
+      colnamesInDataFrame,
+      formatAsPercent
+    )
     if (length(formatAsPercent) > 0) {
       for (col in formatAsPercent) {
         dataFrame[[col]] <-
@@ -41,15 +47,16 @@ prettyReportKabbleTable <- function(dataFrame,
       }
     }
   }
-  
+
   colnames(dataFrame) <-
     SqlRender::camelCaseToTitleCase(colnames(dataFrame))
-  
+
   table <- knitr::kable(dataFrame,
-                        caption = caption,
-                        format = "html",
-                        align = align)
-  
+    caption = caption,
+    format = "html",
+    align = align
+  )
+
   # Apply caption style if specified
   if (!is.null(captionStyle)) {
     if (tolower(captionStyle) %in% c("html", "latex")) {
@@ -64,13 +71,15 @@ prettyReportKabbleTable <- function(dataFrame,
     } else {
       # For other styles, assume it's a CSS class for HTML output
       table <- table |>
-        kableExtra::kable_styling(bootstrap_options = c("striped", "hover"),
-                                  html_font = captionStyle)
+        kableExtra::kable_styling(
+          bootstrap_options = c("striped", "hover"),
+          html_font = captionStyle
+        )
     }
   } else {
     table <- table |>
       kableExtra::kable_styling(bootstrap_options = c("striped", "hover"))
   }
-  
+
   return(table)
 }

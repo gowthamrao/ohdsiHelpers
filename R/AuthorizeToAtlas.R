@@ -6,10 +6,14 @@ authorizeToOhdsiPlAtlas <- function(keyringName = "ohda") {
     authorizeToWebApi(
       baseUrl = baseUrl,
       authMethod = "db",
-      webApiUsername = keyring::key_get(service = "ohdsiAtlasPhenotypeUser",
-                                        keyring = keyringName),
-      webApiPassword = keyring::key_get(service = "ohdsiAtlasPhenotypePassword",
-                                        keyring = keyringName)
+      webApiUsername = keyring::key_get(
+        service = "ohdsiAtlasPhenotypeUser",
+        keyring = keyringName
+      ),
+      webApiPassword = keyring::key_get(
+        service = "ohdsiAtlasPhenotypePassword",
+        keyring = keyringName
+      )
     )
   )
 }
@@ -18,7 +22,7 @@ authorizeToOhdsiPlAtlas <- function(keyringName = "ohda") {
 authorizeToJnjAtlas <- function(keyringName = "ohda") {
   baseUrl <- Sys.getenv("baseUrl")
   message(paste("Authorizing to ", baseUrl))
-  
+
   return(
     authorizeToWebApi(
       baseUrl = Sys.getenv("baseUrl"),
@@ -26,7 +30,7 @@ authorizeToJnjAtlas <- function(keyringName = "ohda") {
       webApiUsername = keyring::key_get(service = "ADMIN_USER", keyring = keyringName),
       webApiPassword = keyring::key_get(service = "ADMIN_PASSWORD", keyring = keyringName)
     )
-  )# Windows authentication
+  ) # Windows authentication
 }
 
 #' @export
@@ -35,7 +39,7 @@ authorizeToWebApi <-
            authMethod,
            webApiUsername,
            webApiPassword) {
-    process <-   ROhdsiWebApi::authorizeWebApi(
+    process <- ROhdsiWebApi::authorizeWebApi(
       baseUrl = baseUrl,
       authMethod = authMethod,
       webApiUsername = webApiUsername,
@@ -47,27 +51,30 @@ authorizeToWebApi <-
 attemptProcess <- function(process,
                            iteration = 5,
                            waitFor = 10) {
-  result <- try({
-    process()
-  }, silent = TRUE)
-  
+  result <- try(
+    {
+      process()
+    },
+    silent = TRUE
+  )
+
   if (class(result) == "try-error") {
     return(FALSE)
   } else {
     return(result)
   }
-  
+
   for (i in 1:iteration) {
     message(paste("Attempt", i, "of ", iteration))
     result <- attemptProcess()
-    
+
     if (result == FALSE) {
       if (i == iteration) {
         message("Final attempt failed. Exiting.")
         break
       } else {
         message(paste0("An error occurred. Will retry in ", waitFor, " seconds..."))
-        Sys.sleep(waitFor)  # Wait for seconds before next attempt
+        Sys.sleep(waitFor) # Wait for seconds before next attempt
       }
     } else {
       message(paste("Process succeeded with result:", result))

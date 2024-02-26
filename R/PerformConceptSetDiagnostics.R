@@ -14,7 +14,7 @@ performConceptSetDiagnostics <-
       OhdsiHelpers::createConnectionDetails(cdmSources = cdmSources)
     connection <-
       DatabaseConnector::connect(connectionDetails = connectionDetailsSelected)
-    
+
     resolveAndMapConcepts <-
       function(conceptSetDefinition,
                connection,
@@ -26,7 +26,7 @@ performConceptSetDiagnostics <-
             vocabularyDatabaseSchema = cdmSource$vocabDatabaseSchemaFinal
           ) |>
           dplyr::mutate(conceptSetId = conceptSetDefinition$conceptSetId)
-        
+
         mappedConcepts <-
           ConceptSetDiagnostics::getMappedSourceConcepts(
             conceptIds = resolvedConcepts$conceptId,
@@ -34,16 +34,18 @@ performConceptSetDiagnostics <-
             vocabularyDatabaseSchema = cdmSource$vocabDatabaseSchemaFinal
           ) |>
           dplyr::mutate(conceptSetId = conceptSetDefinition$conceptSetId)
-        
-        list(resolvedConcepts = resolvedConcepts,
-             mappedConcepts = mappedConcepts)
+
+        list(
+          resolvedConcepts = resolvedConcepts,
+          mappedConcepts = mappedConcepts
+        )
       }
-    
+
     resolvedAndMappedConcepts <-
       lapply(1:nrow(concepSetDefinition), function(i) {
-        resolveAndMapConcepts(concepSetDefinition[i,], connection, cdmSourceSelected)
+        resolveAndMapConcepts(concepSetDefinition[i, ], connection, cdmSourceSelected)
       })
-    
+
     resolvedConcepts <-
       dplyr::bind_rows(lapply(resolvedAndMappedConcepts, `[[`, "resolvedConcepts")) |>
       dplyr::distinct() |>
@@ -52,12 +54,16 @@ performConceptSetDiagnostics <-
       dplyr::bind_rows(lapply(resolvedAndMappedConcepts, `[[`, "mappedConcepts")) |>
       dplyr::distinct() |>
       dplyr::arrange(conceptSetId, givenConceptId, conceptId)
-    
-    saveRDS(resolvedConcepts,
-            file.path(outputFolder, "ResolvedConcepts.RDS"))
-    saveRDS(mappedConcepts,
-            file.path(outputFolder, "MappedConcepts.RDS"))
-    
+
+    saveRDS(
+      resolvedConcepts,
+      file.path(outputFolder, "ResolvedConcepts.RDS")
+    )
+    saveRDS(
+      mappedConcepts,
+      file.path(outputFolder, "MappedConcepts.RDS")
+    )
+
     # Fetching and Saving Concept ID Details ----
     conceptIdDetails <- ConceptSetDiagnostics::getConceptIdDetails(
       connection = connection,
@@ -67,32 +73,38 @@ performConceptSetDiagnostics <-
       vocabularyDatabaseSchema = cdmSourceSelected$vocabDatabaseSchemaFinal
     ) |>
       dplyr::arrange(conceptId)
-    
-    saveRDS(conceptIdDetails,
-            file.path(outputFolder, "ConceptIdDetails.RDS"))
-    
+
+    saveRDS(
+      conceptIdDetails,
+      file.path(outputFolder, "ConceptIdDetails.RDS")
+    )
+
     if (performTemporalCharcterization) {
       # Temporal Utilization Diagnostics ----
       for (i in 1:nrow(concepSetDefinition)) {
         outputLocation <-
-          file.path(outputFolder,
-                    "ConceptRecordCount",
-                    concepSetDefinition[i, ]$conceptSetId)
-        dir.create(path = outputLocation,
-                   showWarnings = FALSE,
-                   recursive = TRUE)
-        
+          file.path(
+            outputFolder,
+            "ConceptRecordCount",
+            concepSetDefinition[i, ]$conceptSetId
+          )
+        dir.create(
+          path = outputLocation,
+          showWarnings = FALSE,
+          recursive = TRUE
+        )
+
         conceptIds <- c(
           resolvedConcepts |>
-            dplyr::filter(conceptSetId %in% concepSetDefinition[i,]$conceptSetId) |>
+            dplyr::filter(conceptSetId %in% concepSetDefinition[i, ]$conceptSetId) |>
             dplyr::pull(conceptId),
           mappedConcepts |>
-            dplyr::filter(conceptSetId %in% concepSetDefinition[i,]$conceptSetId) |>
+            dplyr::filter(conceptSetId %in% concepSetDefinition[i, ]$conceptSetId) |>
             dplyr::pull(conceptId)
         ) |>
           unique() |>
           sort()
-        
+
         OhdsiHelpers::executeConceptRecordCountInParallel(
           cdmSources = cdmSources,
           domainTableName = domainTableName,
@@ -100,13 +112,15 @@ performConceptSetDiagnostics <-
           conceptIds = conceptIds
         )
       }
-      
+
       conceptRecordCount <-
         lapply(1:nrow(concepSetDefinition), function(i) {
           outputLocation <-
-            file.path(outputFolder,
-                      "ConceptRecordCount",
-                      concepSetDefinition[i, ]$conceptSetId)
+            file.path(
+              outputFolder,
+              "ConceptRecordCount",
+              concepSetDefinition[i, ]$conceptSetId
+            )
           rdsFiles <- list.files(
             path = outputLocation,
             pattern = "ConceptRecordCount.RDS",
@@ -115,19 +129,18 @@ performConceptSetDiagnostics <-
             recursive = TRUE,
             include.dirs = TRUE
           )
-          
+
           allRds <- lapply(rdsFiles, readRDS)
           bindedRds <- do.call(dplyr::bind_rows, allRds) |>
             dplyr::distinct() |>
             dplyr::mutate(conceptSetId = concepSetDefinition[i, ]$conceptSetId) |>
             dplyr::relocate(conceptSetId)
-          
+
           return(bindedRds)
         })
-      
+
       conceptRecordCount |>
         dplyr::bind_rows() |>
         saveRDS(file.path(outputFolder, "ConceptRecordCount.RDS"))
     }
-    
   }

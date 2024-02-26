@@ -13,13 +13,13 @@ resultsExtractCohortDiagnosticsDataSource <- function(connection,
     resultDatabaseSettings <-
       ShinyAppBuilder::createDefaultResultDatabaseSettings(schema = resultsSchema)
   }
-  ##cd data source----
+  ## cd data source----
   cohortDiagnosticsDataSource <-
     OhdsiShinyModules::createCdDatabaseDataSource(
       connectionHandler = connection,
       resultDatabaseSettings = ShinyAppBuilder::createDefaultResultDatabaseSettings(schema = resultsSchema)
     )
-  
+
   cohortDiagnosticsDataSource$cohortDefinitionSet <-
     DatabaseConnector::renderTranslateQuerySql(
       connection = connection$con,
@@ -29,7 +29,7 @@ resultsExtractCohortDiagnosticsDataSource <- function(connection,
       snakeCaseToCamelCase = TRUE
     ) |>
     dplyr::tibble()
-  
+
   # Define the list of elements to be converted
   elementsToConvert <-
     c(
@@ -42,11 +42,11 @@ resultsExtractCohortDiagnosticsDataSource <- function(connection,
       "temporalCharacterizationTimeIdChoices",
       "characterizationTimeIdChoices"
     )
-  
+
   # Use lapply to convert each element
   cohortDiagnosticsDataSource[elementsToConvert] <-
     lapply(cohortDiagnosticsDataSource[elementsToConvert], dplyr::tibble)
-  
+
   return(cohortDiagnosticsDataSource)
 }
 
@@ -73,7 +73,7 @@ resultsExtractCohortDiagnosticsIncidenceRate <-
         minPersonYears = minPersonYears,
         minSubjectCount = minSubjectCount
       )
-    
+
     if (!is.null(minIncidenceRate)) {
       cohortDiagnosticsIncidenceRateResult <-
         cohortDiagnosticsIncidenceRateResult |>
@@ -95,8 +95,8 @@ resultsExtractCohortDiagnosticsCharacterization <-
         cohortIds = cohortIds,
         databaseIds = databaseIds,
         meanThreshold = meanThreshold
-      ) #this is the default value
-    
+      ) # this is the default value
+
     return(cohortDiagnosticsCharacterizationResult)
   }
 
@@ -118,7 +118,7 @@ resultsExtractCohortDiagnosticsConceptsInCohort <-
     }
     cohortDiagnosticsConceptsInCohort <-
       dplyr::bind_rows(cohortDiagnosticsConceptsInCohort)
-    
+
     return(cohortDiagnosticsConceptsInCohort)
   }
 
@@ -154,7 +154,7 @@ resultsExtractCohortDiagnosticsIndexEventBreakdown <-
         databaseIds = databaseIds,
         cohortCount = dataSource$cohortCountTable
       )
-    
+
     return(cohortDiagnosticsIndexEventBreakdown)
   }
 
@@ -173,17 +173,19 @@ resultsExtractCohortDiagnosticsAll <- function(connection = NULL,
       resultsExtractConnection(connectionDetails)
   }
   dataSource <-
-    resultsExtractCohortDiagnosticsDataSource(connection = connection,
-                                              resultsSchema = resultsSchema)
-  
+    resultsExtractCohortDiagnosticsDataSource(
+      connection = connection,
+      resultsSchema = resultsSchema
+    )
+
   if (is.null(cohortIds)) {
     cohortIds <- dataSource$cohortTable$cohortId
   }
-  
+
   if (is.null(databaseIds)) {
     databaseIds <- dataSource$dbTable$databaseId
   }
-  
+
   ## cd incidence rate result-----
   cohortDiagnosticsIncidenceRateResult <-
     resultsExtractCohortDiagnosticsIncidenceRate(
@@ -205,25 +207,31 @@ resultsExtractCohortDiagnosticsAll <- function(connection = NULL,
       databaseIds = databaseIds,
       meanThreshold = 0.01
     )
-  
+
   ## cd cohort overalp----
   cohortDiagnosticsCohortOverlap <-
-    resultsExtractCohortDiagnosticsCohortOverlap(dataSource = dataSource,
-                                                 cohortIds = cohortIds,
-                                                 databaseIds = databaseIds)
-  
+    resultsExtractCohortDiagnosticsCohortOverlap(
+      dataSource = dataSource,
+      cohortIds = cohortIds,
+      databaseIds = databaseIds
+    )
+
   ## concepts in data----
   cohortDiagnosticsConceptsInCohort <-
-    resultsExtractCohortDiagnosticsConceptsInCohort(dataSource = dataSource,
-                                                    cohortIds = cohortIds,
-                                                    databaseId = databaseIds)
-  
+    resultsExtractCohortDiagnosticsConceptsInCohort(
+      dataSource = dataSource,
+      cohortIds = cohortIds,
+      databaseId = databaseIds
+    )
+
   ## cd index event breakdown
   cohortDiagnosticsIndexEventBreakdown <-
-    resultsExtractCohortDiagnosticsIndexEventBreakdown(dataSource = dataSource,
-                                                       cohortIds = cohortIds,
-                                                       databaseIds = databaseIds)
-  
+    resultsExtractCohortDiagnosticsIndexEventBreakdown(
+      dataSource = dataSource,
+      cohortIds = cohortIds,
+      databaseIds = databaseIds
+    )
+
   cohortDiagnosticsResults <- c()
   cohortDiagnosticsResults$dataSource <- dataSource
   cohortDiagnosticsResults$incidenceRateResult <-
@@ -236,16 +244,18 @@ resultsExtractCohortDiagnosticsAll <- function(connection = NULL,
     cohortDiagnosticsIndexEventBreakdown
   cohortDiagnosticsResults$cohortOverlap <-
     cohortDiagnosticsCohortOverlap
-  
+
   if (!is.null(outputFolder)) {
-    dir.create(path = outputFolder,
-               showWarnings = FALSE,
-               recursive = TRUE)
+    dir.create(
+      path = outputFolder,
+      showWarnings = FALSE,
+      recursive = TRUE
+    )
     saveRDS(
       object = cohortDiagnosticsResults,
       file = file.path(outputFolder, "CohortDiagnosticsResults.RDS")
     )
   }
-  
+
   return(cohortDiagnosticsResults)
 }

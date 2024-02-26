@@ -12,8 +12,8 @@ dropCohortTablesInParallel <- function(cdmSources,
           DROP TABLE IF EXSITS @cohort_database_schema.@cohort_summary_stats_table;
 
           DROP TABLE IF EXSITS @cohort_database_schema.@cohort_censor_stats_table;"
-  
-  
+
+
   OhdsiHelpers::renderTranslateExecuteSqlInParallel(
     cdmSources = cdmSources,
     sql = sql,
