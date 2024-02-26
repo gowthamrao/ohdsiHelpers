@@ -11,12 +11,13 @@ checkFilterTemporalCovariateDataByTimeIdCohortId <-
         stop("timeId can only be of length 1")
       } else {
         covariateData$timeRef <- covariateData$timeRef |>
-          dplyr::filter(timeId == !!timeId)
+          dplyr::filter(.data$timeId == !!timeId)
         covariateData$covariates <- covariateData$covariates |>
-          dplyr::filter(timeId == !!timeId)
+          dplyr::filter(.data$timeId == !!timeId) |> 
+          dplyr::select(-.data$timeId)
       }
     }
-
+    
     if (is.null(cohortId)) {
       if (length(attributes(covariateData)$metaData$cohortIds) > 1) {
         stop(
@@ -47,21 +48,19 @@ createTable1SpecificationsRow <- function(analysisId,
   if (is.null(conceptIds) & is.null(covariateIds)) {
     stop("please provide atleast conceptIds or covariateIds")
   }
-
+  
   if (!length(analysisId) == 1) {
     stop("only one analysis id")
   }
-
+  
   if (!length(label) == 1) {
     stop("only one label")
   }
-
-  covariateIds <- c(
-    covariateIds,
-    (conceptIds * 1000) + analysisId
-  ) |>
+  
+  covariateIds <- c(covariateIds,
+                    (conceptIds * 1000) + analysisId) |>
     unique()
-
+  
   output <- dplyr::tibble(
     label = label,
     analysisId = analysisId,
@@ -99,7 +98,7 @@ CreateTable1FromCovariateData <- function(covariateData1,
     )
   populationSizeCovariateData1 <-
     attributes(covariateData1)$metaData$populationSize |> as.numeric()
-
+  
   if (!is.null(covariateData2)) {
     covariateData2 <-
       checkFilterTemporalCovariateDataByTimeIdCohortId(
@@ -111,7 +110,7 @@ CreateTable1FromCovariateData <- function(covariateData1,
     populationSizeCovariateData2 <-
       attributes(covariateData2)$metaData$populationSize |> as.numeric()
   }
-
+  
   processCovariateData <- function(covariateData,
                                    rangeLowPercent,
                                    rangeHighPercent) {
@@ -119,41 +118,36 @@ CreateTable1FromCovariateData <- function(covariateData1,
       covariateData$covariates |>
       dplyr::filter(.data$averageValue >= !!rangeLowPercent) |>
       dplyr::filter(.data$averageValue <= !!rangeHighPercent) |>
-      dplyr::select(
-        "covariateId",
-        "averageValue"
-      ) |>
+      dplyr::select("covariateId",
+                    "averageValue") |>
+      dplyr::collect() |> 
       dplyr::arrange(dplyr::desc(.data$averageValue)) |>
-      dplyr::mutate(rn = dplyr::row_number()) |>
-      dplyr::select("covariateId", "rn") |>
+      dplyr::select("covariateId") |>
       dplyr::distinct() |>
       dplyr::inner_join(
         covariateData$covariateRef |>
-          dplyr::select(
-            "covariateId",
-            "analysisId",
-            "conceptId"
-          ) |>
-          dplyr::distinct(),
+          dplyr::select("covariateId",
+                        "analysisId",
+                        "conceptId") |>
+          dplyr::distinct() |> 
+          dplyr::collect(),
         by = "covariateId"
       ) |>
       dplyr::inner_join(
         covariateData$analysisRef |>
-          dplyr::select(
-            "analysisId",
-            "analysisName"
-          ) |>
-          dplyr::distinct() #|> dplyr::collect()
+          dplyr::select("analysisId",
+                        "analysisName") |>
+          dplyr::distinct() |> 
+          dplyr::collect()
         ,
         by = "analysisId"
       ) |>
-      dplyr::arrange(.data$rn) |>
       dplyr::collect()
-
+    
     return(filteringCovariateIdsThatHaveMinThreshold)
   }
-
-
+  
+  
   if (is.null(table1Specifications)) {
     filteringCovariateIdsThatHaveMinThreshold <-
       processCovariateData(
@@ -169,30 +163,31 @@ CreateTable1FromCovariateData <- function(covariateData1,
           rangeLowPercent = rangeLowPercent,
           rangeHighPercent = rangeHighPercent
         )
-      )
+      ) |> 
+        dplyr::distinct()
     }
-
+    
     table1AnalysisSpecifications <- c()
-
+    
     if (!is.null(analysisName)) {
       filteringCovariateIdsThatHaveMinThreshold <-
         filteringCovariateIdsThatHaveMinThreshold |>
         dplyr::filter(analysisName %in% !!analysisName)
     }
-
+    
     if (!is.null(analysisId)) {
       filteringCovariateIdsThatHaveMinThreshold <-
         filteringCovariateIdsThatHaveMinThreshold |>
         dplyr::filter(analysisId %in% !!analysisId)
     }
-
+    
     analysisNames <- filteringCovariateIdsThatHaveMinThreshold |>
       dplyr::select(analysisName) |>
       dplyr::distinct() |>
       dplyr::arrange() |>
       dplyr::collect() |>
       dplyr::pull(analysisName)
-
+    
     for (i in (1:length(analysisNames))) {
       analysisName <-
         analysisNames[[i]]
@@ -201,8 +196,9 @@ CreateTable1FromCovariateData <- function(covariateData1,
         dplyr::select(.data$covariateId) |>
         dplyr::distinct() |>
         dplyr::collect() |>
-        dplyr::pull(.data$covariateId) # dont sort
-
+        dplyr::pull(.data$covariateId) |>  # dont sort
+        unique()
+      
       analysisIds <- filteringCovariateIdsThatHaveMinThreshold |>
         dplyr::filter(analysisName %in% !!analysisName) |>
         dplyr::select(analysisId) |>
@@ -210,11 +206,11 @@ CreateTable1FromCovariateData <- function(covariateData1,
         dplyr::collect() |>
         dplyr::pull(analysisId) |>
         sort()
-
+      
       if (length(analysisIds) != 1) {
         stop("Please check covariateData. More than one analysisId for the same analysisName")
       }
-
+      
       table1AnalysisSpecifications[[i]] <-
         createTable1SpecificationsRow(
           analysisId = analysisIds,
@@ -226,7 +222,7 @@ CreateTable1FromCovariateData <- function(covariateData1,
     table1AnalysisSpecifications <-
       dplyr::bind_rows(table1AnalysisSpecifications)
   }
-
+  
   report <- FeatureExtraction::createTable1(
     covariateData1 = covariateData1,
     covariateData2 = covariateData2,
@@ -240,6 +236,49 @@ CreateTable1FromCovariateData <- function(covariateData1,
     valueDigits = valueDigits,
     stdDiffDigits = stdDiffDigits
   )
-
+  
   return(report)
+}
+
+
+#' @export
+duplicateCovariateDataObjects <- function(covariateData) {
+  tempfileLocation <- tempfile()
+  unlink(x = tempfileLocation, recursive = TRUE, force = TRUE)
+  dir.create(path = tempfileLocation,
+             showWarnings = FALSE,
+             recursive = TRUE)
+  
+  covariateDataArray <- c()
+  suppressMessages(
+    FeatureExtraction::saveCovariateData(
+      covariateData = covariateData,
+      file =
+        file.path(tempfileLocation,
+                  "covariateData1")
+    )
+  )
+  covariateData1 <-
+    FeatureExtraction::loadCovariateData(file.path(tempfileLocation,
+                                                   "covariateData1"))
+  
+  
+  suppressMessages(
+    FeatureExtraction::saveCovariateData(
+      covariateData = covariateData1,
+      file =
+        file.path(tempfileLocation,
+                  "covariateData2")
+    )
+  )
+  covariateDataArray$covariateData2 <-
+    FeatureExtraction::loadCovariateData(file.path(tempfileLocation,
+                                                   "covariateData2"))
+  covariateDataArray$covariateData1 <-
+    FeatureExtraction::loadCovariateData(file.path(tempfileLocation,
+                                                   "covariateData1"))
+  
+  covariateDataArray$path <- tempfileLocation
+  
+  return(covariateDataArray)
 }
