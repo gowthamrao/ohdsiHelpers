@@ -13,7 +13,7 @@ checkFilterTemporalCovariateDataByTimeIdCohortId <-
         covariateData$timeRef <- covariateData$timeRef |>
           dplyr::filter(.data$timeId == !!timeId)
         covariateData$covariates <- covariateData$covariates |>
-          dplyr::filter(.data$timeId == !!timeId) |> 
+          dplyr::filter(.data$timeId == !!timeId) |>
           dplyr::select(-.data$timeId)
       }
     }
@@ -88,7 +88,8 @@ CreateTable1FromCovariateData <- function(covariateData1,
                                           valueDigits = 1,
                                           stdDiffDigits = 2,
                                           rangeHighPercent = 1,
-                                          rangeLowPercent = 0.01) {
+                                          rangeLowPercent = 0.01,
+                                          createFeatureExtractionTable1 = TRUE) {
   covariateData1 <-
     checkFilterTemporalCovariateDataByTimeIdCohortId(
       covariateData = covariateData1,
@@ -120,7 +121,7 @@ CreateTable1FromCovariateData <- function(covariateData1,
       dplyr::filter(.data$averageValue <= !!rangeHighPercent) |>
       dplyr::select("covariateId",
                     "averageValue") |>
-      dplyr::collect() |> 
+      dplyr::collect() |>
       dplyr::arrange(dplyr::desc(.data$averageValue)) |>
       dplyr::select("covariateId") |>
       dplyr::distinct() |>
@@ -129,7 +130,7 @@ CreateTable1FromCovariateData <- function(covariateData1,
           dplyr::select("covariateId",
                         "analysisId",
                         "conceptId") |>
-          dplyr::distinct() |> 
+          dplyr::distinct() |>
           dplyr::collect(),
         by = "covariateId"
       ) |>
@@ -137,7 +138,7 @@ CreateTable1FromCovariateData <- function(covariateData1,
         covariateData$analysisRef |>
           dplyr::select("analysisId",
                         "analysisName") |>
-          dplyr::distinct() |> 
+          dplyr::distinct() |>
           dplyr::collect()
         ,
         by = "analysisId"
@@ -163,7 +164,7 @@ CreateTable1FromCovariateData <- function(covariateData1,
           rangeLowPercent = rangeLowPercent,
           rangeHighPercent = rangeHighPercent
         )
-      ) |> 
+      ) |>
         dplyr::distinct()
     }
     
@@ -223,19 +224,35 @@ CreateTable1FromCovariateData <- function(covariateData1,
       dplyr::bind_rows(table1AnalysisSpecifications)
   }
   
-  report <- FeatureExtraction::createTable1(
-    covariateData1 = covariateData1,
-    covariateData2 = covariateData2,
-    cohortId1 = cohortId1,
-    cohortId2 = cohortId2,
-    specifications = table1AnalysisSpecifications,
-    output = output,
-    showCounts = showCounts,
-    showPercent = showPercent,
-    percentDigits = percentDigits,
-    valueDigits = valueDigits,
-    stdDiffDigits = stdDiffDigits
-  )
+  if (createFeatureExtractionTable1) {
+    report <- FeatureExtraction::createTable1(
+      covariateData1 = covariateData1,
+      covariateData2 = covariateData2,
+      cohortId1 = cohortId1,
+      cohortId2 = cohortId2,
+      specifications = table1AnalysisSpecifications,
+      output = output,
+      showCounts = showCounts,
+      showPercent = showPercent,
+      percentDigits = percentDigits,
+      valueDigits = valueDigits,
+      stdDiffDigits = stdDiffDigits
+    )
+  } else {
+    report <- OhdsiHelpers::createTable1(
+      covariateData1 = covariateData1,
+      covariateData2 = covariateData2,
+      cohortId1 = cohortId1,
+      cohortId2 = cohortId2,
+      specifications = table1AnalysisSpecifications,
+      output = output,
+      showCounts = showCounts,
+      showPercent = showPercent,
+      percentDigits = percentDigits,
+      valueDigits = valueDigits,
+      stdDiffDigits = stdDiffDigits
+    )
+  }
   
   return(report)
 }
@@ -244,7 +261,9 @@ CreateTable1FromCovariateData <- function(covariateData1,
 #' @export
 duplicateCovariateDataObjects <- function(covariateData) {
   tempfileLocation <- tempfile()
-  unlink(x = tempfileLocation, recursive = TRUE, force = TRUE)
+  unlink(x = tempfileLocation,
+         recursive = TRUE,
+         force = TRUE)
   dir.create(path = tempfileLocation,
              showWarnings = FALSE,
              recursive = TRUE)

@@ -1,6 +1,12 @@
 #' @export
-formatMeanSd <- function(mean, standardDeviation) {
-  result <- paste(mean, "(SD =", standardDeviation, ")")
+formatMeanSd <- function(mean, standardDeviation, digits = 2) {
+  result <-
+    paste(
+      mean,
+      "(SD =",
+      formatDecimalWithComma(number = standardDeviation, decimalPlaces = digits),
+      ")"
+    )
   return(result)
 }
 
@@ -29,19 +35,26 @@ formatPercent <- function(x,
 }
 
 #' @export
-formatDecimalWithComma <- function(number, decimalPlaces = 1, round = TRUE) {
-  integerPart <- floor(number)
-  decimalPart <- number - integerPart
-
-  if (round) {
-    decimalPart <- round(decimalPart, decimalPlaces)
-  } else {
-    decimalPart <- trunc(decimalPart * 10^decimalPlaces) / 10^decimalPlaces
+formatDecimalWithComma <-
+  function(number,
+           decimalPlaces = 1,
+           round = TRUE) {
+    integerPart <- floor(number)
+    decimalPart <- number - integerPart
+    
+    if (round) {
+      decimalPart <- round(decimalPart, decimalPlaces)
+    } else {
+      decimalPart <-
+        trunc(decimalPart * 10 ^ decimalPlaces) / 10 ^ decimalPlaces
+    }
+    
+    formattedIntegerPart <-
+      formatC(integerPart, format = "d", big.mark = ",")
+    decimalPartAsString <-
+      formatC(decimalPart, format = "f", digits = decimalPlaces)
+    formattedDecimalPart <-
+      substr(decimalPartAsString, 3, nchar(decimalPartAsString))
+    
+    return(paste(formattedIntegerPart, formattedDecimalPart, sep = "."))
   }
-
-  formattedIntegerPart <- formatC(integerPart, format = "d", big.mark = ",")
-  decimalPartAsString <- formatC(decimalPart, format = "f", digits = decimalPlaces)
-  formattedDecimalPart <- substr(decimalPartAsString, 3, nchar(decimalPartAsString))
-
-  return(paste(formattedIntegerPart, formattedDecimalPart, sep = "."))
-}
