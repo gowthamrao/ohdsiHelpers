@@ -215,7 +215,7 @@ executeFeatureExtractionInParallel <-
            passwordService = "OHDSI_PASSWORD",
            databaseIds = getListOfDatabaseIds(),
            covariateSettings = CohortDiagnostics::getDefaultCovariateSettings(),
-           addCohortBasedTemporalCovariateSettings = TRUE,
+           addCohortBasedTemporalCovariateSettings = FALSE,
            covariateCohortIds = NULL,
            covariateCohortTable = cohortTable,
            covariateCohortDefinitionSet = NULL,

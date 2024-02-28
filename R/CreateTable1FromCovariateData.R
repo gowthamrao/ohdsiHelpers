@@ -34,6 +34,17 @@ checkFilterTemporalCovariateDataByTimeIdCohortId <-
       covariateData$covariates <- covariateData$covariates |>
         dplyr::filter(.data$cohortDefinitionId == !!cohortId)
     }
+    
+    cohortCounts <-
+      attributes(covariateData)$metaData$populationSize |> 
+      as.data.frame()
+    cohortCounts$cohortId <- as.integer(rownames(cohortCounts))
+    colnames(cohortCounts) = c("subjectCount",
+                               "cohortId")
+    cohortCounts <- cohortCounts |> 
+      dplyr::filter(cohortId == !!cohortId)
+    
+    attr(covariateData, "metaData")$populationSize <- cohortCounts$subjectCount
     return(covariateData)
   }
 
@@ -71,7 +82,7 @@ createTable1SpecificationsRow <- function(analysisId,
 
 
 #' @export
-CreateTable1FromCovariateData <- function(covariateData1,
+createTable1FromCovariateData <- function(covariateData1,
                                           covariateData2 = NULL,
                                           cohortId1 = NULL,
                                           cohortId2 = NULL,
@@ -81,7 +92,6 @@ CreateTable1FromCovariateData <- function(covariateData1,
                                           timeId1 = NULL,
                                           timeId2 = NULL,
                                           table1Specifications = NULL,
-                                          output = "two columns",
                                           showCounts = FALSE,
                                           showPercent = TRUE,
                                           percentDigits = 1,
@@ -97,8 +107,6 @@ CreateTable1FromCovariateData <- function(covariateData1,
       timeId = timeId1,
       multipleCohortId = multipleCohortId
     )
-  populationSizeCovariateData1 <-
-    attributes(covariateData1)$metaData$populationSize |> as.numeric()
   
   if (!is.null(covariateData2)) {
     covariateData2 <-
@@ -189,74 +197,135 @@ CreateTable1FromCovariateData <- function(covariateData1,
       dplyr::collect() |>
       dplyr::pull(analysisName)
     
-    for (i in (1:length(analysisNames))) {
-      analysisName <-
-        analysisNames[[i]]
-      covariateIds <- filteringCovariateIdsThatHaveMinThreshold |>
-        dplyr::filter(analysisName %in% !!analysisName) |>
-        dplyr::select(.data$covariateId) |>
-        dplyr::distinct() |>
-        dplyr::collect() |>
-        dplyr::pull(.data$covariateId) |>  # dont sort
-        unique()
-      
-      analysisIds <- filteringCovariateIdsThatHaveMinThreshold |>
-        dplyr::filter(analysisName %in% !!analysisName) |>
-        dplyr::select(analysisId) |>
-        dplyr::distinct() |>
-        dplyr::collect() |>
-        dplyr::pull(analysisId) |>
-        sort()
-      
-      if (length(analysisIds) != 1) {
-        stop("Please check covariateData. More than one analysisId for the same analysisName")
+    if (length(analysisNames) > 0) {
+      for (i in (1:length(analysisNames))) {
+        analysisName <-
+          analysisNames[[i]]
+        covariateIds <- filteringCovariateIdsThatHaveMinThreshold |>
+          dplyr::filter(analysisName %in% !!analysisName) |>
+          dplyr::select(.data$covariateId) |>
+          dplyr::distinct() |>
+          dplyr::collect() |>
+          dplyr::pull(.data$covariateId) |>  # dont sort
+          unique()
+        
+        analysisIds <- filteringCovariateIdsThatHaveMinThreshold |>
+          dplyr::filter(analysisName %in% !!analysisName) |>
+          dplyr::select(analysisId) |>
+          dplyr::distinct() |>
+          dplyr::collect() |>
+          dplyr::pull(analysisId) |>
+          sort()
+        
+        if (length(analysisIds) != 1) {
+          stop(
+            "Please check covariateData. More than one analysisId for the same analysisName"
+          )
+        }
+        
+        table1AnalysisSpecifications[[i]] <-
+          createTable1SpecificationsRow(
+            analysisId = analysisIds,
+            conceptIds = NULL,
+            covariateIds = covariateIds,
+            label = analysisName |> SqlRender::camelCaseToTitleCase() |> stringr::str_trim() |> stringr::str_squish()
+          )
       }
-      
-      table1AnalysisSpecifications[[i]] <-
-        createTable1SpecificationsRow(
-          analysisId = analysisIds,
-          conceptIds = NULL,
-          covariateIds = covariateIds,
-          label = analysisName |> SqlRender::camelCaseToTitleCase() |> stringr::str_trim() |> stringr::str_squish()
-        )
+      table1AnalysisSpecifications <-
+        dplyr::bind_rows(table1AnalysisSpecifications)
+    } else {
+      table1AnalysisSpecifications <- NULL
     }
-    table1AnalysisSpecifications <-
-      dplyr::bind_rows(table1AnalysisSpecifications)
   }
   
   if (createFeatureExtractionTable1) {
-    report <- FeatureExtraction::createTable1(
-      covariateData1 = covariateData1,
-      covariateData2 = covariateData2,
-      cohortId1 = cohortId1,
-      cohortId2 = cohortId2,
-      specifications = table1AnalysisSpecifications,
-      output = output,
-      showCounts = showCounts,
-      showPercent = showPercent,
-      percentDigits = percentDigits,
-      valueDigits = valueDigits,
-      stdDiffDigits = stdDiffDigits
-    )
+    if (!is.null(table1AnalysisSpecifications)) {
+      report <- FeatureExtraction::createTable1(
+        covariateData1 = covariateData1,
+        covariateData2 = covariateData2,
+        cohortId1 = cohortId1,
+        cohortId2 = cohortId2,
+        specifications = table1AnalysisSpecifications,
+        output = "one column",
+        showCounts = showCounts,
+        showPercent = showPercent,
+        percentDigits = percentDigits,
+        valueDigits = valueDigits,
+        stdDiffDigits = stdDiffDigits
+      )
+      
+      reportFields <- report |>
+        dplyr::select(Characteristic) |>
+        dplyr::mutate(isHeader = ifelse(substring(Characteristic, 1, 1) != " ", 1, 0)) |>
+        dplyr::left_join(
+          table1AnalysisSpecifications |>
+            dplyr::select(label,
+                          analysisId) |>
+            dplyr::rename(Characteristic = label),
+          by = "Characteristic"
+        ) |>
+        tidyr::fill(analysisId, .direction = "down") |>
+        dplyr::mutate(Percent = stringr::str_squish(Characteristic)) |>
+        dplyr::select(isHeader,
+                      analysisId,
+                      Characteristic)
+      
+      report <- reportFields |>
+        dplyr::left_join(report,
+                         by = "Characteristic")
+      
+      colnamesReport <- colnames(report)
+      
+      names(report)[[4]] <- "Percent"
+      
+      
+      firstRow <- dplyr::tibble(
+        isHeader = 1,
+        analysisId = 0,
+        Characteristic = "Population",
+        Percent = colnamesReport[[4]] |>
+          stringr::str_squish() |> stringr::str_replace(
+            pattern = stringr::fixed("% (n = "),
+            replacement = ""
+          ) |>
+          stringr::str_replace(
+            pattern = stringr::fixed(")"),
+            replacement = ""
+          ) |>
+          as.character()
+      )
+      
+      report <- dplyr::bind_rows(firstRow,
+                                 report)
+      
+      return(report)
+    }
   } else {
-    report <- OhdsiHelpers::createTable1(
-      covariateData1 = covariateData1,
-      covariateData2 = covariateData2,
-      cohortId1 = cohortId1,
-      cohortId2 = cohortId2,
-      specifications = table1AnalysisSpecifications,
-      output = output,
-      showCounts = showCounts,
-      showPercent = showPercent,
-      percentDigits = percentDigits,
-      valueDigits = valueDigits,
-      stdDiffDigits = stdDiffDigits
-    )
+    stop("not implemented")
   }
-  
-  return(report)
 }
 
+
+#' @export
+copyCovariateDataObjects <- function(covariateData) {
+  tempfileLocation <- tempfile()
+  unlink(x = tempfileLocation,
+         recursive = TRUE,
+         force = TRUE)
+  dir.create(path = tempfileLocation,
+             showWarnings = FALSE,
+             recursive = TRUE)
+  suppressMessages(
+    FeatureExtraction::saveCovariateData(
+      covariateData = covariateData,
+      file =
+        file.path(tempfileLocation,
+                  "covariateData1")
+    )
+  )
+  FeatureExtraction::loadCovariateData(file.path(tempfileLocation,
+                                                 "covariateData1"))
+}
 
 #' @export
 duplicateCovariateDataObjects <- function(covariateData) {
@@ -281,7 +350,6 @@ duplicateCovariateDataObjects <- function(covariateData) {
     FeatureExtraction::loadCovariateData(file.path(tempfileLocation,
                                                    "covariateData1"))
   
-  
   suppressMessages(
     FeatureExtraction::saveCovariateData(
       covariateData = covariateData1,
@@ -300,4 +368,175 @@ duplicateCovariateDataObjects <- function(covariateData) {
   covariateDataArray$path <- tempfileLocation
   
   return(covariateDataArray)
+}
+
+#' @export
+createTable1FromCovariateDataInParallel <- function(cdmSources,
+                                                    covariateData1Path,
+                                                    covariateData1CohortId,
+                                                    covariateData2Path = NULL,
+                                                    covariateData2CohortId = NULL,
+                                                    analysisName = NULL,
+                                                    analysisId = NULL,
+                                                    timeId1 = NULL,
+                                                    timeId2 = NULL,
+                                                    table1Specifications = NULL,
+                                                    showCounts = FALSE,
+                                                    showPercent = TRUE,
+                                                    percentDigits = 1,
+                                                    valueDigits = 1,
+                                                    stdDiffDigits = 2,
+                                                    rangeHighPercent = 1,
+                                                    rangeLowPercent = 0.01,
+                                                    createFeatureExtractionTable1 = TRUE,
+                                                    label = "databaseId") {
+  sourceKeys <- cdmSources$sourceKey |> unique()
+  
+  covariateData1Files <-
+    list.files(
+      path = covariateData1Path,
+      pattern = "covariateData",
+      all.files = TRUE,
+      recursive = TRUE,
+      ignore.case = TRUE,
+      full.names = TRUE,
+      include.dirs = TRUE
+    )
+  covariateData1Files <-
+    covariateData1Files[stringr::str_detect(string = covariateData1Files,
+                                            pattern = unique(sourceKeys) |> paste0(collapse = "|"))]
+  
+  covariateData1Files <-
+    dplyr::tibble(filePath = covariateData1Files,
+                  sourceKey = covariateData1Files |> dirname() |> basename())
+  
+  covariateData2Files <- NULL
+  if (!is.null(covariateData2Path)) {
+    covariateData2Files <-
+      list.files(
+        path = covariateData2Path,
+        pattern = "covariateData",
+        all.files = TRUE,
+        recursive = TRUE,
+        ignore.case = TRUE,
+        full.names = TRUE,
+        include.dirs = TRUE
+      )
+    covariateData2Files <-
+      covariateData2Files[stringr::str_detect(string = covariateData2Files,
+                                              pattern = unique(sourceKeys) |> paste0(collapse = "|"))]
+    covariateData2Files <-
+      dplyr::tibble(filePath = covariateData2Files,
+                    sourceKey = covariateData2Files |> dirname() |> basename())
+  }
+  
+  report <- c()
+  counter <- 0
+  for (i in (1:length(sourceKeys))) {
+    sourceKey <- sourceKeys[[i]]
+    covariateData1File <- covariateData1Files |>
+      dplyr::filter(sourceKey == !!sourceKey)
+    if (nrow(covariateData1File) == 1) {
+      covariateData1 <-
+        FeatureExtraction::loadCovariateData(file = covariateData1File$filePath)
+      
+      if (nrow(covariateData1$covariateRef |> dplyr::collect()) > 0) {
+        covaraiteData1Temp <-
+          copyCovariateDataObjects(covariateData = covariateData1)
+        
+        covariateData2Temp <- NULL
+        if (!is.null(covariateData2Files)) {
+          covariateData2File <- covariateData2Files |>
+            dplyr::filter(sourceKey == !!sourceKey)
+          
+          if (nrow(covariateData2Files) == 1) {
+            covariateData2 <-
+              FeatureExtraction::loadCovariateData(file = covariateData2File$filePath)
+            
+            if (nrow(covariateData2$covariateRef |> dplyr::collect()) > 0) {
+              covariateData2Temp <-
+                copyCovariateDataObjects(covariateData = covariateData2)
+            }
+          }
+        }
+        counter <- counter + 1
+        
+        reportX <-
+          createTable1FromCovariateData(
+            covariateData1 = covaraiteData1Temp,
+            covariateData2 = covariateData2Temp,
+            cohortId1 = covariateData1CohortId,
+            cohortId2 = covariateData2CohortId,
+            analysisName = analysisName,
+            analysisId = analysisId,
+            timeId1 = timeId1,
+            timeId2 = timeId2,
+            table1Specifications = table1Specifications,
+            showCounts = showCounts,
+            showPercent = showPercent,
+            percentDigits = percentDigits,
+            valueDigits = valueDigits,
+            stdDiffDigits = valueDigits,
+            rangeHighPercent = rangeHighPercent,
+            rangeLowPercent = rangeLowPercent,
+            createFeatureExtractionTable1 = createFeatureExtractionTable1
+          )
+        
+        if (!is.null(reportX)) {
+          if ("Percent" %in% colnames(reportX)) {
+            reportX <- reportX |>
+              dplyr::rename(!!sourceKey := Percent)
+          }
+          report[[counter]] <- reportX
+        }
+      }
+    }
+  }
+  
+  if (is.null(covariateData2Path)) {
+    commonColumns <- dplyr::bind_rows(report) |>
+      dplyr::select(isHeader,
+                    analysisId,
+                    Characteristic) |>
+      dplyr::distinct() |>
+      dplyr::arrange(analysisId,
+                     dplyr::desc(isHeader),
+                     Characteristic)
+    
+    for (x in (1:length(report))) {
+      if (!is.null(report[[x]])) {
+        commonColumns <- commonColumns |>
+          dplyr::left_join(report[[x]],
+                           by = c("Characteristic",
+                                  "isHeader",
+                                  "analysisId"))
+      }
+    }
+    report <- commonColumns
+  } else {
+    browser()
+  }
+  
+  if (!is.null(label)) {
+    if (label %in% colnames(cdmSources)) {
+      dataSourcesLabel <- cdmSources |>
+        dplyr::select("sourceKey", dplyr::all_of(label)) |>
+        dplyr::distinct()
+      colnames(dataSourcesLabel) <- c("originalName",
+                                      "newName")
+      
+      reportColumnNames <-
+        dplyr::tibble(originalName = colnames(report)) |>
+        dplyr::left_join(dataSourcesLabel,
+                         by = "originalName") |>
+        dplyr::mutate(newName = dplyr::coalesce(newName, originalName))
+      colnames(report) <- reportColumnNames$newName
+    }
+  }
+  report <- report |>
+    dplyr::arrange(analysisId,
+                   dplyr::desc(isHeader),
+                   dplyr::desc(4)) |>
+    dplyr::mutate(dplyr::across(dplyr::everything(), ~ ifelse(is.na(.), "", .)))
+  return(report)
 }
