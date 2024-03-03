@@ -1,138 +1,144 @@
 #' @export
-# Function to split the string and name columns dynamically
-splitAndNameColumns <-
-  function(dataFrame, columnName, makeConsort = TRUE, seperateSplitsBy = "    ") {
-    # Split the specified column in the data frame by ' - ' and convert the result into a list.
-    # Each element of the list corresponds to a row in the data frame, and contains
-    # the split parts of the string in that row.
-    splitList <- strsplit(dataFrame[[columnName]], split = " - ")
-
-    # Determine the maximum number of parts obtained by splitting across all rows.
-    # This is used to ensure all rows have the same number of columns after splitting.
-    maxSplits <- max(sapply(splitList, length))
-
-    # Create dynamic column names for the new columns. These are named 'name1', 'name2', etc.,
-    # up to the number of maximum splits.
-    dfColumnNames <- paste0("name", seq_len(maxSplits))
-
-    # Convert the list of split parts into a data frame. Missing values are filled with NA,
-    # and then the NAs are standardized to ensure all rows have the same length.
-    # Finally, set the names of the new columns as defined above.
-    splitDataFrame <-
-      do.call(rbind, lapply(splitList, `length<-`, maxSplits))
-    splitDataFrame <-
-      as.data.frame(splitDataFrame, stringsAsFactors = FALSE)
-    names(splitDataFrame) <- dfColumnNames
-
-    # Bind the new split columns to the original data frame after removing the column that was split.
-    # Replace NA values in the new columns with empty strings.
-    # Sort the data frame based on the values in the new columns.
-    # Add a new column 'id' that contains row numbers.
-    # Relocate the 'id' column to the first position.
-    result <- dataFrame |>
-      dplyr::select(-dplyr::all_of(columnName)) |>
-      dplyr::bind_cols(splitDataFrame) |>
-      dplyr::mutate(dplyr::across(dplyr::all_of(dfColumnNames), tidyr::replace_na, "")) |>
-      dplyr::arrange(dplyr::across(dplyr::all_of(dfColumnNames))) |>
+# Function to dynamically split a string column and rename the resulting columns
+splitStringAndRenameColumns <-
+  function(dataFrame,
+           targetColumnName,
+           enableConsecutiveMerge = TRUE,
+           splitBy = " - ",
+           delimiterForMerge = "     ") {
+    # Split the target column in the data frame by value of splitBy and convert the result into a list
+    splitComponentsList <-
+      strsplit(dataFrame[[targetColumnName]], split = splitBy)
+    
+    # Determine the maximum number of split components across all rows
+    maxSplitCount <- max(sapply(splitComponentsList, length))
+    
+    # Generate dynamic column names based on the maximum number of splits
+    dynamicColumnNames <-
+      paste0("component", seq_len(maxSplitCount))
+    
+    # Transform the list of split components into a data frame, ensuring uniform column lengths
+    splitComponentsDataFrame <-
+      do.call(rbind,
+              lapply(splitComponentsList, `length<-`, maxSplitCount))
+    splitComponentsDataFrame <-
+      as.data.frame(splitComponentsDataFrame, stringsAsFactors = FALSE)
+    names(splitComponentsDataFrame) <- dynamicColumnNames
+    
+    # Combine the newly split columns with the original data frame, minus the split column
+    combinedDataFrame <- dataFrame |>
+      dplyr::select(-dplyr::all_of(targetColumnName)) |>
+      dplyr::bind_cols(splitComponentsDataFrame) |>
+      dplyr::mutate(dplyr::across(dplyr::all_of(dynamicColumnNames), tidyr::replace_na, "")) |>
+      dplyr::arrange(dplyr::across(dplyr::all_of(dynamicColumnNames))) |>
       dplyr::mutate(id = dplyr::row_number()) |>
       dplyr::relocate(id)
     
-    rootColumnName <- function(df) {
-      colNamesInDf <-
-        colnames(df)[stringr::str_detect(string = colnames(df), pattern = "name")] |> unique() |> sort()
-      for (i in (1:length(colNamesInDf))) {
-        colNameInDf <- colNamesInDf[[i]]
-        
-        if (length(df[[colNameInDf]] |> unique()) == 1) {
-          rootName <- colNamesInDf[[i]]
+    # Function to find the root column name based on a specific pattern
+    findRootColumnName <- function(dataFrame) {
+      columnNamesMatchingPattern <-
+        colnames(dataFrame)[stringr::str_detect(string = colnames(dataFrame), pattern = "component")] |> unique() |> sort()
+      for (columnName in columnNamesMatchingPattern) {
+        if (length(dataFrame[[columnName]] |> unique()) == 1) {
+          rootName <- columnName
         }
       }
       return(rootName)
     }
     
-    ensureRootName <- function(df, rootName) {
-      colNamesInDf <-
-        colnames(df)[stringr::str_detect(string = colnames(df), pattern = "name")] |> unique() |> sort()
-      colNamesInDfToCollapse <-
-        colNamesInDf[colNamesInDf <= rootName]
-      colNamesInDfAfter <- setdiff(colNamesInDf, colNamesInDfToCollapse)
-      if (length(colNamesInDfAfter) >= 1) {
-        colNamesInDfAfter <- colNamesInDfAfter[[1]]
-      } else {
-        colNamesInDfAfter <- NULL
-      }
+    # Function to ensure the presence of a root name within the data frame
+    integrateRootName <- function(dataFrame, rootColumnName) {
+      columnNamesMatchingPattern <-
+        colnames(dataFrame)[stringr::str_detect(string = colnames(dataFrame), pattern = "component")] |> unique() |> sort()
+      columnsBeforeRoot <-
+        columnNamesMatchingPattern[columnNamesMatchingPattern <= rootColumnName]
+      columnsAfterRoot <-
+        setdiff(columnNamesMatchingPattern, columnsBeforeRoot)
+      columnsAfterRootFirst <-
+        if (length(columnsAfterRoot) >= 1)
+          columnsAfterRoot[[1]]
+      else
+        NULL
       
-      result <- result |>
+      updatedDataFrame <- dataFrame |>
         dplyr::rowwise() |>
         dplyr::mutate(rootName = paste0(dplyr::across(dplyr::all_of(
-          c(colNamesInDfToCollapse,
-            colNamesInDfAfter)
-        )), collapse = " - ")) |>
+          c(columnsBeforeRoot, columnsAfterRootFirst)
+        )), collapse = splitBy)) |>
         dplyr::ungroup() |>
         dplyr::select(-dplyr::all_of(c(
-          colNamesInDfToCollapse,
-          colNamesInDfAfter
+          columnsBeforeRoot, columnsAfterRootFirst
         ))) |>
-        dplyr::relocate(id, cohortId,
-                        rootName)
-      return(result)
+        dplyr::relocate(id)
+      return(updatedDataFrame)
     }
     
-    rootName <- rootColumnName(df = result)
-    result <- ensureRootName(df = result, rootName = rootName)
+    rootColumnName <-
+      findRootColumnName(dataFrame = combinedDataFrame)
+    combinedDataFrame <-
+      integrateRootName(dataFrame = combinedDataFrame, rootColumnName = rootColumnName)
     
-    dfColumnNames <- intersect(dfColumnNames, colnames(result))
+    relevantColumnNames <-
+      intersect(dynamicColumnNames, colnames(combinedDataFrame))
     
-    
-    clearConsecutiveValues <- function(dataFrame, columnNames) {
-      for (columnName in columnNames) {
-        if (columnName %in% names(dataFrame)) {
-          currentValue <- dataFrame[[1, columnName]]
-          for (i in 2:nrow(dataFrame)) {
-            if (dataFrame[[i, columnName]] == currentValue) {
-              dataFrame[[i, columnName]] <- ""
-            } else {
-              currentValue <- dataFrame[[i, columnName]]
+    # Function to remove consecutive duplicate values in specified columns
+    removeConsecutiveDuplicates <-
+      function(dataFrame, columnNames) {
+        for (columnName in columnNames) {
+          if (columnName %in% names(dataFrame)) {
+            previousValue <- dataFrame[[1, columnName]]
+            for (rowIndex in 2:nrow(dataFrame)) {
+              if (dataFrame[[rowIndex, columnName]] == previousValue) {
+                dataFrame[[rowIndex, columnName]] <- ""
+              } else {
+                previousValue <- dataFrame[[rowIndex, columnName]]
+              }
             }
+          } else {
+            warning(paste("Column", columnName, "not found in the data frame."))
           }
-        } else {
-          warning(paste("Column", columnName, "not found in the data frame."))
         }
-      }
-      return(dataFrame)
-    }
-
-    concatenateColumnsWithSpace <-
-      function(dataFrame, columnNames, seperateSplitsBy) {
-        # Check if all column names exist in the data frame
-        if (!all(columnNames %in% colnames(dataFrame))) {
-          stop("Not all specified columns exist in the data frame")
-        }
-
-        # Use Reduce function to iteratively concatenate columns with four spaces in between
-        concatenatedColumn <-
-          Reduce(function(x, y) {
-            paste0(x, seperateSplitsBy, y)
-          }, dataFrame[columnNames])
-
-        # Add the concatenated column to the data frame
-        dataFrame$newColumn <- concatenatedColumn
-
-        dataFrame <- dataFrame |>
-          dplyr::select(-columnNames) |>
-          dplyr::mutate(newColumn = stringr::str_trim(string = .data$newColumn, side = "right"))
-
         return(dataFrame)
       }
-
-    # If makeConsort is TRUE, remove duplicate adjacent values in new columns.
-    if (makeConsort) {
-      result <-
-        clearConsecutiveValues(dataFrame = result, columnName = dfColumnNames)
-
-      result <-
-        concatenateColumnsWithSpace(dataFrame = result, columnName = dfColumnNames, seperateSplitsBy = seperateSplitsBy)
+    
+    # Function to concatenate specified columns with a given delimiter
+    mergeColumnsWithDelimiter <-
+      function(dataFrame, columnNames, delimiter) {
+        # Ensure all specified columns exist in the data frame
+        if (!all(columnNames %in% colnames(dataFrame))) {
+          stop("Not all specified columns exist in the data frame.")
+        }
+        
+        # Concatenate columns with the specified delimiter
+        mergedColumn <-
+          Reduce(function(x, y) {
+            paste0(x, delimiter, y)
+          }, dataFrame[columnNames])
+        
+        # Add the merged column to the data frame and adjust its placement
+        dataFrame$mergedColumn <- mergedColumn
+        dataFrame <- dataFrame |>
+          dplyr::select(-columnNames) |>
+          dplyr::mutate(mergedColumn = stringr::str_trim(string = .data$mergedColumn, side = "right"))
+        
+        return(dataFrame)
+      }
+    
+    # If enabled, process data frame to merge consecutive duplicates and concatenate columns
+    if (enableConsecutiveMerge) {
+      combinedDataFrame <-
+        removeConsecutiveDuplicates(
+          dataFrame = combinedDataFrame,
+          columnNames = c("rootName", relevantColumnNames)
+        )
+      combinedDataFrame <-
+        mergeColumnsWithDelimiter(
+          dataFrame = combinedDataFrame,
+          columnNames = c("rootName", relevantColumnNames),
+          delimiter = delimiterForMerge
+        )
     }
-    # Return the modified data frame.
-    return(result)
+    
+    # Return the processed data frame
+    return(combinedDataFrame)
   }
