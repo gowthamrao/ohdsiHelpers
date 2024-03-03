@@ -2,17 +2,19 @@
 #' @export
 createFeatureExtractionWideReportTemporalCovariateData <-
   function(covariateData,
+           cohortId,
            timeIds = NULL) {
     if (!FeatureExtraction::isTemporalCovariateData(covariateData)) {
       stop("Covariate data is not temporal covariate data")
     }
     
     report <- covariateData$covariates |>
+      dplyr::filter(cohortDefinitionId == cohortId) |>
       dplyr::select(covariateId,
                     timeId,
                     sumValue,
                     averageValue) |>
-      dplyr::filter(!is.na(timeId)) |>
+      dplyr::filter(!is.na(timeId)) |> 
       dplyr::collect() |>
       dplyr::arrange(timeId, dplyr::desc(averageValue)) |>
       dplyr::mutate(report = OhdsiHelpers::formatCountPercent(count = sumValue, percent = averageValue)) |>

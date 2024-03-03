@@ -1,23 +1,29 @@
 #' @export
 getTimeToNextCohortStart <- function(connectionDetails = NULL,
                                      connection = NULL,
-                                     cohortDatabaseSchema,
-                                     cohortDefinitionId = NULL,
-                                     cdmDatabaseSchema = NULL,
-                                     cohortTableName,
+                                     targetCohortDatabaseSchema,
+                                     targetCohortTableName,
+                                     targetCohortId,
+                                     featureCohortId = targetCohortId,
+                                     featureCohortDatabaseSchema = targetCohortDatabaseSchema,
+                                     featureCohortTableName = targetCohortTableName,
                                      tempEmulationSchema = getOption("sqlRenderTempEmulationSchema")) {
   if (is.null(connection)) {
     connection <- DatabaseConnector::connect(connectionDetails)
     on.exit(DatabaseConnector::disconnect(connection))
   }
 
-  if (!is.null(cohortDatabaseSchema)) {
-    if (is.null(cohortDefinitionId)) {
-      stop("cohortDatabaseSchema is not NULL, but cohortDefinitionId is NULL")
-    }
-  }
+
 
   sql <- "
+  DROP table if exists #target_cohort;
+  SELECT subject_id,
+          min(cohort_start_date) cohort_start_date,
+          min(cohort_end_date) cohort_end_date
+  FROM
+    @target_cohort_database_schema.@target_cohort_table
+  WHERE cohort_definition_id = @target_cohort_id;
+  
   SELECT
     subject_id,
     DATEDIFF(day, cohort_start_date, next_start_date) AS days_to_next,
@@ -27,7 +33,9 @@ FROM
         subject_id,
         cohort_start_date,
         LEAD(cohort_start_date) OVER (PARTITION BY subject_id ORDER BY cohort_start_date) AS next_start_date
-     FROM @cohort_database_schema.@cohort_table_name
+     FROM #target_cohort_id t
+     LEFT JOIN
+          @feature_cohort_database_schema.@feature_cohort_table
      WHERE cohort_definition_id = @cohort_definition_id
     ) AS a
   GROUP BY subject_id, DATEDIFF(day, cohort_start_date, next_start_date)
@@ -38,9 +46,12 @@ FROM
     sql = sql,
     snakeCaseToCamelCase = TRUE,
     tempEmulationSchema = tempEmulationSchema,
-    cohort_database_schema = cohortDatabaseSchema,
-    cohort_table_name = cohortTableName,
-    cohort_definition_id = cohortDefinitionId
+    target_cohort_database_schema = targetCohortDatabaseSchema,
+    target_cohort_table_name = targetCohortTableName,
+    target_cohort_definition_id = targetCohortId,
+    feature_cohort_database_schema = featureCohortDatabaseSchema,
+    feature_cohort_table_name = featureCohortTableName,
+    feature_cohort_definition_id = featureCohortId
   )
 
   output <- c()

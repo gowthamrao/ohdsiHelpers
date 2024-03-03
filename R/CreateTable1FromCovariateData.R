@@ -3,7 +3,8 @@ checkFilterTemporalCovariateDataByTimeIdCohortId <-
   function(covariateData,
            cohortId,
            timeId,
-           multipleCohortId) {
+           multipleCohortId,
+           excludedCovariateIds) {
     if (FeatureExtraction::isTemporalCovariateData(covariateData)) {
       if (is.null(timeId)) {
         stop("one of given covariateData is temporal. its corresponding timeId is NULL")
@@ -35,16 +36,22 @@ checkFilterTemporalCovariateDataByTimeIdCohortId <-
         dplyr::filter(.data$cohortDefinitionId == !!cohortId)
     }
     
+    if (!is.null(excludedCovariateIds)) {
+      covariateData$covariates <- covariateData$covariates |>
+        dplyr::filter(!covariateId %in% excludedCovariateIds)
+    }
+    
     cohortCounts <-
-      attributes(covariateData)$metaData$populationSize |> 
+      attributes(covariateData)$metaData$populationSize |>
       as.data.frame()
     cohortCounts$cohortId <- as.integer(rownames(cohortCounts))
     colnames(cohortCounts) = c("subjectCount",
                                "cohortId")
-    cohortCounts <- cohortCounts |> 
+    cohortCounts <- cohortCounts |>
       dplyr::filter(cohortId == !!cohortId)
     
-    attr(covariateData, "metaData")$populationSize <- cohortCounts$subjectCount
+    attr(covariateData, "metaData")$populationSize <-
+      cohortCounts$subjectCount
     return(covariateData)
   }
 
@@ -99,13 +106,15 @@ createTable1FromCovariateData <- function(covariateData1,
                                           stdDiffDigits = 2,
                                           rangeHighPercent = 1,
                                           rangeLowPercent = 0.01,
+                                          excludedCovariateIds = NULL,
                                           createFeatureExtractionTable1 = TRUE) {
   covariateData1 <-
     checkFilterTemporalCovariateDataByTimeIdCohortId(
       covariateData = covariateData1,
       cohortId = cohortId1,
       timeId = timeId1,
-      multipleCohortId = multipleCohortId
+      multipleCohortId = multipleCohortId,
+      excludedCovariateIds = excludedCovariateIds
     )
   
   if (!is.null(covariateData2)) {
@@ -114,7 +123,8 @@ createTable1FromCovariateData <- function(covariateData1,
         covariateData = covariateData2,
         cohortId = cohortId2,
         timeId = timeId2,
-        multipleCohortId = multipleCohortId
+        multipleCohortId = multipleCohortId,
+        excludedCovariateIds = excludedCovariateIds
       )
     populationSizeCovariateData2 <-
       attributes(covariateData2)$metaData$populationSize |> as.numeric()
@@ -389,6 +399,7 @@ createTable1FromCovariateDataInParallel <- function(cdmSources,
                                                     rangeHighPercent = 1,
                                                     rangeLowPercent = 0.01,
                                                     createFeatureExtractionTable1 = TRUE,
+                                                    excludedCovariateIds = NULL,
                                                     label = "databaseId") {
   sourceKeys <- cdmSources$sourceKey |> unique()
   
@@ -479,6 +490,7 @@ createTable1FromCovariateDataInParallel <- function(cdmSources,
             stdDiffDigits = valueDigits,
             rangeHighPercent = rangeHighPercent,
             rangeLowPercent = rangeLowPercent,
+            excludedCovariateIds = excludedCovariateIds,
             createFeatureExtractionTable1 = createFeatureExtractionTable1
           )
         
@@ -494,49 +506,55 @@ createTable1FromCovariateDataInParallel <- function(cdmSources,
   }
   
   if (is.null(covariateData2Path)) {
-    commonColumns <- dplyr::bind_rows(report) |>
-      dplyr::select(isHeader,
-                    analysisId,
-                    Characteristic) |>
-      dplyr::distinct() |>
-      dplyr::arrange(analysisId,
-                     dplyr::desc(isHeader),
-                     Characteristic)
-    
-    for (x in (1:length(report))) {
-      if (!is.null(report[[x]])) {
-        commonColumns <- commonColumns |>
-          dplyr::left_join(report[[x]],
-                           by = c("Characteristic",
-                                  "isHeader",
-                                  "analysisId"))
+    if (!is.null(report)) {
+      commonColumns <- dplyr::bind_rows(report) |>
+        dplyr::select(isHeader,
+                      analysisId,
+                      Characteristic) |>
+        dplyr::distinct() |>
+        dplyr::arrange(analysisId,
+                       dplyr::desc(isHeader),
+                       Characteristic)
+      
+      for (x in (1:length(report))) {
+        if (!is.null(report[[x]])) {
+          commonColumns <- commonColumns |>
+            dplyr::left_join(report[[x]],
+                             by = c("Characteristic",
+                                    "isHeader",
+                                    "analysisId"))
+        }
       }
+      report <- commonColumns
     }
-    report <- commonColumns
   } else {
     browser()
   }
   
-  if (!is.null(label)) {
-    if (label %in% colnames(cdmSources)) {
-      dataSourcesLabel <- cdmSources |>
-        dplyr::select("sourceKey", dplyr::all_of(label)) |>
-        dplyr::distinct()
-      colnames(dataSourcesLabel) <- c("originalName",
-                                      "newName")
-      
-      reportColumnNames <-
-        dplyr::tibble(originalName = colnames(report)) |>
-        dplyr::left_join(dataSourcesLabel,
-                         by = "originalName") |>
-        dplyr::mutate(newName = dplyr::coalesce(newName, originalName))
-      colnames(report) <- reportColumnNames$newName
+  if (!is.null(report)) {
+    if (!is.null(label)) {
+      if (label %in% colnames(cdmSources)) {
+        dataSourcesLabel <- cdmSources |>
+          dplyr::select("sourceKey", dplyr::all_of(label)) |>
+          dplyr::distinct()
+        colnames(dataSourcesLabel) <- c("originalName",
+                                        "newName")
+        
+        reportColumnNames <-
+          dplyr::tibble(originalName = colnames(report)) |>
+          dplyr::left_join(dataSourcesLabel,
+                           by = "originalName") |>
+          dplyr::mutate(newName = dplyr::coalesce(newName, originalName))
+        colnames(report) <- reportColumnNames$newName
+      }
     }
+    report <- report |>
+      dplyr::arrange(analysisId,
+                     dplyr::desc(isHeader),
+                     dplyr::desc(4)) |>
+      dplyr::mutate(dplyr::across(dplyr::everything(), ~ ifelse(is.na(.), "", .)))
+    return(report)
+  } else {
+    writeLines("No output generated.")
   }
-  report <- report |>
-    dplyr::arrange(analysisId,
-                   dplyr::desc(isHeader),
-                   dplyr::desc(4)) |>
-    dplyr::mutate(dplyr::across(dplyr::everything(), ~ ifelse(is.na(.), "", .)))
-  return(report)
 }

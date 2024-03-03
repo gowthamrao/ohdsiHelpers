@@ -94,9 +94,11 @@ executeCohortDiagnosticsInParallel <-
            useSubsetCohortsAsFeatures = FALSE,
            createMergedFile = FALSE,
            minCellCount = 5) {
-    cdmSources <- cdmSources |>
-      dplyr::filter(.data$database %in% c(databaseIds)) |>
-      dplyr::filter(.data$sequence == !!sequence)
+    
+    cdmSources <-
+      getCdmSource(cdmSources = cdmSources,
+                   database = databaseIds,
+                   sequence = sequence)
 
     if (nrow(cdmSources) == 0) {
       stop("no matching cdm sources.")

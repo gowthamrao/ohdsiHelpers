@@ -16,9 +16,11 @@ createObservedPersonsCohortInParallel <-
            minimumPriorObservationDays = 0,
            endDateStrategy = "cohort_start_date",
            unit = "day") {
-    cdmSources <- cdmSources |>
-      dplyr::filter(.data$database %in% c(databaseIds)) |>
-      dplyr::filter(.data$sequence == !!sequence)
+    
+    cdmSources <-
+      getCdmSource(cdmSources = cdmSources,
+                   database = databaseIds,
+                   sequence = sequence)
 
     x <- list()
     for (i in 1:nrow(cdmSources)) {

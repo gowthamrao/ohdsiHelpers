@@ -11,9 +11,11 @@ executeCohortExplorerInParallel <-
            sequence = 1,
            sampleSize = 100,
            cohortIds = NULL) {
-    cdmSources <- cdmSources |>
-      dplyr::filter(.data$database %in% c(databaseIds)) |>
-      dplyr::filter(.data$sequence == !!sequence)
+
+    cdmSources <-
+      getCdmSource(cdmSources = cdmSources,
+                   database = databaseIds,
+                   sequence = sequence)
 
     x <- list()
     for (i in 1:nrow(cdmSources)) {

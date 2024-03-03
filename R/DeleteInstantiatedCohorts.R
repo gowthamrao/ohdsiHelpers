@@ -8,9 +8,10 @@ deleteInstantiatedCohortsInParrallel <- function(cdmSources = NULL,
     stop("pick one - either delete or keep. cant do both")
   }
 
-  cdmSources <- cdmSources |>
-    dplyr::filter(.data$database %in% c(databaseIds)) |>
-    dplyr::filter(.data$sequence == 1)
+  cdmSources <-
+    getCdmSource(cdmSources = cdmSources,
+                 database = databaseIds,
+                 sequence = sequence)
 
   if (!is.null(cohortIdsToKeep)) {
     sql <- "

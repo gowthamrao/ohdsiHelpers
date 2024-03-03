@@ -4,18 +4,11 @@ getCohortCountsInParallel <- function(cdmSources = NULL,
                                       sequence = 1,
                                       databaseIds = NULL,
                                       cohortIds = NULL) {
-  if (!is.null(sequence)) {
-    if (length(sequence) > 1) {
-      stop("more than 1 sequence values provided")
-    }
-    cdmSources <- cdmSources |>
-      dplyr::filter(.data$sequence %in% c(sequence))
-  }
-
-  if (!is.null(databaseIds)) {
-    cdmSources <- cdmSources |>
-      dplyr::filter(.data$database %in% c(databaseIds))
-  }
+  
+  cdmSources <-
+    getCdmSource(cdmSources = cdmSources,
+                 database = databaseIds,
+                 sequence = sequence)
 
   if (!is.null(cohortIds)) {
     sql <- "
