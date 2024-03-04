@@ -106,8 +106,7 @@ createTable1FromCovariateData <- function(covariateData1,
                                           stdDiffDigits = 2,
                                           rangeHighPercent = 1,
                                           rangeLowPercent = 0.01,
-                                          excludedCovariateIds = NULL,
-                                          createFeatureExtractionTable1 = TRUE) {
+                                          excludedCovariateIds = NULL) {
   covariateData1 <-
     checkFilterTemporalCovariateDataByTimeIdCohortId(
       covariateData = covariateData1,
@@ -248,71 +247,61 @@ createTable1FromCovariateData <- function(covariateData1,
     }
   }
   
-  if (createFeatureExtractionTable1) {
-    if (!is.null(table1AnalysisSpecifications)) {
-      report <- FeatureExtraction::createTable1(
-        covariateData1 = covariateData1,
-        covariateData2 = covariateData2,
-        cohortId1 = cohortId1,
-        cohortId2 = cohortId2,
-        specifications = table1AnalysisSpecifications,
-        output = "one column",
-        showCounts = showCounts,
-        showPercent = showPercent,
-        percentDigits = percentDigits,
-        valueDigits = valueDigits,
-        stdDiffDigits = stdDiffDigits
-      )
-      
-      reportFields <- report |>
-        dplyr::select(Characteristic) |>
-        dplyr::mutate(isHeader = ifelse(substring(Characteristic, 1, 1) != " ", 1, 0)) |>
-        dplyr::left_join(
-          table1AnalysisSpecifications |>
-            dplyr::select(label,
-                          analysisId) |>
-            dplyr::rename(Characteristic = label),
-          by = "Characteristic"
-        ) |>
-        tidyr::fill(analysisId, .direction = "down") |>
-        dplyr::mutate(Percent = stringr::str_squish(Characteristic)) |>
-        dplyr::select(isHeader,
-                      analysisId,
-                      Characteristic)
-      
-      report <- reportFields |>
-        dplyr::left_join(report,
-                         by = "Characteristic")
-      
-      colnamesReport <- colnames(report)
-      
-      names(report)[[4]] <- "Percent"
-      
-      
-      firstRow <- dplyr::tibble(
-        isHeader = 1,
-        analysisId = 0,
-        Characteristic = "Population",
-        Percent = colnamesReport[[4]] |>
-          stringr::str_squish() |> stringr::str_replace(
-            pattern = stringr::fixed("% (n = "),
-            replacement = ""
-          ) |>
-          stringr::str_replace(
-            pattern = stringr::fixed(")"),
-            replacement = ""
-          ) |>
-          as.character()
-      )
-      
-      report <- dplyr::bind_rows(firstRow,
-                                 report)
-      
-      return(report)
-    }
-  } else {
-    stop("not implemented")
-  }
+  report <- FeatureExtraction::createTable1(
+    covariateData1 = covariateData1,
+    covariateData2 = covariateData2,
+    cohortId1 = cohortId1,
+    cohortId2 = cohortId2,
+    specifications = table1AnalysisSpecifications,
+    output = "one column",
+    showCounts = showCounts,
+    showPercent = showPercent,
+    percentDigits = percentDigits,
+    valueDigits = valueDigits,
+    stdDiffDigits = stdDiffDigits
+  )
+  
+  reportFields <- report |>
+    dplyr::select(Characteristic) |>
+    dplyr::mutate(isHeader = ifelse(substring(Characteristic, 1, 1) != " ", 1, 0)) |>
+    dplyr::left_join(
+      table1AnalysisSpecifications |>
+        dplyr::select(label,
+                      analysisId) |>
+        dplyr::rename(Characteristic = label),
+      by = "Characteristic"
+    ) |>
+    tidyr::fill(analysisId, .direction = "down") |>
+    dplyr::mutate(Percent = stringr::str_squish(Characteristic)) |>
+    dplyr::select(isHeader,
+                  analysisId,
+                  Characteristic)
+  
+  report <- reportFields |>
+    dplyr::left_join(report,
+                     by = "Characteristic")
+  
+  colnamesReport <- colnames(report)
+  
+  names(report)[[4]] <- "Percent"
+  
+  
+  firstRow <- dplyr::tibble(
+    isHeader = 1,
+    analysisId = 0,
+    Characteristic = "Population",
+    Percent = colnamesReport[[4]] |>
+      stringr::str_squish() |> stringr::str_replace(pattern = stringr::fixed("% (n = "),
+                                                    replacement = "") |>
+      stringr::str_replace(pattern = stringr::fixed(")"),
+                           replacement = "") |>
+      as.character()
+  )
+  
+  report <- dplyr::bind_rows(firstRow,
+                             report)
+  
+  return(report)
 }
 
 
@@ -398,7 +387,6 @@ createTable1FromCovariateDataInParallel <- function(cdmSources,
                                                     stdDiffDigits = 2,
                                                     rangeHighPercent = 1,
                                                     rangeLowPercent = 0.01,
-                                                    createFeatureExtractionTable1 = TRUE,
                                                     excludedCovariateIds = NULL,
                                                     label = "databaseId") {
   sourceKeys <- cdmSources$sourceKey |> unique()
@@ -452,7 +440,7 @@ createTable1FromCovariateDataInParallel <- function(cdmSources,
         FeatureExtraction::loadCovariateData(file = covariateData1File$filePath)
       
       if (nrow(covariateData1$covariateRef |> dplyr::collect()) > 0) {
-        covaraiteData1Temp <-
+        covariateData1Temp <-
           copyCovariateDataObjects(covariateData = covariateData1)
         
         covariateData2Temp <- NULL
@@ -474,7 +462,7 @@ createTable1FromCovariateDataInParallel <- function(cdmSources,
         
         reportX <-
           createTable1FromCovariateData(
-            covariateData1 = covaraiteData1Temp,
+            covariateData1 = covariateData1Temp,
             covariateData2 = covariateData2Temp,
             cohortId1 = covariateData1CohortId,
             cohortId2 = covariateData2CohortId,
@@ -490,8 +478,7 @@ createTable1FromCovariateDataInParallel <- function(cdmSources,
             stdDiffDigits = valueDigits,
             rangeHighPercent = rangeHighPercent,
             rangeLowPercent = rangeLowPercent,
-            excludedCovariateIds = excludedCovariateIds,
-            createFeatureExtractionTable1 = createFeatureExtractionTable1
+            excludedCovariateIds = excludedCovariateIds
           )
         
         if (!is.null(reportX)) {
@@ -557,4 +544,140 @@ createTable1FromCovariateDataInParallel <- function(cdmSources,
   } else {
     writeLines("No output generated.")
   }
+}
+
+
+
+#' @export
+createFeatureExtractionReportInParallel <- function(cdmSources,
+                                                    covariateDataPath,
+                                                    cohortId,
+                                                    analysisName = NULL,
+                                                    analysisId = NULL,
+                                                    timeId = NULL,
+                                                    rangeHighPercent = 1,
+                                                    rangeLowPercent = 0.01,
+                                                    excludedCovariateIds = NULL,
+                                                    includedCovariateIds = NULL,
+                                                    valueColumn = "averageValue",
+                                                    pivotWider = TRUE,
+                                                    pivotBy = "databaseId") {
+  sourceKeys <- cdmSources$sourceKey |> unique()
+  
+  covariateDataFiles <-
+    list.files(
+      path = covariateDataPath,
+      pattern = "covariateData",
+      all.files = TRUE,
+      recursive = TRUE,
+      ignore.case = TRUE,
+      full.names = TRUE,
+      include.dirs = TRUE
+    )
+  covariateDataFiles <-
+    covariateDataFiles[stringr::str_detect(string = covariateDataFiles,
+                                           pattern = unique(sourceKeys) |> paste0(collapse = "|"))]
+  
+  covariateDataFiles <-
+    dplyr::tibble(filePath = covariateDataFiles,
+                  sourceKey = covariateDataFiles |> dirname() |> basename())
+  
+  
+  report <- c()
+  for (i in (1:length(sourceKeys))) {
+    sourceKey <- sourceKeys[[i]]
+    covariateDataFile <- covariateDataFiles |>
+      dplyr::filter(sourceKey == !!sourceKey)
+    if (nrow(covariateDataFile) == 1) {
+      covariateData <-
+        FeatureExtraction::loadCovariateData(file = covariateDataFile$filePath)
+      
+      if (nrow(covariateData$covariateRef |> dplyr::collect()) > 0) {
+        covariateDataTemp <-
+          copyCovariateDataObjects(covariateData = covariateData)
+        
+        covariateDataTemp <-
+          checkFilterTemporalCovariateDataByTimeIdCohortId(
+            covariateData = covariateDataTemp,
+            cohortId = cohortId,
+            timeId = timeId,
+            multipleCohortId = multipleCohortId,
+            excludedCovariateIds = excludedCovariateIds
+          )
+        
+        if (!is.null(rangeHighPercent)) {
+          covariateDataTemp$covariates <- covariateDataTemp$covariates |> 
+            dplyr::filter(averageValue <= rangeHighPercent)
+        }
+        
+        if (!is.null(rangeLowPercent)) {
+          covariateDataTemp$covariates <- covariateDataTemp$covariates |> 
+            dplyr::filter(averageValue >= rangeLowPercent)
+        }
+        
+        report[[i]] <- covariateDataTemp$covariates |>
+          dplyr::inner_join(covariateDataTemp$covariateRef,
+                            by = "covariateId") |>
+          dplyr::inner_join(covariateDataTemp$analysisRef,
+                            by = "analysisId") |>
+          dplyr::collect() |>
+          dplyr::mutate(
+            sourceKey = !!sourceKey,
+            databaseId = cdmSources |>
+              dplyr::filter(sourceKey == !!sourceKey) |>
+              dplyr::pull(database)
+          ) |>
+          dplyr::mutate(
+            countPercent = OhdsiHelpers::formatCountPercent(
+              count = sumValue,
+              percent = averageValue,
+              percentDigits = 2
+            )
+          ) |>
+          dplyr::mutate(averageValue = round(averageValue*100, digits = 2)) |>
+          dplyr::relocate(cohortDefinitionId,
+                          covariateId,
+                          conceptId,
+                          covariateName)
+        
+        if (FeatureExtraction::isTemporalCovariateData(covariateDataTemp)) {
+          report[[i]] <- report[[i]] |>
+            dplyr::left_join(covariateDataTemp$timeRef |>
+                               dplyr::collect(),
+                             by = "timeId") |>
+            dplyr::relocate(
+              cohortDefinitionId,
+              covariateId,
+              conceptId,
+              covariateName,
+              timeId,
+              startDay,
+              endDay
+            )
+        }
+      }
+    }
+  }
+  
+  report <- dplyr::bind_rows(report)
+  
+  if (pivotWider) {
+    report <- report |>
+      tidyr::pivot_wider(
+        id_cols = setdiff(
+          colnames(report),
+          c(
+            "sumValue",
+            "averageValue",
+            "databaseId",
+            "countPercent",
+            "sourceKey"
+          )
+        ),
+        names_from = !!pivotBy,
+        values_from = !!valueColumn, 
+        values_fill = 0
+      )
+  }
+  return(report)
 }
