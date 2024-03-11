@@ -185,7 +185,7 @@ createTable1FromCovariateData <- function(covariateData1,
         dplyr::distinct()
     }
     
-    table1AnalysisSpecifications <- c()
+    table1Specifications <- c()
     
     if (!is.null(analysisName)) {
       filteringCovariateIdsThatHaveMinThreshold <-
@@ -232,7 +232,7 @@ createTable1FromCovariateData <- function(covariateData1,
           )
         }
         
-        table1AnalysisSpecifications[[i]] <-
+        table1Specifications[[i]] <-
           createTable1SpecificationsRow(
             analysisId = analysisIds,
             conceptIds = NULL,
@@ -240,10 +240,10 @@ createTable1FromCovariateData <- function(covariateData1,
             label = analysisName |> SqlRender::camelCaseToTitleCase() |> stringr::str_trim() |> stringr::str_squish()
           )
       }
-      table1AnalysisSpecifications <-
-        dplyr::bind_rows(table1AnalysisSpecifications)
+      table1Specifications <-
+        dplyr::bind_rows(table1Specifications)
     } else {
-      table1AnalysisSpecifications <- NULL
+      table1Specifications <- NULL
     }
   }
   
@@ -252,7 +252,7 @@ createTable1FromCovariateData <- function(covariateData1,
     covariateData2 = covariateData2,
     cohortId1 = cohortId1,
     cohortId2 = cohortId2,
-    specifications = table1AnalysisSpecifications,
+    specifications = table1Specifications,
     output = "one column",
     showCounts = showCounts,
     showPercent = showPercent,
@@ -265,7 +265,7 @@ createTable1FromCovariateData <- function(covariateData1,
     dplyr::select(Characteristic) |>
     dplyr::mutate(isHeader = ifelse(substring(Characteristic, 1, 1) != " ", 1, 0)) |>
     dplyr::left_join(
-      table1AnalysisSpecifications |>
+      table1Specifications |>
         dplyr::select(label,
                       analysisId) |>
         dplyr::rename(Characteristic = label),
@@ -606,12 +606,12 @@ createFeatureExtractionReportInParallel <- function(cdmSources,
           )
         
         if (!is.null(rangeHighPercent)) {
-          covariateDataTemp$covariates <- covariateDataTemp$covariates |> 
+          covariateDataTemp$covariates <- covariateDataTemp$covariates |>
             dplyr::filter(averageValue <= rangeHighPercent)
         }
         
         if (!is.null(rangeLowPercent)) {
-          covariateDataTemp$covariates <- covariateDataTemp$covariates |> 
+          covariateDataTemp$covariates <- covariateDataTemp$covariates |>
             dplyr::filter(averageValue >= rangeLowPercent)
         }
         
@@ -634,7 +634,7 @@ createFeatureExtractionReportInParallel <- function(cdmSources,
               percentDigits = 2
             )
           ) |>
-          dplyr::mutate(averageValue = round(averageValue*100, digits = 2)) |>
+          dplyr::mutate(averageValue = round(averageValue * 100, digits = 2)) |>
           dplyr::relocate(cohortDefinitionId,
                           covariateId,
                           conceptId,
@@ -675,7 +675,7 @@ createFeatureExtractionReportInParallel <- function(cdmSources,
           )
         ),
         names_from = !!pivotBy,
-        values_from = !!valueColumn, 
+        values_from = !!valueColumn,
         values_fill = 0
       )
   }

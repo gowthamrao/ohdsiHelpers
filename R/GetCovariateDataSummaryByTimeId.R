@@ -2,7 +2,7 @@
 getCovaraiteDataSummaryByTimeId <- function(covariateData,
                                             cohortCovariateAnalysisId = 150,
                                             covariateCohortId = NULL,
-                                            startDay = NULL,
+                                            temporalWindows = NULL,
                                             minProportion = NULL,
                                             minCount = NULL,
                                             getCohortId = TRUE,
@@ -23,8 +23,24 @@ getCovaraiteDataSummaryByTimeId <- function(covariateData,
     is.null(cohortCovariateAnalysisId)) {
     stop("cannot filter by covariateCohortId. cohortCovariateAnalysisId should be provided")
   }
-  if (!is.null(startDay) && !is.numeric(startDay)) {
-    stop("startDay must be numeric")
+  if (!is.null(temporalWindows)) {
+    if (!is.data.frame(temporalWindows)) {
+      stop("temporalWindows should be a data frame with startDay and endDay columns")
+    }
+    if (!"startDay" %in% colnames(temporalWindows)) {
+      stop("temporalWindows should be a data frame with startDay and endDay columns")
+    }
+    if (!"endDay" %in% colnames(temporalWindows)) {
+      stop("temporalWindows should be a data frame with startDay and endDay columns")
+    }
+  }
+  
+  if (!"rowId" %in% colnames(covariateData$covariates)) {
+    if ("cohortDefinitionId" %in% colnames(covariateData)) {
+      stop("Please check. CovariateData appears to be of aggregate type. Please generate person level CovariateData")
+    } else {
+      stop("Please check CovariateData. It does not have rowId. Is it a person level output?")
+    }
   }
 
   # Extract population size and convert to numeric
@@ -33,19 +49,54 @@ getCovaraiteDataSummaryByTimeId <- function(covariateData,
 
   # Select covariates and exclude covariateValue
   covariates <- covariateData$covariates |>
+    dplyr::filter(!is.na(timeId)) |> 
     dplyr::select(-.data$covariateValue)
 
   # Filter covariates based on startDay, if provided
-  if (!is.null(startDay)) {
-    covariates <-
-      covariates |> dplyr::inner_join(
-        covariateData$timeRef |>
-          dplyr::filter(.data$startDay >= 0),
-        by = "timeId"
-      )
+  if (!is.null(temporalWindows)) {
+    
+    timeIds <- covariateData$timeRef |>
+      dplyr::collect() |> 
+      dplyr::inner_join(temporalWindows) |>
+      dplyr::distinct()
+    
+    covariates <- covariateData$covariates |> 
+      dplyr::collect() |> 
+      dplyr::inner_join(timeIds,
+                        by = "timeId") |>
+      dplyr::arrange(rowId,
+                     covariateId,
+                     startDay,
+                     endDay)
+    
   } else {
-    covariates <- covariates |> dplyr::inner_join(covariateData$timeRef,
-      by = "timeId"
+    covariates <- covariates |>
+      dplyr::inner_join(covariateData$timeRef,
+                        by = "timeId") |>
+      dplyr::arrange(rowId,
+                     covariateId,
+                     startDay,
+                     endDay) |> 
+      dplyr::collect()
+  }
+  
+  startDayMoreThanOnce <- covariates |>
+    dplyr::select(timeId,
+                  startDay,
+                  endDay) |>
+    dplyr::distinct() |>
+    dplyr::collect() |>
+    dplyr::group_by(startDay) |>
+    dplyr::summarise(occurrence = dplyr::n()) |>
+    dplyr::ungroup() |>
+    dplyr::filter(occurrence > 1)
+  
+  if (nrow(startDayMoreThanOnce) > 0) {
+    warning(
+      paste0(
+        "The follow startDays were found more than once. This may make results uninterpretable. ",
+        paste0(startDayMoreThanOnce$startDay, collapse = ", ")
+      )
     )
   }
 
@@ -79,10 +130,11 @@ getCovaraiteDataSummaryByTimeId <- function(covariateData,
       dplyr::group_by(.data$covariateId) |>
       dplyr::mutate(cumulativeSum = cumsum(.data$rowCount)) |>
       dplyr::ungroup() |>
+      dplyr::collect() |> 
       dplyr::arrange(.data$startDay, .data$endDay, .data$covariateId) |>
       dplyr::mutate(
-        proportion = round((.data$rowCount / .data$populationSize), 2),
-        cumulativeProportion = round((.data$cumulativeSum / .data$populationSize), 2)
+        proportion = round((.data$rowCount / !!populationSize), 2),
+        cumulativeProportion = round((.data$cumulativeSum / !!populationSize), 2)
       ) |>
       dplyr::arrange(
         .data$covariateId,
@@ -109,16 +161,16 @@ getCovaraiteDataSummaryByTimeId <- function(covariateData,
       dplyr::mutate(cumulativeSum = cumsum(.data$rowCount)) |>
       dplyr::ungroup() |>
       dplyr::arrange(.data$startDay, .data$endDay) |>
+      dplyr::collect() |> 
       dplyr::mutate(
-        proportion = round((.data$rowCount / .data$populationSize), 2),
-        cumulativeProportion = round((.data$cumulativeSum / .data$populationSize), 2)
+        proportion = round((.data$rowCount / populationSize), 2),
+        cumulativeProportion = round((.data$cumulativeSum / populationSize), 2)
       ) |>
       dplyr::arrange(
         .data$startDay,
         .data$endDay
       ) |>
-      dplyr::collect() |>
-      dplyr::mutate(covariateId = (1000 + .data$cohortCovariateAnalysisId))
+      dplyr::mutate(covariateId = (1000 + cohortCovariateAnalysisId))
   )
 
   output <- dplyr::bind_rows(
@@ -147,7 +199,7 @@ getCovaraiteDataSummaryByTimeId <- function(covariateData,
 
   if (getCohortId) {
     output <- output |>
-      dplyr::mutate(cohortId = (.data$covariateId - .data$cohortCovariateAnalysisId) / 1000) |>
+      dplyr::mutate(cohortId = (.data$covariateId - cohortCovariateAnalysisId) / 1000) |>
       dplyr::relocate(.data$cohortId)
   }
 

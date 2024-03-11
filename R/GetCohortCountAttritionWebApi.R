@@ -52,8 +52,27 @@ getCohortCountAttritionWebApiGetCohortResultsOutput <-
                     .data$name,
                     .data$report)
     
-    bothCombined <- dplyr::bind_rows(.data$summary,
-                                     .data$inclusionRule) |>
+    finalCount <-
+      getCohortResultsOutput$summary |>
+      dplyr::filter(.data$mode == modeId) |>
+      dplyr::select(.data$sourceKey,
+                    .data$finalCount) |>
+      dplyr::mutate(id = -1,
+                    name = "final",
+                    countSatisfying = finalCount) |>
+      dplyr::mutate(report = OhdsiHelpers::formatIntegerWithComma(number = countSatisfying)) |>
+      dplyr::inner_join(cdmSources |>
+                          dplyr::select(.data$sourceKey,
+                                        .data$database)) |>
+      dplyr::select(.data$database,
+                    .data$sourceKey,
+                    .data$id,
+                    .data$name,
+                    .data$report)
+    
+    bothCombined <- dplyr::bind_rows(finalCount,
+                                     summary,
+                                     inclusionRule) |>
       dplyr::inner_join(sequenceSourceKey,
                         by = "sourceKey") |>
       dplyr::arrange(.data$sequenceSourceKey) |>
