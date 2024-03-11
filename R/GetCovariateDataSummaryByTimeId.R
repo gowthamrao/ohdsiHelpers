@@ -49,36 +49,34 @@ getCovaraiteDataSummaryByTimeId <- function(covariateData,
 
   # Select covariates and exclude covariateValue
   covariates <- covariateData$covariates |>
-    dplyr::filter(!is.na(timeId)) |> 
-    dplyr::select(-.data$covariateValue)
+    dplyr::select(-.data$covariateValue) |>
+    dplyr::filter(!is.na(timeId))
 
   # Filter covariates based on startDay, if provided
   if (!is.null(temporalWindows)) {
     
     timeIds <- covariateData$timeRef |>
       dplyr::collect() |> 
-      dplyr::inner_join(temporalWindows) |>
+      dplyr::inner_join(temporalWindows,
+                        by = c("startDay", "endDay")) |>
       dplyr::distinct()
     
-    covariates <- covariateData$covariates |> 
-      dplyr::collect() |> 
-      dplyr::inner_join(timeIds,
-                        by = "timeId") |>
-      dplyr::arrange(rowId,
-                     covariateId,
-                     startDay,
-                     endDay)
-    
   } else {
-    covariates <- covariates |>
-      dplyr::inner_join(covariateData$timeRef,
-                        by = "timeId") |>
-      dplyr::arrange(rowId,
-                     covariateId,
-                     startDay,
-                     endDay) |> 
-      dplyr::collect()
+    
+    timeIds <- covariateData$timeRef |>
+      dplyr::collect() |> 
+      dplyr::distinct()
+  
   }
+  
+  covariates <- covariates |> 
+    dplyr::collect() |>
+    dplyr::inner_join(timeIds,
+                      by = "timeId") |>
+    dplyr::arrange(rowId,
+                   covariateId,
+                   startDay,
+                   endDay)
   
   startDayMoreThanOnce <- covariates |>
     dplyr::select(timeId,
@@ -113,7 +111,7 @@ getCovaraiteDataSummaryByTimeId <- function(covariateData,
     dplyr::filter(.data$covariateId > 0)
 
   # Calculate summary statistics for covariates
-  outputAll <- suppressWarnings(
+  firstOccurrenceOfCovariateId <- suppressWarnings(
     covariates |>
       dplyr::select(-.data$timeId) |>
       dplyr::group_by(.data$rowId, .data$covariateId) |>
@@ -144,7 +142,7 @@ getCovaraiteDataSummaryByTimeId <- function(covariateData,
       dplyr::collect()
   )
 
-  outputAggegated <- suppressWarnings(
+  firstOccurrence <- suppressWarnings(
     covariates |>
       dplyr::select(-.data$timeId) |>
       dplyr::group_by(.data$rowId) |>
@@ -174,8 +172,8 @@ getCovaraiteDataSummaryByTimeId <- function(covariateData,
   )
 
   output <- dplyr::bind_rows(
-    outputAll,
-    outputAggegated
+    firstOccurrenceOfCovariateId,
+    firstOccurrence
   ) |>
     dplyr::arrange(
       .data$covariateId,
