@@ -41,17 +41,6 @@ checkFilterTemporalCovariateDataByTimeIdCohortId <-
         dplyr::filter(!covariateId %in% excludedCovariateIds)
     }
     
-    cohortCounts <-
-      attributes(covariateData)$metaData$populationSize |>
-      as.data.frame()
-    cohortCounts$cohortId <- as.integer(rownames(cohortCounts))
-    colnames(cohortCounts) = c("subjectCount",
-                               "cohortId")
-    cohortCounts <- cohortCounts |>
-      dplyr::filter(cohortId == !!cohortId)
-    
-    attr(covariateData, "metaData")$populationSize <-
-      cohortCounts$subjectCount
     return(covariateData)
   }
 
@@ -89,6 +78,47 @@ createTable1SpecificationsRow <- function(analysisId,
 
 
 #' @export
+createTable1SpecificationsFromCovariateData <-
+  function(covariateData) {
+    table1Specifications <- c()
+    
+    analysisNames <- covariateData$analysisRef |>
+      dplyr::collect() |>
+      dplyr::select(analysisId,
+                    analysisName) |>
+      dplyr::distinct()
+    
+    if (nrow(analysisNames) > 0) {
+      for (i in (1:nrow(analysisNames))) {
+        analysisName <-
+          analysisNames[i, ]
+        
+        covariateIds <- covariateData$covariateRef |>
+          dplyr::collect() |>
+          dplyr::filter(analysisId %in% analysisName$analysisId) |>
+          dplyr::select(.data$covariateId) |>
+          dplyr::distinct() |>
+          dplyr::collect() |>
+          dplyr::pull(.data$covariateId) |>  # dont sort
+          unique()
+        
+        table1Specifications[[i]] <-
+          createTable1SpecificationsRow(
+            analysisId = analysisName$analysisId,
+            conceptIds = NULL,
+            covariateIds = covariateIds,
+            label = analysisName$analysisName |> SqlRender::camelCaseToTitleCase() |> stringr::str_trim() |> stringr::str_squish()
+          )
+      }
+      table1Specifications <-
+        dplyr::bind_rows(table1Specifications)
+    }
+    
+    return(table1Specifications)
+  }
+
+
+#' @export
 createTable1FromCovariateData <- function(covariateData1,
                                           covariateData2 = NULL,
                                           cohortId1 = NULL,
@@ -98,7 +128,7 @@ createTable1FromCovariateData <- function(covariateData1,
                                           analysisId = NULL,
                                           timeId1 = NULL,
                                           timeId2 = NULL,
-                                          table1Specifications = NULL,
+                                          table1Specifications = createTable1SpecificationsFromCovariateData(covariateData1),
                                           showCounts = FALSE,
                                           showPercent = TRUE,
                                           percentDigits = 1,
@@ -125,126 +155,6 @@ createTable1FromCovariateData <- function(covariateData1,
         multipleCohortId = multipleCohortId,
         excludedCovariateIds = excludedCovariateIds
       )
-    populationSizeCovariateData2 <-
-      attributes(covariateData2)$metaData$populationSize |> as.numeric()
-  }
-  
-  processCovariateData <- function(covariateData,
-                                   rangeLowPercent,
-                                   rangeHighPercent) {
-    filteringCovariateIdsThatHaveMinThreshold <-
-      covariateData$covariates |>
-      dplyr::filter(.data$averageValue >= !!rangeLowPercent) |>
-      dplyr::filter(.data$averageValue <= !!rangeHighPercent) |>
-      dplyr::select("covariateId",
-                    "averageValue") |>
-      dplyr::collect() |>
-      dplyr::arrange(dplyr::desc(.data$averageValue)) |>
-      dplyr::select("covariateId") |>
-      dplyr::distinct() |>
-      dplyr::inner_join(
-        covariateData$covariateRef |>
-          dplyr::select("covariateId",
-                        "analysisId",
-                        "conceptId") |>
-          dplyr::distinct() |>
-          dplyr::collect(),
-        by = "covariateId"
-      ) |>
-      dplyr::inner_join(
-        covariateData$analysisRef |>
-          dplyr::select("analysisId",
-                        "analysisName") |>
-          dplyr::distinct() |>
-          dplyr::collect()
-        ,
-        by = "analysisId"
-      ) |>
-      dplyr::collect()
-    
-    return(filteringCovariateIdsThatHaveMinThreshold)
-  }
-  
-  
-  if (is.null(table1Specifications)) {
-    filteringCovariateIdsThatHaveMinThreshold <-
-      processCovariateData(
-        covariateData = covariateData1,
-        rangeLowPercent = rangeLowPercent,
-        rangeHighPercent = rangeHighPercent
-      )
-    if (!is.null(covariateData2)) {
-      filteringCovariateIdsThatHaveMinThreshold <- dplyr::bind_rows(
-        filteringCovariateIdsThatHaveMinThreshold,
-        processCovariateData(
-          covariateData = covariateData2,
-          rangeLowPercent = rangeLowPercent,
-          rangeHighPercent = rangeHighPercent
-        )
-      ) |>
-        dplyr::distinct()
-    }
-    
-    table1Specifications <- c()
-    
-    if (!is.null(analysisName)) {
-      filteringCovariateIdsThatHaveMinThreshold <-
-        filteringCovariateIdsThatHaveMinThreshold |>
-        dplyr::filter(analysisName %in% !!analysisName)
-    }
-    
-    if (!is.null(analysisId)) {
-      filteringCovariateIdsThatHaveMinThreshold <-
-        filteringCovariateIdsThatHaveMinThreshold |>
-        dplyr::filter(analysisId %in% !!analysisId)
-    }
-    
-    analysisNames <- filteringCovariateIdsThatHaveMinThreshold |>
-      dplyr::select(analysisName) |>
-      dplyr::distinct() |>
-      dplyr::arrange() |>
-      dplyr::collect() |>
-      dplyr::pull(analysisName)
-    
-    if (length(analysisNames) > 0) {
-      for (i in (1:length(analysisNames))) {
-        analysisName <-
-          analysisNames[[i]]
-        covariateIds <- filteringCovariateIdsThatHaveMinThreshold |>
-          dplyr::filter(analysisName %in% !!analysisName) |>
-          dplyr::select(.data$covariateId) |>
-          dplyr::distinct() |>
-          dplyr::collect() |>
-          dplyr::pull(.data$covariateId) |>  # dont sort
-          unique()
-        
-        analysisIds <- filteringCovariateIdsThatHaveMinThreshold |>
-          dplyr::filter(analysisName %in% !!analysisName) |>
-          dplyr::select(analysisId) |>
-          dplyr::distinct() |>
-          dplyr::collect() |>
-          dplyr::pull(analysisId) |>
-          sort()
-        
-        if (length(analysisIds) != 1) {
-          stop(
-            "Please check covariateData. More than one analysisId for the same analysisName"
-          )
-        }
-        
-        table1Specifications[[i]] <-
-          createTable1SpecificationsRow(
-            analysisId = analysisIds,
-            conceptIds = NULL,
-            covariateIds = covariateIds,
-            label = analysisName |> SqlRender::camelCaseToTitleCase() |> stringr::str_trim() |> stringr::str_squish()
-          )
-      }
-      table1Specifications <-
-        dplyr::bind_rows(table1Specifications)
-    } else {
-      table1Specifications <- NULL
-    }
   }
   
   report <- FeatureExtraction::createTable1(
@@ -272,9 +182,19 @@ createTable1FromCovariateData <- function(covariateData1,
       by = "Characteristic"
     ) |>
     tidyr::fill(analysisId, .direction = "down") |>
+    dplyr::left_join(
+      covariateData1$covariateRef |>
+        dplyr::collect() |>
+        dplyr::mutate(Characteristic = paste0(
+          "  ", stringr::str_remove(covariateName, ".*: ")
+        )) |>
+        dplyr::select(-covariateName,-covariateId),
+      by = c("analysisId", "Characteristic")
+    ) |>
     dplyr::mutate(Percent = stringr::str_squish(Characteristic)) |>
     dplyr::select(isHeader,
                   analysisId,
+                  conceptId,
                   Characteristic)
   
   report <- reportFields |>
@@ -285,18 +205,51 @@ createTable1FromCovariateData <- function(covariateData1,
   
   names(report)[[4]] <- "Percent"
   
-  
-  firstRow <- dplyr::tibble(
-    isHeader = 1,
-    analysisId = 0,
-    Characteristic = "Population",
-    Percent = colnamesReport[[4]] |>
-      stringr::str_squish() |> stringr::str_replace(pattern = stringr::fixed("% (n = "),
-                                                    replacement = "") |>
-      stringr::str_replace(pattern = stringr::fixed(")"),
-                           replacement = "") |>
-      as.character()
-  )
+  if (is.null(cohortId2)) {
+    firstRow <- dplyr::tibble(
+      isHeader = 1,
+      analysisId = 0,
+      conceptId = 0,
+      Characteristic = c("Cohort Id", "Population"),
+      Percent = c(
+        cohortId1,
+        colnamesReport[[5]] |>
+          stringr::str_squish() |> stringr::str_replace(pattern = stringr::fixed("% (n = "),
+                                                        replacement = "") |>
+          stringr::str_replace(pattern = stringr::fixed(")"),
+                               replacement = "") |>
+          as.character()
+      )
+    )
+  } else {
+    firstRow <- dplyr::tibble(
+      isHeader = 1,
+      analysisId = 0,
+      conceptId = 0,
+      Characteristic = c("Cohort Id", "Population"),
+      cohort1 = c(
+        cohortId1,
+        colnamesReport[[5]] |>
+          stringr::str_squish() |> stringr::str_replace(pattern = stringr::fixed("% (n = "),
+                                                        replacement = "") |>
+          stringr::str_replace(pattern = stringr::fixed(")"),
+                               replacement = "") |>
+          as.character()
+      ),
+      cohort2 = c(
+        cohortId2,
+        colnamesReport[[6]] |>
+          stringr::str_squish() |> stringr::str_replace(pattern = stringr::fixed("% (n = "),
+                                                        replacement = "") |>
+          stringr::str_replace(pattern = stringr::fixed(")"),
+                               replacement = "") |>
+          as.character()
+      ),
+      stdDiff = ""
+    )
+  }
+
+  colnames(report) <- colnames(firstRow)
   
   report <- dplyr::bind_rows(firstRow,
                              report)
