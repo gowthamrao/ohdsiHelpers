@@ -135,6 +135,11 @@ createTable1FromCovariateData <- function(covariateData1,
                                           rangeHighPercent = 1,
                                           rangeLowPercent = 0.01,
                                           excludedCovariateIds = NULL) {
+  if (is.null(table1Specifications)) {
+    table1Specifications <-
+      createTable1SpecificationsFromCovariateData(covariateData1)
+  }
+  
   covariateData1 <-
     checkFilterTemporalCovariateDataByTimeIdCohortId(
       covariateData = covariateData1,
@@ -361,8 +366,6 @@ createTable1FromCovariateDataInParallel <- function(cdmSources,
                                                     covariateData1CohortId,
                                                     covariateData2Path = NULL,
                                                     covariateData2CohortId = NULL,
-                                                    analysisName = NULL,
-                                                    analysisId = NULL,
                                                     timeId1 = NULL,
                                                     timeId2 = NULL,
                                                     table1Specifications = NULL,
@@ -452,8 +455,6 @@ createTable1FromCovariateDataInParallel <- function(cdmSources,
             covariateData2 = covariateData2Temp,
             cohortId1 = covariateData1CohortId,
             cohortId2 = covariateData2CohortId,
-            analysisName = analysisName,
-            analysisId = analysisId,
             timeId1 = timeId1,
             timeId2 = timeId2,
             table1Specifications = table1Specifications,
@@ -468,9 +469,11 @@ createTable1FromCovariateDataInParallel <- function(cdmSources,
           )
         
         if (!is.null(reportX)) {
-          if ("Percent" %in% colnames(reportX)) {
+          if ("Value" %in% colnames(reportX)) {
             reportX <- reportX |>
-              dplyr::rename(!!sourceKey := Percent)
+              dplyr::rename(!!sourceKey := Value)
+          } else {
+            browser()
           }
           report[[counter]] <- reportX
         }
@@ -478,24 +481,35 @@ createTable1FromCovariateDataInParallel <- function(cdmSources,
     }
   }
   
+  
   if (is.null(covariateData2Path)) {
     if (!is.null(report)) {
       commonColumns <- dplyr::bind_rows(report) |>
         dplyr::select(isHeader,
                       analysisId,
+                      analysisName,
+                      conceptId,
                       Characteristic) |>
         dplyr::distinct() |>
         dplyr::arrange(analysisId,
                        dplyr::desc(isHeader),
-                       Characteristic)
+                       Characteristic) |> 
+        dplyr::mutate(id = dplyr::row_number())
       
       for (x in (1:length(report))) {
         if (!is.null(report[[x]])) {
           commonColumns <- commonColumns |>
-            dplyr::left_join(report[[x]],
-                             by = c("Characteristic",
-                                    "isHeader",
-                                    "analysisId"))
+            dplyr::left_join(
+              report[[x]] |>
+                dplyr::select(-id),
+              by = c(
+                "Characteristic",
+                "isHeader",
+                "analysisId",
+                "analysisName",
+                "conceptId"
+              )
+            )
         }
       }
       report <- commonColumns
@@ -538,8 +552,6 @@ createTable1FromCovariateDataInParallel <- function(cdmSources,
 createFeatureExtractionReportInParallel <- function(cdmSources,
                                                     covariateDataPath,
                                                     cohortId,
-                                                    analysisName = NULL,
-                                                    analysisId = NULL,
                                                     timeId = NULL,
                                                     rangeHighPercent = 1,
                                                     rangeLowPercent = 0.01,
