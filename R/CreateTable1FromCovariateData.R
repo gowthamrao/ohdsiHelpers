@@ -91,7 +91,7 @@ createTable1SpecificationsFromCovariateData <-
     if (nrow(analysisNames) > 0) {
       for (i in (1:nrow(analysisNames))) {
         analysisName <-
-          analysisNames[i, ]
+          analysisNames[i,]
         
         covariateIds <- covariateData$covariateRef |>
           dplyr::collect() |>
@@ -175,7 +175,7 @@ createTable1FromCovariateData <- function(covariateData1,
     stdDiffDigits = stdDiffDigits
   )
   
-  report <- report |> 
+  report <- report |>
     dplyr::mutate(analysisName = dplyr::if_else(
       substr(Characteristic, 1, 2) != "  ",
       Characteristic,
@@ -210,19 +210,19 @@ createTable1FromCovariateData <- function(covariateData1,
         dplyr::mutate(Characteristic = paste0(
           "  ", stringr::str_remove(covariateName, ".*: ")
         )) |>
-        dplyr::select(-covariateName,-covariateId),
+        dplyr::select(-covariateName, -covariateId),
       by = c("analysisId", "Characteristic")
     ) |>
     dplyr::mutate(Percent = stringr::str_squish(Characteristic)) |>
     dplyr::select(isHeader,
                   analysisId,
                   conceptId,
-                  Characteristic) |> 
+                  Characteristic) |>
     dplyr::distinct()
   
   report <- reportFields |>
     dplyr::left_join(report,
-                     by = c("analysisId", "Characteristic")) |> 
+                     by = c("analysisId", "Characteristic")) |>
     dplyr::relocate(isHeader,
                     analysisId,
                     analysisName,
@@ -272,19 +272,19 @@ createTable1FromCovariateData <- function(covariateData1,
       stdDiff = ""
     )
   }
-
+  
   colnames(report) <- colnames(firstRow)
   
   report <- dplyr::bind_rows(firstRow,
                              report)
   
   if (!is.null(cohortId2)) {
-    report <- report |> 
+    report <- report |>
       dplyr::mutate(stdDiff = as.numeric(stdDiff))
   }
   
-  report <- report |> 
-    dplyr::mutate(id = dplyr::row_number()) |> 
+  report <- report |>
+    dplyr::mutate(id = dplyr::row_number()) |>
     dplyr::relocate(id)
   
   return(report)
