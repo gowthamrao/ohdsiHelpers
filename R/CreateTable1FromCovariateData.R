@@ -124,8 +124,6 @@ createTable1FromCovariateData <- function(covariateData1,
                                           cohortId1 = NULL,
                                           cohortId2 = NULL,
                                           multipleCohortId = FALSE,
-                                          analysisName = NULL,
-                                          analysisId = NULL,
                                           timeId1 = NULL,
                                           timeId2 = NULL,
                                           table1Specifications = createTable1SpecificationsFromCovariateData(covariateData1),
@@ -145,6 +143,9 @@ createTable1FromCovariateData <- function(covariateData1,
       multipleCohortId = multipleCohortId,
       excludedCovariateIds = excludedCovariateIds
     )
+  covariateData1$covariates <- covariateData1$covariates |>
+    dplyr::filter(averageValue <= rangeHighPercent,
+                  averageValue >= rangeLowPercent)
   
   if (!is.null(covariateData2)) {
     covariateData2 <-
@@ -155,6 +156,9 @@ createTable1FromCovariateData <- function(covariateData1,
         multipleCohortId = multipleCohortId,
         excludedCovariateIds = excludedCovariateIds
       )
+    covariateData2$covariates <- covariateData2$covariates |>
+      dplyr::filter(averageValue <= rangeHighPercent,
+                    averageValue >= rangeLowPercent)
   }
   
   report <- FeatureExtraction::createTable1(
@@ -227,6 +231,20 @@ createTable1FromCovariateData <- function(covariateData1,
   
   colnamesReport <- colnames(report)
   
+  covariateData1Count <-
+    attr(covariateData1, "metaData")$populationSize
+  if (length(covariateData1Count) > 0) {
+    covariateData1Count <-
+      covariateData1Count[[which(names(covariateData1Count) == cohortId1)]]
+  }
+  
+  covariateData2Count <-
+    attr(covariateData2, "metaData")$populationSize
+  if (length(covariateData2Count) > 0) {
+    covariateData2Count <-
+      covariateData2Count[[which(names(covariateData2Count) == cohortId2)]]
+  }
+  
   if (is.null(cohortId2)) {
     firstRow <- dplyr::tibble(
       isHeader = 1,
@@ -234,15 +252,9 @@ createTable1FromCovariateData <- function(covariateData1,
       analysisName = "",
       conceptId = 0,
       Characteristic = c("Cohort Id", "Population"),
-      Value = c(
-        cohortId1,
-        colnamesReport[[5]] |>
-          stringr::str_squish() |> stringr::str_replace(pattern = stringr::fixed("% (n = "),
-                                                        replacement = "") |>
-          stringr::str_replace(pattern = stringr::fixed(")"),
-                               replacement = "") |>
-          as.character()
-      )
+      Value = c(cohortId1,
+                covariateData1Count |>
+                  as.character())
     )
   } else {
     firstRow <- dplyr::tibble(
@@ -251,24 +263,12 @@ createTable1FromCovariateData <- function(covariateData1,
       analysisName = "",
       conceptId = 0,
       Characteristic = c("Cohort Id", "Population"),
-      cohort1 = c(
-        cohortId1,
-        colnamesReport[[6]] |>
-          stringr::str_squish() |> stringr::str_replace(pattern = stringr::fixed("% (n = "),
-                                                        replacement = "") |>
-          stringr::str_replace(pattern = stringr::fixed(")"),
-                               replacement = "") |>
-          as.character()
-      ),
-      cohort2 = c(
-        cohortId2,
-        colnamesReport[[7]] |>
-          stringr::str_squish() |> stringr::str_replace(pattern = stringr::fixed("% (n = "),
-                                                        replacement = "") |>
-          stringr::str_replace(pattern = stringr::fixed(")"),
-                               replacement = "") |>
-          as.character()
-      ),
+      cohort1 = c(cohortId1,
+                  covariateData1Count |>
+                    as.character()),
+      cohort2 = c(cohortId2,
+                  covariateData2Count |>
+                    as.character()),
       stdDiff = ""
     )
   }
