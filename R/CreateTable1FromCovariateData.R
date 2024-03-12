@@ -171,15 +171,33 @@ createTable1FromCovariateData <- function(covariateData1,
     stdDiffDigits = stdDiffDigits
   )
   
+  report <- report |> 
+    dplyr::mutate(analysisName = dplyr::if_else(
+      substr(Characteristic, 1, 2) != "  ",
+      Characteristic,
+      NA_character_
+    )) |>
+    tidyr::fill(analysisName, .direction = "down") |>
+    dplyr::left_join(
+      covariateData1$analysisRef |>
+        dplyr::select(analysisId,
+                      analysisName) |>
+        dplyr::collect() |>
+        dplyr::mutate(
+          analysisName = SqlRender::camelCaseToTitleCase(analysisName) |> stringr::str_squish()
+        ),
+      by = "analysisName"
+    )
+  
   reportFields <- report |>
-    dplyr::select(Characteristic) |>
+    dplyr::select(analysisId, Characteristic) |>
     dplyr::mutate(isHeader = ifelse(substring(Characteristic, 1, 1) != " ", 1, 0)) |>
     dplyr::left_join(
       table1Specifications |>
         dplyr::select(label,
                       analysisId) |>
         dplyr::rename(Characteristic = label),
-      by = "Characteristic"
+      by = c("analysisId", "Characteristic")
     ) |>
     tidyr::fill(analysisId, .direction = "down") |>
     dplyr::left_join(
@@ -195,23 +213,28 @@ createTable1FromCovariateData <- function(covariateData1,
     dplyr::select(isHeader,
                   analysisId,
                   conceptId,
-                  Characteristic)
+                  Characteristic) |> 
+    dplyr::distinct()
   
   report <- reportFields |>
     dplyr::left_join(report,
-                     by = "Characteristic")
+                     by = c("analysisId", "Characteristic")) |> 
+    dplyr::relocate(isHeader,
+                    analysisId,
+                    analysisName,
+                    conceptId,
+                    Characteristic)
   
   colnamesReport <- colnames(report)
-  
-  names(report)[[4]] <- "Percent"
   
   if (is.null(cohortId2)) {
     firstRow <- dplyr::tibble(
       isHeader = 1,
       analysisId = 0,
+      analysisName = "",
       conceptId = 0,
       Characteristic = c("Cohort Id", "Population"),
-      Percent = c(
+      Value = c(
         cohortId1,
         colnamesReport[[5]] |>
           stringr::str_squish() |> stringr::str_replace(pattern = stringr::fixed("% (n = "),
@@ -225,11 +248,12 @@ createTable1FromCovariateData <- function(covariateData1,
     firstRow <- dplyr::tibble(
       isHeader = 1,
       analysisId = 0,
+      analysisName = "",
       conceptId = 0,
       Characteristic = c("Cohort Id", "Population"),
       cohort1 = c(
         cohortId1,
-        colnamesReport[[5]] |>
+        colnamesReport[[6]] |>
           stringr::str_squish() |> stringr::str_replace(pattern = stringr::fixed("% (n = "),
                                                         replacement = "") |>
           stringr::str_replace(pattern = stringr::fixed(")"),
@@ -238,7 +262,7 @@ createTable1FromCovariateData <- function(covariateData1,
       ),
       cohort2 = c(
         cohortId2,
-        colnamesReport[[6]] |>
+        colnamesReport[[7]] |>
           stringr::str_squish() |> stringr::str_replace(pattern = stringr::fixed("% (n = "),
                                                         replacement = "") |>
           stringr::str_replace(pattern = stringr::fixed(")"),
@@ -253,6 +277,15 @@ createTable1FromCovariateData <- function(covariateData1,
   
   report <- dplyr::bind_rows(firstRow,
                              report)
+  
+  if (!is.null(cohortId2)) {
+    report <- report |> 
+      dplyr::mutate(stdDiff = as.numeric(stdDiff))
+  }
+  
+  report <- report |> 
+    dplyr::mutate(id = dplyr::row_number()) |> 
+    dplyr::relocate(id)
   
   return(report)
 }
