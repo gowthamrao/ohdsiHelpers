@@ -79,11 +79,20 @@ createTable1SpecificationsRow <- function(analysisId,
 
 #' @export
 createTable1SpecificationsFromCovariateData <-
-  function(covariateData) {
+  function(covariateData = NULL,
+           covariateRef = NULL,
+           analysisRef = NULL) {
     table1Specifications <- c()
     
-    analysisNames <- covariateData$analysisRef |>
-      dplyr::collect() |>
+    if (!is.null(covariateData)) {
+      covariateRef <- covariateData$covariateRef |>
+        dplyr::collect()
+      
+      analysisRef <- covariateData$analysisRef |>
+        dplyr::collect()
+    }
+    
+    analysisNames <- analysisRef |>
       dplyr::select(analysisId,
                     analysisName) |>
       dplyr::distinct()
@@ -91,9 +100,9 @@ createTable1SpecificationsFromCovariateData <-
     if (nrow(analysisNames) > 0) {
       for (i in (1:nrow(analysisNames))) {
         analysisName <-
-          analysisNames[i,]
+          analysisNames[i, ]
         
-        covariateIds <- covariateData$covariateRef |>
+        covariateIds <- covariateRef |>
           dplyr::collect() |>
           dplyr::filter(analysisId %in% analysisName$analysisId) |>
           dplyr::select(.data$covariateId) |>
@@ -135,6 +144,11 @@ createTable1FromCovariateData <- function(covariateData1,
                                           rangeHighPercent = 1,
                                           rangeLowPercent = 0.01,
                                           excludedCovariateIds = NULL) {
+  
+  if (is.null(covariateData1)) {
+    return(NULL)
+  }
+  
   if (is.null(table1Specifications)) {
     table1Specifications <-
       createTable1SpecificationsFromCovariateData(covariateData1)
@@ -151,6 +165,12 @@ createTable1FromCovariateData <- function(covariateData1,
   covariateData1$covariates <- covariateData1$covariates |>
     dplyr::filter(averageValue <= rangeHighPercent,
                   averageValue >= rangeLowPercent)
+  
+  if (!is.null(cohortId2)) {
+    if (is.null(covariateData2)) {
+      return(NULL)
+    }
+  }
   
   if (!is.null(covariateData2)) {
     covariateData2 <-
@@ -215,7 +235,7 @@ createTable1FromCovariateData <- function(covariateData1,
         dplyr::mutate(Characteristic = paste0(
           "  ", stringr::str_remove(covariateName, ".*: ")
         )) |>
-        dplyr::select(-covariateName, -covariateId),
+        dplyr::select(-covariateName,-covariateId),
       by = c("analysisId", "Characteristic")
     ) |>
     dplyr::mutate(Percent = stringr::str_squish(Characteristic)) |>
@@ -378,6 +398,11 @@ createTable1FromCovariateDataInParallel <- function(cdmSources,
                                                     rangeLowPercent = 0.01,
                                                     excludedCovariateIds = NULL,
                                                     label = "databaseId") {
+  cdmSources$databaseUniqueName <-
+    coalesce(cdmSources[[label]], cdmSources[["database"]])
+  databaseUniqueNameValues <- cdmSources |>
+    dplyr::pull(databaseUniqueName) |>
+    unique()
   sourceKeys <- cdmSources$sourceKey |> unique()
   
   covariateData1Files <-
@@ -424,20 +449,27 @@ createTable1FromCovariateDataInParallel <- function(cdmSources,
     sourceKey <- sourceKeys[[i]]
     covariateData1File <- covariateData1Files |>
       dplyr::filter(sourceKey == !!sourceKey)
+    
     if (nrow(covariateData1File) == 1) {
       covariateData1 <-
         FeatureExtraction::loadCovariateData(file = covariateData1File$filePath)
       
-      if (nrow(covariateData1$covariateRef |> dplyr::collect()) > 0) {
+      if (nrow(covariateData1$covariateRef |> dplyr::collect()) > 0) {        
+        
+        if (nrow(covariateData1$covariates |> dplyr::collect()) == 0) {
+          return(NULL)
+        }
+        
         covariateData1Temp <-
           copyCovariateDataObjects(covariateData = covariateData1)
+
         
         covariateData2Temp <- NULL
         if (!is.null(covariateData2Files)) {
           covariateData2File <- covariateData2Files |>
             dplyr::filter(sourceKey == !!sourceKey)
           
-          if (nrow(covariateData2Files) == 1) {
+          if (nrow(covariateData2File) == 1) {
             covariateData2 <-
               FeatureExtraction::loadCovariateData(file = covariateData2File$filePath)
             
@@ -447,6 +479,7 @@ createTable1FromCovariateDataInParallel <- function(cdmSources,
             }
           }
         }
+        
         counter <- counter + 1
         
         reportX <-
@@ -468,12 +501,26 @@ createTable1FromCovariateDataInParallel <- function(cdmSources,
             excludedCovariateIds = excludedCovariateIds
           )
         
+        fieldValue <- cdmSources |>
+          dplyr::filter(sourceKey == !!sourceKey) |>
+          dplyr::pull(databaseUniqueName)
+        
         if (!is.null(reportX)) {
           if ("Value" %in% colnames(reportX)) {
             reportX <- reportX |>
-              dplyr::rename(!!sourceKey := Value)
+              dplyr::rename(!!fieldValue := Value)
           } else {
-            browser()
+            cohort1ColumnName <- paste0("cohortId1", "_", fieldValue)
+            cohort2ColumnName <-
+              paste0("cohortId2", "_", fieldValue)
+            stdDiffColumnName <- paste0("stdDiff", "_", fieldValue)
+            
+            reportX <- reportX |>
+              dplyr::rename(
+                !!cohort1ColumnName := cohort1,
+                !!cohort2ColumnName := cohort2,
+                !!stdDiffColumnName := stdDiff
+              )
           }
           report[[counter]] <- reportX
         }
@@ -481,69 +528,39 @@ createTable1FromCovariateDataInParallel <- function(cdmSources,
     }
   }
   
-  
-  if (is.null(covariateData2Path)) {
-    if (!is.null(report)) {
-      commonColumns <- dplyr::bind_rows(report) |>
-        dplyr::select(isHeader,
-                      analysisId,
-                      analysisName,
-                      conceptId,
-                      Characteristic) |>
-        dplyr::distinct() |>
-        dplyr::arrange(analysisId,
-                       dplyr::desc(isHeader),
-                       Characteristic) |> 
-        dplyr::mutate(id = dplyr::row_number())
-      
-      for (x in (1:length(report))) {
-        if (!is.null(report[[x]])) {
-          commonColumns <- commonColumns |>
-            dplyr::left_join(
-              report[[x]] |>
-                dplyr::select(-id),
-              by = c(
-                "Characteristic",
-                "isHeader",
-                "analysisId",
-                "analysisName",
-                "conceptId"
-              )
-            )
-        }
-      }
-      report <- commonColumns
-    }
-  } else {
-    browser()
-  }
-  
   if (!is.null(report)) {
-    if (!is.null(label)) {
-      if (label %in% colnames(cdmSources)) {
-        dataSourcesLabel <- cdmSources |>
-          dplyr::select("sourceKey", dplyr::all_of(label)) |>
-          dplyr::distinct()
-        colnames(dataSourcesLabel) <- c("originalName",
-                                        "newName")
-        
-        reportColumnNames <-
-          dplyr::tibble(originalName = colnames(report)) |>
-          dplyr::left_join(dataSourcesLabel,
-                           by = "originalName") |>
-          dplyr::mutate(newName = dplyr::coalesce(newName, originalName))
-        colnames(report) <- reportColumnNames$newName
-      }
-    }
-    report <- report |>
+    commonColumns <- dplyr::bind_rows(report) |>
+      dplyr::select(isHeader,
+                    analysisId,
+                    analysisName,
+                    conceptId,
+                    Characteristic) |>
+      dplyr::distinct() |>
       dplyr::arrange(analysisId,
                      dplyr::desc(isHeader),
-                     dplyr::desc(4)) |>
-      dplyr::mutate(dplyr::across(dplyr::everything(), ~ ifelse(is.na(.), "", .)))
-    return(report)
-  } else {
-    writeLines("No output generated.")
+                     Characteristic) |>
+      dplyr::mutate(id = dplyr::row_number())
+    
+    for (x in (1:length(report))) {
+      if (!is.null(report[[x]])) {
+        commonColumns <- commonColumns |>
+          dplyr::left_join(
+            report[[x]] |>
+              dplyr::select(-id),
+            by = c(
+              "Characteristic",
+              "isHeader",
+              "analysisId",
+              "analysisName",
+              "conceptId"
+            )
+          )
+      }
+    }
+    report <- commonColumns
   }
+  
+  return(report)
 }
 
 
