@@ -186,6 +186,10 @@ createTable1FromCovariateData <- function(covariateData1,
                     averageValue >= rangeLowPercent)
   }
   
+  if (covariateData1$covariates |> dplyr::count() |> dplyr::pull() == 0) {
+    return(NULL)
+  }
+  
   report <- FeatureExtraction::createTable1(
     covariateData1 = covariateData1,
     covariateData2 = covariateData2,
@@ -454,16 +458,15 @@ createTable1FromCovariateDataInParallel <- function(cdmSources,
       covariateData1 <-
         FeatureExtraction::loadCovariateData(file = covariateData1File$filePath)
       
-      if (nrow(covariateData1$covariateRef |> dplyr::collect()) > 0) {        
+      if (covariateData1$covariateRef |> dplyr::count() |> dplyr::pull() > 0) {        
         
-        if (nrow(covariateData1$covariates |> dplyr::collect()) == 0) {
+        if (covariateData1$covariates |> dplyr::count() |> dplyr::pull() == 0) {
           return(NULL)
         }
         
         covariateData1Temp <-
           copyCovariateDataObjects(covariateData = covariateData1)
 
-        
         covariateData2Temp <- NULL
         if (!is.null(covariateData2Files)) {
           covariateData2File <- covariateData2Files |>
@@ -694,5 +697,11 @@ createFeatureExtractionReportInParallel <- function(cdmSources,
         values_fill = 0
       )
   }
+  
+  if ('id' %in% colnames(report)) {
+    report <- report |> 
+      dplyr::relocate(id)
+  }
+  
   return(report)
 }
