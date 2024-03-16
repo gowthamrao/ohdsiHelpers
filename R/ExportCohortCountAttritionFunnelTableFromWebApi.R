@@ -3,6 +3,7 @@ exportCohortCountAttritionFunnelTableFromWebApi <-
   function(cohortId,
            outputFolder,
            cdmSources,
+           sequence = 1,
            cohortDefinitionSet = NULL,
            baseUrl = Sys.getenv("BaseUrl"),
            authMethod = "windows",
@@ -26,8 +27,11 @@ exportCohortCountAttritionFunnelTableFromWebApi <-
     
     # Generate cohort attrition data
     s1FunnelPlotCohortAttrition <-
-      OhdsiHelpers::getCohortCountAttritionWebApiGetCohortResultsOutput(cdmSources = cdmSources,
-                                                                        getCohortResultsOutput = cohortResults)
+      OhdsiHelpers::getCohortCountAttritionWebApiGetCohortResultsOutput(
+        cdmSources = cdmSources |>
+          dplyr::filter(sequence %in% !!sequence),
+        getCohortResultsOutput = cohortResults   
+      )
     
     if (!is.null(cohortDefinitionSet)) {
       cohortName <- cohortDefinitionSet |>

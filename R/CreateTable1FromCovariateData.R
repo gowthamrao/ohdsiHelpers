@@ -14,7 +14,8 @@ checkFilterTemporalCovariateDataByTimeIdCohortId <-
         covariateData$timeRef <- covariateData$timeRef |>
           dplyr::filter(.data$timeId == !!timeId)
         covariateData$covariates <- covariateData$covariates |>
-          dplyr::filter(.data$timeId == !!timeId) |>
+          dplyr::filter(.data$timeId == !!timeId |
+                        is.na(.data$timeId)) |>
           dplyr::select(-.data$timeId)
       }
     }
