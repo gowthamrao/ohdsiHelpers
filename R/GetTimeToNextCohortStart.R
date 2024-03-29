@@ -13,50 +13,58 @@ getTimeToNextCohortStart <- function(connectionDetails = NULL,
     on.exit(DatabaseConnector::disconnect(connection))
   }
 
-
-
-  sql <- "SELECT subject_id,
+  sql <- "SELECT start_sequence,
           	DATEDIFF(day, cohort_start_date, next_start_date) AS days_to_next,
-          	count(DISTINCT cohort_start_date) records
+          	count(DISTINCT subject_id) subjects,
+          	count(DISTINCT CAST(subject_id AS VARCHAR(25)) || '-' || CAST(cohort_start_date AS VARCHAR(10))) records
           FROM (
           	SELECT subject_id,
           		cohort_start_date,
           		next_start_date,
           		ROW_NUMBER() OVER (
-          			PARTITION BY subject_id,
-          			cohort_start_date 
-          			ORDER BY next_start_date
-          			) rn
+          			PARTITION BY subject_id
+          			ORDER BY cohort_start_date
+          			) AS start_sequence
           	FROM (
-          		SELECT DISTINCT t.subject_id,
-          			t.cohort_start_date,
-          			LEAD(f.cohort_start_date) OVER (
-          				PARTITION BY t.subject_id,
-          				t.cohort_start_date 
-          				ORDER BY f.cohort_start_date
-          				) AS next_start_date
+          		SELECT subject_id,
+          			cohort_start_date,
+          			next_start_date,
+          			ROW_NUMBER() OVER (
+          				PARTITION BY subject_id,
+          				cohort_start_date 
+          				ORDER BY next_start_date
+          				) rn
           		FROM (
-          			SELECT subject_id, 
-          			        cohort_start_date
-          			FROM @target_cohort_database_schema.@target_cohort_table_name
-          			WHERE cohort_definition_id = @target_cohort_definition_id
-          			) t
-          		INNER JOIN (
-          			SELECT subject_id,
-          				cohort_start_date
-          			FROM @feature_cohort_database_schema.@feature_cohort_table_name
-          			WHERE cohort_definition_id = @feature_cohort_definition_id
-          			) AS f
-          			ON t.subject_id = f.subject_id
-          			AND t.cohort_start_date <= f.cohort_start_date
-          		) f
-          	WHERE DATEDIFF(day, cohort_start_date, next_start_date) IS NOT NULL
-          	) f2
-          WHERE rn = 1
-          GROUP BY subject_id,
+          			SELECT DISTINCT t.subject_id,
+          				t.cohort_start_date,
+          				LEAD(f.cohort_start_date) OVER (
+          					PARTITION BY t.subject_id,
+          					t.cohort_start_date 
+          					ORDER BY f.cohort_start_date
+          					) AS next_start_date
+          			FROM (
+          				SELECT subject_id,
+          					cohort_start_date
+          				FROM @target_cohort_database_schema.@target_cohort_table_name
+          				WHERE cohort_definition_id = @target_cohort_definition_id
+          				) t
+          			INNER JOIN (
+          				SELECT subject_id,
+          					cohort_start_date
+          				FROM @feature_cohort_database_schema.@feature_cohort_table_name
+          				WHERE cohort_definition_id = @feature_cohort_definition_id
+          				) AS f
+          				ON t.subject_id = f.subject_id
+          					AND t.cohort_start_date <= f.cohort_start_date
+          			) f
+          		WHERE DATEDIFF(day, cohort_start_date, next_start_date) IS NOT NULL
+          		) f2
+          	WHERE rn = 1
+          	) f3
+          GROUP BY start_sequence,
           	DATEDIFF(day, cohort_start_date, next_start_date)
-          ORDER BY subject_id,
-          	DATEDIFF(day, cohort_start_date, next_start_date)
+          ORDER BY start_sequence,
+          	DATEDIFF(day, cohort_start_date, next_start_date);
 "
   subjectRecords <- DatabaseConnector::renderTranslateQuerySql(
     connection = connection,
@@ -74,24 +82,25 @@ getTimeToNextCohortStart <- function(connectionDetails = NULL,
 
   output <- c()
   output$daysToNextDistribution <- subjectRecords |>
-    dplyr::group_by(.data$daysToNext) |>
+    dplyr::group_by(.data$startSequence,
+                    .data$daysToNext) |>
     dplyr::summarize(
       totalRecords = sum(.data$records),
-      uniqueSubjectIds = dplyr::n_distinct(.data$subjectId),
-      minRecords = min(.data$records),
-      maxRecords = max(.data$records),
-      percentile1 = quantile(.data$records, probs = 0.01),
-      percentile5 = quantile(.data$records, probs = 0.05),
-      percentile10 = quantile(.data$records, probs = 0.10),
-      percentile25 = quantile(.data$records, probs = 0.25),
-      medianRecords = median(.data$records),
-      percentile75 = quantile(.data$records, probs = 0.75),
-      percentile90 = quantile(.data$records, probs = 0.90),
-      percentile95 = quantile(.data$records, probs = 0.95),
-      percentile99 = quantile(.data$records, probs = 0.99),
-      meanRecords = mean(.data$records),
-      sdRecords = sd(.data$records),
-      iqrRecords = IQR(.data$records)
+      uniqueSubjectIds = max(.data$subjects),
+      minRecords = min(.data$records/.data$subjects),
+      maxRecords = max(.data$records/.data$subjects),
+      percentile1 = quantile(.data$records/.data$subjects, probs = 0.01),
+      percentile5 = quantile(.data$records/.data$subjects, probs = 0.05),
+      percentile10 = quantile(.data$records/.data$subjects, probs = 0.10),
+      percentile25 = quantile(.data$records/.data$subjects, probs = 0.25),
+      medianRecords = median(.data$records/.data$subjects),
+      percentile75 = quantile(.data$records/.data$subjects, probs = 0.75),
+      percentile90 = quantile(.data$records/.data$subjects, probs = 0.90),
+      percentile95 = quantile(.data$records/.data$subjects, probs = 0.95),
+      percentile99 = quantile(.data$records/.data$subjects, probs = 0.99),
+      meanRecords = mean(.data$records/.data$subjects),
+      sdRecords = sd(.data$records/.data$subjects),
+      iqrRecords = IQR(.data$records/.data$subjects)
     )|> 
     dplyr::ungroup() 
 
