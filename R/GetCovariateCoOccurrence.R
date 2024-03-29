@@ -77,22 +77,26 @@ getCovariateCoOccurrence <- function(covariateData,
       dplyr::summarise(maxTimeId = min(.data$timeId, na.rm = TRUE)) |>
       dplyr::ungroup()
     
-    # Filter covariates based on time ID constraints
-    covariateData$covariatesFiltered <-
-      covariateData$covariatesFiltered |>
-      dplyr::left_join(rowIdMaxTimeId, by = "rowId") |>
-      dplyr::filter(.data$timeId < .data$maxTimeId |
-                      is.na(.data$maxTimeId)) |>
-      dplyr::select(-.data$maxTimeId)
-    
-    # Remove unwanted cohort IDs
-    covariateIdsToRemove <-
-      setdiff(exitCovariateIds, eventCovariateIds)
-    
-    # Filter out the unwanted cohorts from covariates and covariate reference
-    covariateData$covariatesFiltered <-
-      covariateData$covariatesFiltered |>
-      dplyr::filter(!.data$covariateId %in% covariateCohortIdsToRemove)
+    if (rowIdMaxTimeId |> dplyr::count() |> dplyr::collect() |> dplyr::pull() > 0) {
+      # Filter covariates based on time ID constraints
+      covariateData$covariatesFiltered <-
+        covariateData$covariatesFiltered |>
+        dplyr::left_join(rowIdMaxTimeId, by = "rowId") |>
+        dplyr::filter(.data$timeId < .data$maxTimeId |
+                        is.na(.data$maxTimeId)) |>
+        dplyr::select(-.data$maxTimeId)
+      
+      # Remove unwanted cohort IDs
+      covariateIdsToRemove <-
+        setdiff(exitCovariateIds, eventCovariateIds)
+      
+      if (length(covariateIdsToRemove) > 0) {
+        # Filter out the unwanted cohorts from covariates and covariate reference
+        covariateData$covariatesFiltered <-
+          covariateData$covariatesFiltered |>
+          dplyr::filter(!.data$covariateId %in% covariateCohortIdsToRemove)
+      }
+    }
   }
   
   # Handling entry cohorts
@@ -104,20 +108,24 @@ getCovariateCoOccurrence <- function(covariateData,
       dplyr::summarise(minTimeId = min(.data$timeId, na.rm = TRUE)) |>
       dplyr::ungroup()
     
-    # Filter covariates based on time ID constraints for entry cohorts
-    covariateData$covariatesFiltered <-
-      covariateData$covariatesFiltered |>
-      dplyr::left_join(rowIdMinTimeId, by = "rowId") |>
-      dplyr::filter(.data$timeId >= .data$minTimeId) |>
-      dplyr::select(-.data$minTimeId)
-    
-    # Remove unwanted cohort IDs for entry cohorts
-    covariateIdsToRemove <-
-      setdiff(exitCovariateIds, eventCovariateIds)
-    
-    covariateData$covariatesFiltered <-
-      covariateData$covariatesFiltered |>
-      dplyr::filter(!.data$covariateId %in% covariateIdsToRemove)
+    if (rowIdMinTimeId |> dplyr::count() |> dplyr::collect() |> dplyr::pull() > 0) {
+      # Filter covariates based on time ID constraints for entry cohorts
+      covariateData$covariatesFiltered <-
+        covariateData$covariatesFiltered |>
+        dplyr::left_join(rowIdMinTimeId, by = "rowId") |>
+        dplyr::filter(.data$timeId >= .data$minTimeId) |>
+        dplyr::select(-.data$minTimeId)
+      
+      # Remove unwanted cohort IDs for entry cohorts
+      covariateIdsToRemove <-
+        setdiff(exitCovariateIds, eventCovariateIds)
+      
+      if (length(covariateIdsToRemove) > 0) {
+        covariateData$covariatesFiltered <-
+          covariateData$covariatesFiltered |>
+          dplyr::filter(!.data$covariateId %in% covariateIdsToRemove)
+      }
+    }
   }
   
   # Extract population size from metadata

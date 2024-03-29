@@ -26,4 +26,6 @@ saveDataFrameToExcel <-
 
     # Save the workbook to the specified file path, allowing overwriting if the file already exists
     openxlsx::saveWorkbook(wb, filePath, overwrite = TRUE)
+    
+    rm(wb)
   }

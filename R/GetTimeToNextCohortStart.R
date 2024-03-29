@@ -15,31 +15,48 @@ getTimeToNextCohortStart <- function(connectionDetails = NULL,
 
 
 
-  sql <- "
-  DROP table if exists #target_cohort;
-  SELECT subject_id,
-          min(cohort_start_date) cohort_start_date,
-          min(cohort_end_date) cohort_end_date
-  FROM
-    @target_cohort_database_schema.@target_cohort_table
-  WHERE cohort_definition_id = @target_cohort_id;
-  
-  SELECT
-    subject_id,
-    DATEDIFF(day, cohort_start_date, next_start_date) AS days_to_next,
-    count(*) records
-FROM
-    (SELECT
-        subject_id,
-        cohort_start_date,
-        LEAD(cohort_start_date) OVER (PARTITION BY subject_id ORDER BY cohort_start_date) AS next_start_date
-     FROM #target_cohort_id t
-     LEFT JOIN
-          @feature_cohort_database_schema.@feature_cohort_table
-     WHERE cohort_definition_id = @cohort_definition_id
-    ) AS a
-  GROUP BY subject_id, DATEDIFF(day, cohort_start_date, next_start_date)
-  ORDER BY subject_id, DATEDIFF(day, cohort_start_date, next_start_date)
+  sql <- "SELECT subject_id,
+          	DATEDIFF(day, cohort_start_date, next_start_date) AS days_to_next,
+          	count(DISTINCT cohort_start_date) records
+          FROM (
+          	SELECT subject_id,
+          		cohort_start_date,
+          		next_start_date,
+          		ROW_NUMBER() OVER (
+          			PARTITION BY subject_id,
+          			cohort_start_date 
+          			ORDER BY next_start_date
+          			) rn
+          	FROM (
+          		SELECT DISTINCT t.subject_id,
+          			t.cohort_start_date,
+          			LEAD(f.cohort_start_date) OVER (
+          				PARTITION BY t.subject_id,
+          				t.cohort_start_date 
+          				ORDER BY f.cohort_start_date
+          				) AS next_start_date
+          		FROM (
+          			SELECT subject_id, 
+          			        cohort_start_date
+          			FROM @target_cohort_database_schema.@target_cohort_table_name
+          			WHERE cohort_definition_id = @target_cohort_definition_id
+          			) t
+          		INNER JOIN (
+          			SELECT subject_id,
+          				cohort_start_date
+          			FROM @feature_cohort_database_schema.@feature_cohort_table_name
+          			WHERE cohort_definition_id = @feature_cohort_definition_id
+          			) AS f
+          			ON t.subject_id = f.subject_id
+          			AND t.cohort_start_date <= f.cohort_start_date
+          		) f
+          	WHERE DATEDIFF(day, cohort_start_date, next_start_date) IS NOT NULL
+          	) f2
+          WHERE rn = 1
+          GROUP BY subject_id,
+          	DATEDIFF(day, cohort_start_date, next_start_date)
+          ORDER BY subject_id,
+          	DATEDIFF(day, cohort_start_date, next_start_date)
 "
   subjectRecords <- DatabaseConnector::renderTranslateQuerySql(
     connection = connection,
@@ -52,7 +69,8 @@ FROM
     feature_cohort_database_schema = featureCohortDatabaseSchema,
     feature_cohort_table_name = featureCohortTableName,
     feature_cohort_definition_id = featureCohortId
-  )
+  ) |> 
+    dplyr::tibble()
 
   output <- c()
   output$daysToNextDistribution <- subjectRecords |>
@@ -74,7 +92,8 @@ FROM
       meanRecords = mean(.data$records),
       sdRecords = sd(.data$records),
       iqrRecords = IQR(.data$records)
-    )
+    )|> 
+    dplyr::ungroup() 
 
   output$daysToNext <- subjectRecords |>
     dplyr::select(
