@@ -1,5 +1,5 @@
 #' @export
-getCohortTemporalRelationshipByDayInParrallel <-
+getTargetCohortToFeatureCohortDateDifferenceDistributionInParrallel <-
   function(cdmSources,
            targetCohortTableName,
            targetCohortIds,
@@ -12,7 +12,6 @@ getCohortTemporalRelationshipByDayInParrallel <-
            sequence = 1,
            userService = "OHDSI_USER",
            passwordService = "OHDSI_PASSWORD") {
-    
     cdmSources <-
       getCdmSource(cdmSources = cdmSources,
                    database = databaseIds,
@@ -62,7 +61,7 @@ getCohortTemporalRelationshipByDayInParrallel <-
         
         # Render and translate SQL for the CDM source
         output <-
-          getCohortTemporalRelationshipByDay(
+          getTargetCohortToFeatureCohortDateDifferenceDistribution(
             connectionDetails = connectionDetails,
             connection = connection,
             targetCohortDatabaseSchema =  x$cohortDatabaseSchemaFinal,
@@ -140,7 +139,7 @@ getCohortTemporalRelationshipByDayInParrallel <-
 
 
 #' @export
-getCohortTemporalRelationshipByDay <-
+getTargetCohortToFeatureCohortDateDifferenceDistribution <-
   function(connectionDetails = NULL,
            connection = NULL,
            targetCohortDatabaseSchema,
@@ -152,7 +151,6 @@ getCohortTemporalRelationshipByDay <-
            featureCohortTableName = targetCohortTableName,
            featureCohortAnchorDate = "cohort_start_date",
            tempEmulationSchema = getOption("sqlRenderTempEmulationSchema")) {
-    
     # Validate inputs using checkmate
     checkmate::assertChoice(targetCohortAnchorDate,
                             c("cohort_start_date", "cohort_end_date"),
@@ -243,9 +241,16 @@ getCohortTemporalRelationshipByDay <-
           	        start_sequence,
           	        cohort_start_date,
           	        next_start_date,
-          	        DATEDIFF(day, cohort_start_date, next_start_date) AS days_to_next_cohort_start
+          	        DATEDIFF(day, cohort_start_date, next_start_date) AS days_to_next_cohort_start,
+                    CAST(subject_id AS VARCHAR(25)) || '-' || CAST(cohort_start_date AS VARCHAR(10)) AS event_id,
+                    DENSE_RANK() OVER (PARTITION BY start_sequence
+                                        ORDER BY subject_id) AS subject_rank,
+                    DENSE_RANK() OVER (PARTITION BY start_sequence
+                                        ORDER BY CAST(subject_id AS VARCHAR(25)
+                                        ) || '-' || CAST(next_start_date AS VARCHAR(10))) AS event_rank
             INTO #occurrence_next_date
           	FROM next_feature_date2
+          	WHERE next_start_date IS NOT NULL
           ;
 
           SELECT *
@@ -255,7 +260,9 @@ getCohortTemporalRelationshipByDay <-
             SELECT -2 AS start_sequence,
                   -2 AS days_to_next_cohort_start,
                 	count(DISTINCT subject_id) subjects,
-                	count(DISTINCT CAST(subject_id AS VARCHAR(25)) || '-' || CAST(cohort_start_date AS VARCHAR(10))) events
+                	count(DISTINCT CAST(subject_id AS VARCHAR(25)) || '-' || CAST(cohort_start_date AS VARCHAR(10))) events,
+                	MAX(subject_rank) OVER (ORDER BY start_sequence ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS subjects_cumulative,
+                  MAX(event_rank) OVER (ORDER BY start_sequence ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS events_cumulative
             FROM #target_cohort
 
             UNION
@@ -263,7 +270,9 @@ getCohortTemporalRelationshipByDay <-
             SELECT start_sequence,
                   -2 AS days_to_next_cohort_start,
                 	count(DISTINCT subject_id) subjects,
-                	count(DISTINCT CAST(subject_id AS VARCHAR(25)) || '-' || CAST(cohort_start_date AS VARCHAR(10))) events
+                	count(DISTINCT CAST(subject_id AS VARCHAR(25)) || '-' || CAST(cohort_start_date AS VARCHAR(10))) events,
+                	MAX(subject_rank) OVER (ORDER BY start_sequence ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS subjects_cumulative,
+                  MAX(event_rank) OVER (ORDER BY start_sequence ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS events_cumulative
             FROM #target_cohort
             GROUP BY start_sequence
 
@@ -272,7 +281,9 @@ getCohortTemporalRelationshipByDay <-
             SELECT -1 AS start_sequence,
                   -1 AS days_to_next_cohort_start,
                 	count(DISTINCT subject_id) subjects,
-                	count(DISTINCT CAST(subject_id AS VARCHAR(25)) || '-' || CAST(next_start_date AS VARCHAR(10))) events
+                	count(DISTINCT CAST(subject_id AS VARCHAR(25)) || '-' || CAST(next_start_date AS VARCHAR(10))) events,
+                	MAX(subject_rank) OVER (ORDER BY start_sequence ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS subjects_cumulative,
+                  MAX(event_rank) OVER (ORDER BY start_sequence ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS events_cumulative
             FROM #occurrence_next_date
 
             UNION
@@ -280,7 +291,9 @@ getCohortTemporalRelationshipByDay <-
             SELECT start_sequence,
                   -1 AS days_to_next_cohort_start,
                 	count(DISTINCT subject_id) subjects,
-                	count(DISTINCT CAST(subject_id AS VARCHAR(25)) || '-' || CAST(next_start_date AS VARCHAR(10))) events
+                	count(DISTINCT CAST(subject_id AS VARCHAR(25)) || '-' || CAST(next_start_date AS VARCHAR(10))) events,
+                	MAX(subject_rank) OVER (ORDER BY start_sequence ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS subjects_cumulative,
+                  MAX(event_rank) OVER (ORDER BY start_sequence ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS events_cumulative
             FROM #occurrence_next_date
             GROUP BY start_sequence
 
@@ -289,7 +302,9 @@ getCohortTemporalRelationshipByDay <-
             SELECT -1 start_sequence,
                   days_to_next_cohort_start,
                 	count(DISTINCT subject_id) subjects,
-                	count(DISTINCT CAST(subject_id AS VARCHAR(25)) || '-' || CAST(next_start_date AS VARCHAR(10))) events
+                	count(DISTINCT CAST(subject_id AS VARCHAR(25)) || '-' || CAST(next_start_date AS VARCHAR(10))) events,
+                	MAX(subject_rank) OVER (ORDER BY start_sequence ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS subjects_cumulative,
+                  MAX(event_rank) OVER (ORDER BY start_sequence ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS events_cumulative
             FROM #occurrence_next_date
             GROUP BY days_to_next_cohort_start
 
@@ -298,7 +313,9 @@ getCohortTemporalRelationshipByDay <-
             SELECT start_sequence,
             	days_to_next_cohort_start,
             	count(DISTINCT subject_id) subjects,
-            	count(DISTINCT CAST(subject_id AS VARCHAR(25)) || '-' || CAST(next_start_date AS VARCHAR(10))) events
+            	count(DISTINCT CAST(subject_id AS VARCHAR(25)) || '-' || CAST(next_start_date AS VARCHAR(10))) events,
+                	MAX(subject_rank) OVER (ORDER BY start_sequence ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS subjects_cumulative,
+                  MAX(event_rank) OVER (ORDER BY start_sequence ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS events_cumulative
             FROM #occurrence_next_date
             WHERE next_start_date IS NOT NULL
             GROUP BY start_sequence,
