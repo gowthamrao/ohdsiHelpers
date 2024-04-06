@@ -72,6 +72,7 @@ getCohortTemporalRelationshipByDayInParrallel <-
             featureCohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
             featureCohortTableName = featureCohortTableName,
             featureCohortAnchorDate = featureCohortAnchorDate,
+            featureCohortIds = featureCohortIds,
             tempEmulationSchema = tempEmulationSchema
           ) |>
           dplyr::tibble() |>
@@ -218,7 +219,8 @@ getCohortTemporalRelationshipByDay <-
           		t.cohort_start_date,
           		LEAD(f.cohort_start_date) OVER (
           			PARTITION BY t.subject_id,
-          			t.cohort_start_date
+          			t.cohort_start_date,
+          			t.start_sequence
           			ORDER BY f.cohort_start_date
           			) AS next_start_date
           	FROM #target_cohort t
