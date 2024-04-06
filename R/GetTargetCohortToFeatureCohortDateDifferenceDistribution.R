@@ -20,7 +20,7 @@ getTargetCohortToFeatureCohortDateDifferenceDistributionInParrallel <-
     # Convert the filtered cdmSources to a list for parallel processing
     x <- list()
     for (i in 1:nrow(cdmSources)) {
-      x[[i]] <- cdmSources[i,]
+      x[[i]] <- cdmSources[i, ]
     }
     
     # Create a temporary directory for storing output files
@@ -122,7 +122,7 @@ getTargetCohortToFeatureCohortDateDifferenceDistributionInParrallel <-
       # Read and combine all outputData data
       outputData <- c()
       for (i in (1:nrow(df))) {
-        outputData[[i]] <- readRDS(df[i, ]$fileNames)
+        outputData[[i]] <- readRDS(df[i,]$fileNames)
       }
       
       outputData <- dplyr::bind_rows(outputData)
@@ -195,7 +195,7 @@ getTargetCohortToFeatureCohortDateDifferenceDistribution <-
             DROP TABLE IF EXISTS #agg_non_cum;
             DROP TABLE IF EXISTS #agg_cum;
             DROP TABLE IF EXISTS #aggregate;
-            
+
             DROP TABLE IF EXISTS #days_to_next_start;
 
             ------
@@ -212,15 +212,15 @@ getTargetCohortToFeatureCohortDateDifferenceDistribution <-
             	FROM @target_cohort_database_schema.@target_cohort_table_name
             	WHERE cohort_definition_id IN (@target_cohort_definition_ids)
             	) a;
-          
+
             ------
-            
+
             SELECT DISTINCT subject_id,
             	@feature_cohort_anchor_date cohort_start_date
             INTO #feature_cohort
             FROM @feature_cohort_database_schema.@feature_cohort_table_name
             WHERE cohort_definition_id IN (@feature_cohort_definition_ids);
-          
+
             -----
             SELECT subject_id,
             	start_sequence,
@@ -246,11 +246,11 @@ getTargetCohortToFeatureCohortDateDifferenceDistribution <-
             	start_sequence,
             	cohort_start_date,
             	next_start_date;
-          
+
             ------
             with days_to_next_cohort_start_tm as
               (
-                SELECT distinct days_to_next_cohort_start 
+                SELECT distinct days_to_next_cohort_start
                 FROM #all_next_ft_date
               )
             select a.days_to_next_cohort_start days_to_next_cohort_start_group,
@@ -261,7 +261,7 @@ getTargetCohortToFeatureCohortDateDifferenceDistribution <-
                 days_to_next_cohort_start_tm b
              WHERE a.days_to_next_cohort_start >= b.days_to_next_cohort_start
             ORDER BY a.days_to_next_cohort_start, b.days_to_next_cohort_start;
-              
+
             ------
             SELECT subject_id,
               	cohort_start_date,
@@ -285,17 +285,17 @@ getTargetCohortToFeatureCohortDateDifferenceDistribution <-
               	cohort_start_date,
               	start_sequence,
               	next_start_date;
-            
+
             ------
             SELECT start_sequence,
                   days_to_next_cohort_start,
                   COUNT(DISTINCT subject_id) AS subjects,
                   COUNT(DISTINCT event_id) AS events
             INTO #agg_non_cum
-            FROM #next_feature_date f 
+            FROM #next_feature_date f
             GROUP BY start_sequence,
                   days_to_next_cohort_start;
-          
+
             ------
             SELECT start_sequence,
                   days_to_next_cohort_start_group days_to_next_cohort_start,
@@ -307,7 +307,7 @@ getTargetCohortToFeatureCohortDateDifferenceDistribution <-
             ON nf.days_to_next_cohort_start = ss.days_to_next_cohort_start
             GROUP BY start_sequence,
                   days_to_next_cohort_start_group;
-          
+
             ------
             SELECT anc.start_sequence,
                     anc.days_to_next_cohort_start,
@@ -321,9 +321,9 @@ getTargetCohortToFeatureCohortDateDifferenceDistribution <-
               anc.days_to_next_cohort_start = ac.days_to_next_cohort_start
             ORDER BY anc.start_sequence,
                     anc.days_to_next_cohort_start;
-          
+
             ------
-          
+
           SELECT *
           INTO #days_to_next_start
           FROM (
@@ -333,7 +333,7 @@ getTargetCohortToFeatureCohortDateDifferenceDistribution <-
           		count(DISTINCT CAST(subject_id AS VARCHAR(25)) || '-' || CAST(cohort_start_date AS VARCHAR(10))) AS events,
           		count(DISTINCT subject_id) AS subjects_cumulative
           	FROM #target_cohort
-          	
+
           	UNION
           	SELECT start_sequence,
           		- 2 AS days_to_next_cohort_start,
@@ -342,18 +342,18 @@ getTargetCohortToFeatureCohortDateDifferenceDistribution <-
           		count(DISTINCT subject_id) AS subjects_cumulative
           	FROM #target_cohort
           	GROUP BY start_sequence
-          	
+
           	UNION
-          	
+
           	SELECT - 1 AS start_sequence,
           		- 1 AS days_to_next_cohort_start,
           		count(DISTINCT subject_id) subjects,
           		count(DISTINCT CAST(subject_id AS VARCHAR(25)) || '-' || CAST(next_start_date AS VARCHAR(10))) events,
           		count(DISTINCT subject_id) subjects_cumulative
           	FROM #all_next_ft_date
-          	
+
           	UNION
-          	
+
           	SELECT start_sequence,
           		days_to_next_cohort_start,
           		subjects,
@@ -410,31 +410,57 @@ getTargetCohortToFeatureCohortDateDifferenceDistribution <-
     )
     
     summaryReport <- queryOutput |>
-      dplyr::filter(daysToNextCohortStart > -1) |>
-      dplyr::left_join(
-        queryOutput |>
-          dplyr::filter(daysToNextCohortStart == -1) |>
-          dplyr::rename(subjectsTotal = subjects,
-                        eventsTotal = events) |>
-          dplyr::select(-daysToNextCohortStart),
-        by = c("startSequence")
-      ) |>
-      dplyr::mutate(
-        subjectProportion = subjects / subjectsTotal,
-        eventsProportion = events / eventsTotal
-      )
-    
-    summaryReport <- summaryReport |>
-      dplyr::bind_rows(
+      dplyr::filter(daysToNextCohortStart >= 0) |>
+      tidyr::crossing(
         queryOutput |>
           dplyr::filter(startSequence == -1,
                         daysToNextCohortStart == -1) |>
-          dplyr::mutate(
-            subjectsTotal = subjects,
-            eventsTotal = events,
-            subjectProportion = 1.0,
-            eventsProportion = 1.0
-          )
+          dplyr::select(subjects,
+                        events) |>
+          dplyr::rename(subjectsTotal = subjects,
+                        eventsTotal = events)
+      ) |>
+      dplyr::mutate(
+        featureSubjectProportion = round(subjects / subjectsTotal, 4),
+        featureEventsProportion = round(events / eventsTotal, 4),
+        featureSubjectCumulativeProportion = round(subjectsCumulative / subjectsTotal, 4)
+      ) |>
+      dplyr::select(
+        startSequence,
+        daysToNextCohortStart,
+        subjects,
+        events,
+        subjectsCumulative,
+        featureSubjectProportion,
+        featureSubjectCumulativeProportion,
+        featureEventsProportion
+      ) |>
+      tidyr::crossing(
+        queryOutput |>
+          dplyr::filter(startSequence == -2,
+                        daysToNextCohortStart == -2) |>
+          dplyr::select(subjects,
+                        events) |>
+          dplyr::rename(subjectsTotal = subjects,
+                        eventsTotal = events)
+      )  |>
+      dplyr::mutate(
+        targetSubjectProportion = round(subjects / subjectsTotal, 4),
+        targetEventsProportion = round(events / eventsTotal, 4),
+        targetSubjectCumulativeProportion = round(subjectsCumulative / subjectsTotal, 4)
+      ) |>
+      dplyr::select(
+        startSequence,
+        daysToNextCohortStart,
+        subjects,
+        events,
+        subjectsCumulative,
+        featureSubjectProportion,
+        featureSubjectCumulativeProportion,
+        featureEventsProportion,
+        targetSubjectProportion,
+        targetSubjectCumulativeProportion,
+        targetEventsProportion
       ) |>
       dplyr::arrange(startSequence,
                      daysToNextCohortStart)
