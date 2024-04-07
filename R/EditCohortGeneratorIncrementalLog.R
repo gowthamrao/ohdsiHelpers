@@ -4,6 +4,7 @@ editCohortGeneratorIncrementalLogInParallel <-
            incrementalFileName = "GeneratedCohorts.csv",
            deleteCohortIds = NULL,
            keepCohortIds = NULL) {
+    
     incrementalFiles <- list.files(
       path = incrementalFolder,
       pattern = incrementalFileName,
@@ -21,7 +22,8 @@ editCohortGeneratorIncrementalLogInParallel <-
       OhdsiHelpers::editCohortGeneratorIncrementalLog(
         incrementalFolder = dirname(incrementalFiles[[i]]),
         incrementalFileName = basename(incrementalFiles[[i]]),
-        keepCohortIds = cohortIdsToKeep
+        keepCohortIds = keepCohortIds,
+        deleteCohortIds = deleteCohortIds
       )
     }
   }

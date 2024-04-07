@@ -1,21 +1,21 @@
 #' @export
 dropCohortTablesInParallel <- function(cdmSources,
                                        cohortTableNames) {
-  sql <- "DROP TABLE IF EXSITS @cohort_database_schema.@cohort_table;
+  sql <- "DROP TABLE IF EXISTS @cohort_database_schema.@cohort_table;
 
-          DROP TABLE IF EXSITS @cohort_database_schema.@cohort_inclusion_table;
+          DROP TABLE IF EXISTS @cohort_database_schema.@cohort_inclusion_table;
 
-          DROP TABLE IF EXSITS @cohort_database_schema.@cohort_inclusion_result_table;
+          DROP TABLE IF EXISTS @cohort_database_schema.@cohort_inclusion_result_table;
 
-          DROP TABLE IF EXSITS @cohort_database_schema.@cohort_inclusion_stats_table;
+          DROP TABLE IF EXISTS @cohort_database_schema.@cohort_inclusion_stats_table;
 
-          DROP TABLE IF EXSITS @cohort_database_schema.@cohort_summary_stats_table;
+          DROP TABLE IF EXISTS @cohort_database_schema.@cohort_summary_stats_table;
 
-          DROP TABLE IF EXSITS @cohort_database_schema.@cohort_censor_stats_table;"
+          DROP TABLE IF EXISTS @cohort_database_schema.@cohort_censor_stats_table;"
 
 
   OhdsiHelpers::renderTranslateExecuteSqlInParallel(
-    cdmSources = cdmSources,
+    cdmSources = OhdsiHelpers::getCdmSource(cdmSources = cdmSources),
     sql = sql,
     cohort_table = cohortTableNames$cohortTable,
     cohort_inclusion_table = cohortTableNames$cohortInclusionTable,
