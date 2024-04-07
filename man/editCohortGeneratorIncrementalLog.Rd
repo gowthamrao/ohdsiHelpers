@@ -32,4 +32,5 @@ updates to the log file by either adding new data or deleting specified cohorts.
 }
 \examples{
 editCohortGeneratorIncrementalLog("path/to/folder", deleteCohortIds = c(101, 102))
+
 }
