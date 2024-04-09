@@ -7,9 +7,12 @@ getTargetCohortToFeatureCohortDateDifferenceDistributionInParrallel <-
            featureCohortIds = targetCohortIds,
            featureCohortTableName = targetCohortTableName,
            featureCohortAnchorDate = "cohort_start_date",
+           restrictToSameObservationPeriod = TRUE,
            databaseIds = getListOfDatabaseIds(),
            tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
            sequence = 1,
+           minDays = NULL,
+           maxDays = NULL,
            userService = "OHDSI_USER",
            passwordService = "OHDSI_PASSWORD") {
     cdmSources <-
@@ -20,7 +23,7 @@ getTargetCohortToFeatureCohortDateDifferenceDistributionInParrallel <-
     # Convert the filtered cdmSources to a list for parallel processing
     x <- list()
     for (i in 1:nrow(cdmSources)) {
-      x[[i]] <- cdmSources[i, ]
+      x[[i]] <- cdmSources[i,]
     }
     
     # Create a temporary directory for storing output files
@@ -46,6 +49,9 @@ getTargetCohortToFeatureCohortDateDifferenceDistributionInParrallel <-
                featureCohortTableName,
                featureCohortAnchorDate,
                tempEmulationSchema,
+               restrictToSameObservationPeriod,
+               minDays,
+               maxDays,
                outputLocation) {
         # Create connection details for each CDM source
         connectionDetails <-
@@ -72,7 +78,11 @@ getTargetCohortToFeatureCohortDateDifferenceDistributionInParrallel <-
             featureCohortTableName = featureCohortTableName,
             featureCohortAnchorDate = featureCohortAnchorDate,
             featureCohortIds = featureCohortIds,
-            tempEmulationSchema = tempEmulationSchema
+            restrictToSameObservationPeriod = restrictToSameObservationPeriod,
+            cdmDatabaseSchema = x$cdmDatabaseSchemaFinal,
+            tempEmulationSchema = tempEmulationSchema,
+            minDays,
+            maxDays
           ) |>
           dplyr::tibble() |>
           dplyr::tibble(databaseKey = x$sourceKey,
@@ -95,7 +105,10 @@ getTargetCohortToFeatureCohortDateDifferenceDistributionInParrallel <-
       featureCohortIds = featureCohortIds,
       featureCohortTableName = featureCohortTableName,
       featureCohortAnchorDate = featureCohortAnchorDate,
-      tempEmulationSchema = tempEmulationSchema
+      restrictToSameObservationPeriod = restrictToSameObservationPeriod,
+      tempEmulationSchema = tempEmulationSchema,
+      minDays = minDays,
+      maxDays = maxDays
     )
     
     # Stop the cluster after execution
@@ -122,7 +135,7 @@ getTargetCohortToFeatureCohortDateDifferenceDistributionInParrallel <-
       # Read and combine all outputData data
       outputData <- c()
       for (i in (1:nrow(df))) {
-        outputData[[i]] <- readRDS(df[i,]$fileNames)
+        outputData[[i]] <- readRDS(df[i, ]$fileNames)
       }
       
       outputData <- dplyr::bind_rows(outputData)
@@ -150,6 +163,10 @@ getTargetCohortToFeatureCohortDateDifferenceDistribution <-
            featureCohortDatabaseSchema = targetCohortDatabaseSchema,
            featureCohortTableName = targetCohortTableName,
            featureCohortAnchorDate = "cohort_start_date",
+           cdmDatabaseSchema = NULL,
+           restrictToSameObservationPeriod = TRUE,
+           minDays = NULL,
+           maxDays = NULL,
            tempEmulationSchema = getOption("sqlRenderTempEmulationSchema")) {
     # Validate inputs using checkmate
     checkmate::assertChoice(targetCohortAnchorDate,
@@ -172,9 +189,26 @@ getTargetCohortToFeatureCohortDateDifferenceDistribution <-
     checkmate::assertCharacter(featureCohortTableName,
                                any.missing = FALSE,
                                len = 1)
+    checkmate::assertLogical(x = restrictToSameObservationPeriod,
+                             any.missing = FALSE,
+                             len = 1)
+    
+    if (restrictToSameObservationPeriod) {
+      checkmate::assertCharacter(cdmDatabaseSchema,
+                                 any.missing = FALSE,
+                                 len = 1)
+    }
     
     checkmate::assertNumeric(targetCohortIds, any.missing = FALSE, lower = 1)
     checkmate::assertNumeric(featureCohortIds, any.missing = FALSE, lower = 1)
+    
+    if (!is.null(minDays)) {
+      checkmate::assertNumeric(minDays, any.missing = TRUE, lower = 0)
+    }
+    
+    if (!is.null(maxDays)) {
+      checkmate::assertNumeric(maxDays, any.missing = TRUE, lower = 0)
+    }
     
     if (!is.null(tempEmulationSchema)) {
       checkmate::assertCharacter(tempEmulationSchema,
@@ -189,6 +223,7 @@ getTargetCohortToFeatureCohortDateDifferenceDistribution <-
     
     sql <- "DROP TABLE IF EXISTS #target_cohort;
             DROP TABLE IF EXISTS #feature_cohort;
+            DROP TABLE IF EXISTS #target_feature;
             DROP TABLE IF EXISTS #all_next_ft_date;
             DROP TABLE IF EXISTS #days_to_next_cs_t;
             DROP TABLE IF EXISTS #next_feature_date;
@@ -221,37 +256,68 @@ getTargetCohortToFeatureCohortDateDifferenceDistribution <-
             FROM @feature_cohort_database_schema.@feature_cohort_table_name
             WHERE cohort_definition_id IN (@feature_cohort_definition_ids);
 
-            -----
             SELECT subject_id,
-            	start_sequence,
-            	cohort_start_date,
-            	next_start_date,
-              DATEDIFF(day, cohort_start_date, next_start_date) AS days_to_next_cohort_start
-            INTO #all_next_ft_date
-            FROM (
-                	SELECT DISTINCT t.subject_id,
-                		t.start_sequence,
-                		t.cohort_start_date,
-                		LEAD(f.cohort_start_date) OVER (
-                			PARTITION BY t.subject_id,
-                			t.cohort_start_date ORDER BY f.cohort_start_date
-                			) AS next_start_date
-                	FROM #target_cohort t
-                	INNER JOIN #feature_cohort AS f ON t.subject_id = f.subject_id
-                		AND t.cohort_start_date <= f.cohort_start_date
-            	) f
-            WHERE next_start_date IS NOT NULL
-            -------------
-            ORDER BY subject_id,
-            	start_sequence,
-            	cohort_start_date,
-            	next_start_date;
+                    cohort_start_date,
+                    feature_cohort
+            INTO #target_feature
+            FROM
+            (
+              SELECT subject_id,
+          			cohort_start_date,
+          			0 AS feature_cohort
+          		FROM #target_cohort a1
+          		
+          		UNION
+          		
+          		SELECT subject_id,
+          			cohort_start_date,
+          			1 AS feature_cohort
+          		FROM #feature_cohort a2
+            ) f;
+          		
+            -----
+           SELECT subject_id,
+          	start_sequence,
+          	cohort_start_date,
+          	next_start_date,
+          	DATEDIFF(day, cohort_start_date, next_start_date) AS days_to_next_cohort_start
+          INTO #all_next_ft_date
+          FROM (
+          	SELECT DISTINCT t.subject_id,
+          		t.start_sequence,
+          		t.cohort_start_date,
+          		f.feature_cohort,
+          		LEAD(f.cohort_start_date) OVER (
+          			PARTITION BY t.subject_id,
+          			t.cohort_start_date ORDER BY f.cohort_start_date
+          			) AS next_start_date
+          	FROM #target_cohort t
+          	INNER JOIN #target_feature AS f
+          		ON t.subject_id = f.subject_id
+          			AND t.cohort_start_date <= f.cohort_start_date 
+          	
+          {@restrict_to_same_observation_period} ? {
+          	INNER JOIN @cdm_database_schema.observation_period op
+          		ON t.subject_id = op.person_id
+          			AND t.cohort_start_date >= op.observation_period_start_date
+          			AND t.cohort_start_date <= op.observation_period_end_date
+          			AND f.cohort_start_date >= op.observation_period_start_date
+          			AND f.cohort_start_date <= op.observation_period_end_date 
+          }
+          	) f
+          WHERE next_start_date IS NOT NULL
+          -------------
+          ORDER BY subject_id,
+          	start_sequence,
+          	cohort_start_date,
+          	next_start_date;
 
             ------
             with days_to_next_cohort_start_tm as
               (
                 SELECT distinct days_to_next_cohort_start
                 FROM #all_next_ft_date
+                WHERE days_to_next_cohort_start IS NOT NULL
               )
             select a.days_to_next_cohort_start days_to_next_cohort_start_group,
                     b.days_to_next_cohort_start
@@ -293,6 +359,13 @@ getTargetCohortToFeatureCohortDateDifferenceDistribution <-
                   COUNT(DISTINCT event_id) AS events
             INTO #agg_non_cum
             FROM #next_feature_date f
+            WHERE start_sequence >= 0
+            {@min_days_is_not_null} ? {
+              AND days_to_next_cohort_start >= @min_days
+            }
+            {@max_days_is_not_null} ? {
+              AND days_to_next_cohort_start <= @max_days
+            }
             GROUP BY start_sequence,
                   days_to_next_cohort_start;
 
@@ -305,6 +378,13 @@ getTargetCohortToFeatureCohortDateDifferenceDistribution <-
             INNER JOIN
                 #days_to_next_cs_t ss
             ON nf.days_to_next_cohort_start = ss.days_to_next_cohort_start
+            WHERE start_sequence >= 0
+            {@min_days_is_not_null} ? {
+              AND nf.days_to_next_cohort_start >= @min_days
+            }
+            {@max_days_is_not_null} ? {
+              AND nf.days_to_next_cohort_start <= @max_days
+            }
             GROUP BY start_sequence,
                   days_to_next_cohort_start_group;
 
@@ -351,6 +431,13 @@ getTargetCohortToFeatureCohortDateDifferenceDistribution <-
           		count(DISTINCT CAST(subject_id AS VARCHAR(25)) || '-' || CAST(next_start_date AS VARCHAR(10))) events,
           		count(DISTINCT subject_id) subjects_cumulative
           	FROM #all_next_ft_date
+            WHERE start_sequence >= 0
+            {@min_days_is_not_null} ? {
+              AND days_to_next_cohort_start >= @min_days
+            }
+            {@max_days_is_not_null} ? {
+              AND days_to_next_cohort_start <= @max_days
+            }
 
           	UNION
 
@@ -360,6 +447,13 @@ getTargetCohortToFeatureCohortDateDifferenceDistribution <-
           		events,
           		subjects_cumulative
           	FROM #aggregated
+            WHERE start_sequence >= 0
+            {@min_days_is_not_null} ? {
+              AND days_to_next_cohort_start >= @min_days
+            }
+            {@max_days_is_not_null} ? {
+              AND days_to_next_cohort_start <= @max_days
+            }
           	) f
           ORDER BY start_sequence,
           	days_to_next_cohort_start,
@@ -368,6 +462,7 @@ getTargetCohortToFeatureCohortDateDifferenceDistribution <-
 
           DROP TABLE IF EXISTS #target_cohort;
           DROP TABLE IF EXISTS #feature_cohort;
+          DROP TABLE IF EXISTS #target_feature;
           DROP TABLE IF EXISTS #all_next_ft_date;
           DROP TABLE IF EXISTS #days_to_next_cs_t;
           DROP TABLE IF EXISTS #next_feature_date;
@@ -387,6 +482,12 @@ getTargetCohortToFeatureCohortDateDifferenceDistribution <-
       feature_cohort_definition_ids = featureCohortIds,
       target_cohort_anchor_date = targetCohortAnchorDate,
       feature_cohort_anchor_date = featureCohortAnchorDate,
+      restrict_to_same_observation_period = restrictToSameObservationPeriod,
+      cdm_database_schema = cdmDatabaseSchema,
+      min_days = minDays,
+      max_days = maxDays,
+      min_days_is_not_null = !is.null(minDays),
+      max_days_is_not_null = !is.null(maxDays),
       progressBar = FALSE,
       profile = FALSE,
       reportOverallTime = FALSE
