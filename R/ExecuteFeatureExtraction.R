@@ -42,7 +42,9 @@ executeFeatureExtraction <-
            tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
            outputFolder = NULL,
            aggregated = TRUE,
-           rowIdField = "subject_id") {
+           rowIdField = "subject_id",
+           incremental = TRUE) {
+    
     if (!is.null(outputFolder)) {
       if (!file.exists(outputFolder)) {
         dir.create(outputFolder, recursive = TRUE)
@@ -168,24 +170,49 @@ executeFeatureExtraction <-
     }
     
     ParallelLogger::logInfo(" - Beginning Feature Extraction")
-    covariateData <-
-      FeatureExtraction::getDbCovariateData(
-        connection = connection,
-        oracleTempSchema = tempEmulationSchema,
-        cdmDatabaseSchema = cdmDatabaseSchema,
-        cohortDatabaseSchema = cohortDatabaseSchema,
-        cdmVersion = 5,
-        cohortTable = cohortTable,
-        cohortIds = cohortIds,
-        covariateSettings = covariateSettings,
-        aggregated = aggregated,
-        cohortTableIsTemp = is.null(cohortDatabaseSchema),
-        rowIdField = rowIdField
-      )
     
-    if (!is.null(outputFolder)) {
-      FeatureExtraction::saveCovariateData(covariateData = covariateData,
-                                           file = file.path(outputFolder, "covariateData"))
+    for (x in (1:length(cohortIds))) {
+      cohortId <- cohortIds[[x]]
+      ParallelLogger::logInfo(paste0("   - cohort id: ", cohortId))
+      
+      skipCohort <- FALSE
+      if (incremental) {
+        if (file.exists(file.path(outputFolder, "covariateData", cohortId))) {
+          skipCohort <- TRUE
+        } 
+      }
+      
+      if (!skipCohort) {
+        covariateData <-
+          FeatureExtraction::getDbCovariateData(
+            connection = connection,
+            oracleTempSchema = tempEmulationSchema,
+            cdmDatabaseSchema = cdmDatabaseSchema,
+            cohortDatabaseSchema = cohortDatabaseSchema,
+            cdmVersion = 5,
+            cohortTable = cohortTable,
+            cohortIds = cohortId,
+            covariateSettings = covariateSettings,
+            aggregated = aggregated,
+            cohortTableIsTemp = is.null(cohortDatabaseSchema),
+            rowIdField = rowIdField
+          )
+        
+        if (!is.null(outputFolder)) {
+          unlink(
+            x = file.path(outputFolder, "covariateData", cohortId),
+            recursive = TRUE,
+            force = TRUE
+          )
+          dir.create(path = file.path(outputFolder, "covariateData", cohortId))
+          FeatureExtraction::saveCovariateData(
+            covariateData = covariateData,
+            file = file.path(outputFolder, "covariateData", cohortId)
+          )
+        }
+      } else {
+        ParallelLogger::logInfo(paste0("    - skipping cohort id: ", cohortId))
+      }
     }
     
     if (useRowId) {
@@ -226,7 +253,8 @@ executeFeatureExtractionInParallel <-
            tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
            outputFolder,
            rowIdField = "subject_id",
-           aggregated = TRUE) {
+           aggregated = TRUE,
+           incremental = TRUE) {
 
     cdmSources <-
       getCdmSource(cdmSources = cdmSources,
@@ -275,7 +303,8 @@ executeFeatureExtractionInParallel <-
                cohortCovariateAnalysisId,
                outputFolder,
                rowIdField,
-               aggregated) {
+               aggregated,
+               incremental) {
         connectionDetails <- DatabaseConnector::createConnectionDetails(
           dbms = x$dbms,
           user = keyring::key_get(userService),
@@ -302,7 +331,8 @@ executeFeatureExtractionInParallel <-
           covariateCohortDefinitionSet = covariateCohortDefinitionSet,
           cohortCovariateAnalysisId = cohortCovariateAnalysisId,
           rowIdField = rowIdField,
-          aggregated = aggregated
+          aggregated = aggregated,
+          incremental = incremental
         )
       }
     
@@ -323,7 +353,8 @@ executeFeatureExtractionInParallel <-
       covariateCohortDefinitionSet = covariateCohortDefinitionSet,
       cohortCovariateAnalysisId = cohortCovariateAnalysisId,
       rowIdField = rowIdField,
-      aggregated = aggregated
+      aggregated = aggregated,
+      incremental = incremental
     )
     
     ParallelLogger::stopCluster(cluster = cluster)

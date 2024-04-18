@@ -19,10 +19,12 @@ calculateSummaryStatistics <-
         mean = mean(.data[[value]], na.rm = TRUE),
         sd = sd(.data[[value]], na.rm = TRUE),
         median = median(.data[[value]], na.rm = TRUE),
-        p5 = quantile(.data[[value]], 0.05, na.rm = TRUE),
+        p01 = quantile(.data[[value]], 0.01, na.rm = TRUE),
+        p05 = quantile(.data[[value]], 0.05, na.rm = TRUE),
         p25 = quantile(.data[[value]], 0.25, na.rm = TRUE),
         p75 = quantile(.data[[value]], 0.75, na.rm = TRUE),
         p95 = quantile(.data[[value]], 0.95, na.rm = TRUE),
+        p99 = quantile(.data[[value]], 0.99, na.rm = TRUE),
         mode = calculateMode(.data[[value]]),
         count = n(),
         count_distinct = n_distinct(.data[[value]])

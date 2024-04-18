@@ -22,7 +22,8 @@ executeFeatureExtraction(
   tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
   outputFolder = NULL,
   aggregated = TRUE,
-  rowIdField = "subject_id"
+  rowIdField = "subject_id",
+  incremental = TRUE
 )
 }
 \arguments{
