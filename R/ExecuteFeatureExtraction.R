@@ -177,7 +177,7 @@ executeFeatureExtraction <-
       
       skipCohort <- FALSE
       if (incremental) {
-        if (file.exists(file.path(outputFolder, "covariateData", cohortId))) {
+        if (file.exists(file.path(outputFolder, cohortId))) {
           skipCohort <- TRUE
         } 
       }
@@ -199,16 +199,13 @@ executeFeatureExtraction <-
           )
         
         if (!is.null(outputFolder)) {
-          unlink(
-            x = file.path(outputFolder, "covariateData", cohortId),
-            recursive = TRUE,
-            force = TRUE
+          dir.create(
+            path = file.path(outputFolder),
+            showWarnings = FALSE,
+            recursive = TRUE
           )
-          dir.create(path = file.path(outputFolder, "covariateData", cohortId))
-          FeatureExtraction::saveCovariateData(
-            covariateData = covariateData,
-            file = file.path(outputFolder, "covariateData", cohortId)
-          )
+          FeatureExtraction::saveCovariateData(covariateData = covariateData,
+                                               file = file.path(outputFolder, cohortId))
         }
       } else {
         ParallelLogger::logInfo(paste0("    - skipping cohort id: ", cohortId))
