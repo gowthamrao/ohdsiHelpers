@@ -36,7 +36,8 @@ getDefaultCovariateSettings <- function(temporalStartDays = NULL,
           0,
           1,
           0,
-          seq(0, -3900, by = -365) - 365
+          seq(0, -3900, by = -365) - 365,
+          seq(1, 3900, by = 365) - 365
         )
   }
   
@@ -73,7 +74,8 @@ getDefaultCovariateSettings <- function(temporalStartDays = NULL,
           9999,
           9999,
           365,
-          seq(0, -3900, by = -365) - 1
+          seq(0, -3900, by = -365) - 1,
+          seq(1, 3900, by = 365) - 1
         )
   }
   
