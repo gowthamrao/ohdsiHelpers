@@ -188,7 +188,7 @@ createStateCohortDefinitionSet <- function() {
           select ",
         .data$cohortId,
         " as cohort_definition_id, 
-            person_id subject_id, 
+            op.person_id subject_id, 
             min(observation_period_start_date) cohort_start_date, 
             min(observation_period_end_date) cohort_end_date
           FROM @cdm_database_schema.observation_period op
@@ -200,8 +200,9 @@ createStateCohortDefinitionSet <- function() {
                 on p.location_id = l.location_id
                 WHERE state = '",
         stateAbbreviation,
-        "')
-        GROUP BY person_id;"
+        "') p
+        ON op.person_id = p.person_id
+        GROUP BY op.person_id;"
       )
     ) |>
     dplyr::select(cohortId,
