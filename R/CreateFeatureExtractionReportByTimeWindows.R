@@ -3,6 +3,7 @@ createFeatureExtractionReportByTimeWindows <-
   function(covariateData,
            startDays,
            endDays,
+           includeNonTimeVarying = TRUE,
            minAverageValue = 0.01,
            cohortIdToStudy,
            cohortDefinitionSet,
@@ -41,7 +42,36 @@ createFeatureExtractionReportByTimeWindows <-
       ) |>
       dplyr::filter(averageValue > minAverageValue) |>
       dplyr::collect() |>
-      dplyr::mutate(metric = OhdsiHelpers::formatCountPercent(count = sumValue, percent = averageValue)) |>
+      dplyr::mutate(metric = OhdsiHelpers::formatCountPercent(count = sumValue, percent = averageValue))
+    
+    if (includeNonTimeVarying) {
+      reportNontTimeVarying <- covariateData$covariates |>
+        dplyr::filter(cohortDefinitionId == cohortIdToStudy) |>
+        dplyr::filter(is.na(timeId)) |>
+        dplyr::inner_join(covariateData$covariateRef) |>
+        dplyr::inner_join(covariateData$analysisRef) |>
+        dplyr::arrange(dplyr::desc(averageValue)) |>
+        dplyr::mutate(periodName = "fixed") |>
+        dplyr::select(
+          covariateId,
+          covariateName,
+          conceptId,
+          analysisId,
+          analysisName,
+          domainId,
+          periodName,
+          sumValue,
+          averageValue
+        ) |>
+        dplyr::filter(averageValue > minAverageValue) |>
+        dplyr::collect() |>
+        dplyr::mutate(metric = OhdsiHelpers::formatCountPercent(count = sumValue, percent = averageValue))
+      
+      report <- dplyr::bind_rows(reportNontTimeVarying,
+                                 report)
+    }
+    
+    report <- report |>
       tidyr::pivot_wider(
         id_cols = c(
           covariateId,

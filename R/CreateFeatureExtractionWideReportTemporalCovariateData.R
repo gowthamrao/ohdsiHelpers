@@ -14,7 +14,6 @@ createFeatureExtractionWideReportTemporalCovariateData <-
                     timeId,
                     sumValue,
                     averageValue) |>
-      dplyr::filter(!is.na(timeId)) |> 
       dplyr::collect() |>
       dplyr::arrange(timeId, dplyr::desc(averageValue)) |>
       dplyr::mutate(report = OhdsiHelpers::formatCountPercent(count = sumValue, percent = averageValue)) |>
@@ -22,15 +21,19 @@ createFeatureExtractionWideReportTemporalCovariateData <-
     
     if (!is.null(timeIds)) {
       report <- report |>
-        dplyr::filter(timeId %in% timeIds)
+        dplyr::filter(timeId %in% c(NA, timeIds))
     }
     
-    report <- report |>
+    report <- dplyr::bind_rows(report |>
       dplyr::inner_join(
         covariateData$timeRef |>
           dplyr::collect() |>
           dplyr::arrange(timeId) |>
           dplyr::mutate(timeName = paste0("t", startDay, "d to t", endDay, "d"))
+      ),
+      report |> 
+        dplyr::filter(is.na(timeId)) |> 
+        dplyr::mutate(timeName = "t_invariant")
       ) |>
       dplyr::inner_join(
         covariateData$covariateRef |>
