@@ -41,7 +41,12 @@ createObservedOnDateCohortDefinitionSet <-
           .data$observedDate,
           "' <= observation_period_end_Date;"
         )
-      )
+      ) |>
+      dplyr::mutate(cohortType = "observed on date") |>
+      dplyr::select(cohortId,
+                    cohortName,
+                    sql,
+                    json)
     
     return(observedByCalendarYear)
   }

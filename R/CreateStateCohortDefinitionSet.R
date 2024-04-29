@@ -209,7 +209,7 @@ createStateCohortDefinitionSet <- function() {
                   cohortName,
                   sql,
                   json) |>
-    dplyr::mutate(stateCohorts = 1)
+    dplyr::mutate(cohortType = "state cohorts")
   
   return(stateCohortDefinitionSet)
 }

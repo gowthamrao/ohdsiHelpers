@@ -16,7 +16,11 @@ createObservationPeriodCohortDefinitionSet <- function() {
                     observation_period_end_date cohort_end_date
           FROM @cdm_database_schema.observation_period;"
     ) |>
-    dplyr::mutate(observationPeriod = 1)
+    dplyr::mutate(cohortType = "observation period") |> 
+    dplyr::select(cohortId,
+                  cohortName,
+                  sql,
+                  json)
   
   return(observationPeriodCohortDefinitionSet)
 }
