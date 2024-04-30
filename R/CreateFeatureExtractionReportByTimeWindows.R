@@ -94,7 +94,8 @@ createFeatureExtractionReportByTimeWindows <-
           averageValue
         ) |>
         dplyr::filter(averageValue > minAverageValue) |>
-        dplyr::collect()
+        dplyr::collect() |> 
+        dplyr::mutate(continuous = 0)
       
       reportTimeVarying2a <-
         covariateData$covariatesContinuous |>
@@ -167,7 +168,8 @@ createFeatureExtractionReportByTimeWindows <-
       reportNonTimeVarying2 <- reportNonTimeVarying2a |>
         dplyr::inner_join(reportNonTimeVarying2b,
                           by = c("covariateId",
-                                 "periodName"))
+                                 "periodName")) |> 
+        dplyr::mutate(continuous = 1)
       
       reportTimeVarying <- dplyr::tibble()
       if (nrow(reportTimeVarying1) > 0) {
@@ -225,7 +227,8 @@ createFeatureExtractionReportByTimeWindows <-
           averageValue
         ) |>
         dplyr::filter(averageValue > minAverageValue) |>
-        dplyr::collect()
+        dplyr::collect() |>
+        dplyr::mutate(continuous = 0)
       
       reportNonTimeVarying2a <-
         covariateData$covariatesContinuous |>
@@ -277,7 +280,8 @@ createFeatureExtractionReportByTimeWindows <-
       reportNonTimeVarying2 <- reportNonTimeVarying2a |>
         dplyr::inner_join(reportNonTimeVarying2b,
                           by = c("covariateId",
-                                 "periodName"))
+                                 "periodName")) |>
+        dplyr::mutate(continuous = 1)
       
       reportNonTimeVarying <- dplyr::tibble()
       if (nrow(reportNonTimeVarying1) > 0) {
@@ -451,7 +455,7 @@ createFeatureExtractionReportInParallel <-
            table1specifications = NULL,
            simple = TRUE,
            cohortId,
-           covariateDataFileNamePattern = as.character(cohortId),
+           covariateDataFileNamePattern =  paste0(cohortId, "$"),
            cohortDefinitionSet,
            databaseId = NULL,
            cohortName = NULL,
@@ -462,7 +466,7 @@ createFeatureExtractionReportInParallel <-
     covariateDataFiles <-
       list.files(
         path = covariateDataPath,
-        pattern = covariateDataFileNamePattern,
+        pattern = paste0("^", cohortId, "$"),
         all.files = TRUE,
         recursive = TRUE,
         ignore.case = TRUE,
