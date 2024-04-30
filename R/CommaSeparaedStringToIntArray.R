@@ -6,6 +6,6 @@ commaSeparaedStringToIntArray <- function(inputString) {
   # Remove empty elements
   stringElements <- stringElements[stringElements != ""]
   # Convert elements to integer
-  integerArray <- as.integer(stringElements)
+  integerArray <- as.double(stringElements)
   return(integerArray)
 }

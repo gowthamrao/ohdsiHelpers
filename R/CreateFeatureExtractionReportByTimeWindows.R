@@ -169,15 +169,15 @@ createFeatureExtractionReportByTimeWindows <-
                           by = c("covariateId",
                                  "periodName"))
       
-      reportTimeVarying <-
-        dplyr::bind_rows(if (nrow(reportTimeVarying1) > 0) {
-          reportTimeVarying1 |>
-            dplyr::mutate(continuous == 2)
-        },
-        if (nrow(reportTimeVarying2b) > 0) {
-          reportTimeVarying2 |>
-            dplyr::mutate(continuous = 1)
-        })
+      reportTimeVarying <- dplyr::tibble()
+      if (nrow(reportTimeVarying1) > 0) {
+        reportTimeVarying <- dplyr::bind_rows(reportTimeVarying,
+                                              reportTimeVarying1)
+      }
+      if (nrow(reportTimeVarying2) > 0) {
+        reportTimeVarying <- dplyr::bind_rows(reportTimeVarying,
+                                              reportTimeVarying2)
+      }
       
       if (all(nrow(reportTimeVarying) > 0,
               length(colnames(reportTimeVarying) > 0),
@@ -279,15 +279,15 @@ createFeatureExtractionReportByTimeWindows <-
                           by = c("covariateId",
                                  "periodName"))
       
-      reportNonTimeVarying <-
-        dplyr::bind_rows(if (nrow(reportNonTimeVarying1) > 0) {
-          reportNonTimeVarying1 |>
-            dplyr::mutate(continuous == 2)
-        },
-        if (nrow(reportNonTimeVarying2) > 0) {
-          reportNonTimeVarying2 |>
-            dplyr::mutate(continuous = 1)
-        })
+      reportNonTimeVarying <- dplyr::tibble()
+      if (nrow(reportNonTimeVarying1) > 0) {
+        reportNonTimeVarying <- dplyr::bind_rows(reportNonTimeVarying,
+                                                 reportNonTimeVarying1)
+      }
+      if (nrow(reportNonTimeVarying2) > 0) {
+        reportNonTimeVarying <- dplyr::bind_rows(reportNonTimeVarying,
+                                                 reportNonTimeVarying2)
+      }
       
       if (all(nrow(reportNonTimeVarying) > 0,
               length(colnames(reportNonTimeVarying) > 0),
