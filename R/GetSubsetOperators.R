@@ -68,7 +68,7 @@ getSubsetOperatorEnM <- function(startDay = 0,
     getCohortSubsetOperators(
       subsetCohortIds = c(cohortIdLevel4or5New,
                           cohortIdLevel4or5Established),
-      cohortCombinationOperator = "all",
+      cohortCombinationOperator = "any",
       baseName = "05 new and established level 4 E&M visit",
       startDay = startDay,
       endDay = endDay,

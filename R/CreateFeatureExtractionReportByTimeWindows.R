@@ -165,10 +165,10 @@ createFeatureExtractionReportByTimeWindows <-
         dplyr::rename(sumValue = countValue) |>
         dplyr::collect()
       
-      reportNonTimeVarying2 <- reportNonTimeVarying2a |>
-        dplyr::inner_join(reportNonTimeVarying2b,
+      reportTimeVarying2 <- reportTimeVarying2a |>
+        dplyr::inner_join(reportTimeVarying2b,
                           by = c("covariateId",
-                                 "periodName")) |> 
+                                 "periodName")) |>
         dplyr::mutate(continuous = 1)
       
       reportTimeVarying <- dplyr::tibble()
