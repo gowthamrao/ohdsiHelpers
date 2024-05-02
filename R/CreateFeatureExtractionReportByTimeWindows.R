@@ -61,8 +61,24 @@ createFeatureExtractionReportByTimeWindows <-
     reportTimeVarying <- dplyr::tibble()
     reportNonTimeVarying <- dplyr::tibble()
     
-    if (!any(is.null(startDays),
-             is.null(endDays))) {
+    if (all(is.null(startDays),
+            is.null(endDays))) {
+      if (covariateData$covariates |>
+          dplyr::select(covariateId) |>
+          dplyr::distinct() |>
+          dplyr::inner_join(covariateAnalysisId |>
+                            dplyr::select(covariateId) |>
+                            dplyr::distinct()) |>
+          dplyr::collect() |>
+          nrow() > 1) {
+        message(
+          "startDays and endDays is NULL, but covariateId is time varying. Report may be incomplete"
+        )
+      }
+    }
+    
+    if (any(!is.null(startDays),
+             !is.null(endDays))) {
       reportTimeVarying1 <- covariateData$covariates |>
         dplyr::filter(cohortDefinitionId == cohortId) |>
         dplyr::inner_join(
