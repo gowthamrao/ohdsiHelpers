@@ -224,15 +224,15 @@ getFeatureExtractionReportByTimeWindows <-
     
     if (includeNonTimeVarying) {
       if ("timeId" %in% colnames(covariateData$covariates)) {
-        covariateData <-  covariateData$covariates |>
+        covariateDataTemp <-  covariateData$covariates |>
           dplyr::filter(cohortDefinitionId == cohortId) |>
           dplyr::filter(is.na(timeId))
       } else {
-        covariateData <-  covariateData$covariates |>
+        covariateDataTemp <-  covariateData$covariates |>
           dplyr::filter(cohortDefinitionId == cohortId)
       }
       
-      reportNonTimeVarying1 <- covariateData |>
+      reportNonTimeVarying1 <- covariateDataTemp |>
         dplyr::inner_join(covariateAnalysisId,
                           by = "covariateId") |>
         dplyr::arrange(dplyr::desc(averageValue)) |>
@@ -253,16 +253,16 @@ getFeatureExtractionReportByTimeWindows <-
         dplyr::mutate(continuous = 0)
       
       if ("timeId" %in% colnames(covariateData$covariatesContinuous)) {
-        covariatesContinuous <-  covariateData$covariatesContinuous |>
+        covariatesContinuousTemp <-  covariateData$covariatesContinuous |>
           dplyr::filter(cohortDefinitionId == cohortId) |>
           dplyr::filter(is.na(timeId))
       } else {
-        covariatesContinuous <-  covariateData$covariatesContinuous |>
+        covariatesContinuousTemp <-  covariateData$covariatesContinuous |>
           dplyr::filter(cohortDefinitionId == cohortId)
       }
       
       reportNonTimeVarying2a <-
-        covariatesContinuous |>
+        covariatesContinuousTemp |>
         dplyr::inner_join(covariateAnalysisId,
                           by = "covariateId") |>
         dplyr::arrange(dplyr::desc(averageValue)) |>
@@ -293,7 +293,7 @@ getFeatureExtractionReportByTimeWindows <-
         dplyr::select(-statistic)
       
       reportNonTimeVarying2b <-
-        covariatesContinuous |>
+        covariatesContinuousTemp |>
         dplyr::inner_join(covariateAnalysisId,
                           by = "covariateId") |>
         dplyr::arrange(dplyr::desc(averageValue)) |>
@@ -365,6 +365,8 @@ getFeatureExtractionReportByTimeWindows <-
       writeLines("No results")
       return()
     }
+    
+    rawReport <- report
     
     if (!is.null(table1specifications)) {
       table1specifications <- table1specifications |>
@@ -464,7 +466,10 @@ getFeatureExtractionReportByTimeWindows <-
                          report)
     }
     
-    return(report)
+    output <- c()
+    output$raw <- rawReport
+    output$formatted <- report
+    return(output)
   }
 
 
@@ -508,7 +513,8 @@ getFeatureExtractionReportInParallel <-
       dplyr::tibble(filePath = covariateDataFiles,
                     sourceKey = covariateDataFiles |> dirname() |> basename())
     
-    report <- c()
+    reportRaw <- c()
+    reportFormatted <- c()
     for (i in (1:length(sourceKeys))) {
       sourceKey <- sourceKeys[[i]]
       covariateDataFile <- covariateDataFiles |>
@@ -535,26 +541,28 @@ getFeatureExtractionReportInParallel <-
             pivot = FALSE
           )
         
-        if (!is.null(reportFe)) {
-          if (nrow(reportFe) > 0) {
+        if (!is.null(reportFe$raw)) {
+          if (nrow(reportFe$raw) > 0) {
             databaseId <- cdmSources |>
               dplyr::filter(sourceKey == !!sourceKey) |>
               dplyr::pull(database)
-            report[[i]] <- reportFe |>
+            reportRaw[[i]] <- reportFe$raw |>
+              dplyr::mutate(databaseId = databaseId)
+            reportFormatted[[i]] <- reportFe$formatted |>
               dplyr::mutate(databaseId = databaseId)
           }
         }
       }
     }
     
-    if (is.null(report)) {
+    if (is.null(reportFe$raw)) {
       return(NULL)
     }
     
-    report <- dplyr::bind_rows(report) |>
+    reportFormatted <- dplyr::bind_rows(reportFormatted) |>
       dplyr::mutate(Characteristic = paste0("  ", stringr::str_remove(covariateName, ".*: ")))
     
-    idCols <- setdiff(colnames(report),
+    idCols <- setdiff(colnames(reportFormatted),
                       c("sumValue",
                         "averageValue",
                         "report",
@@ -571,7 +579,7 @@ getFeatureExtractionReportInParallel <-
                           ))
     }
     
-    report <- report |>
+    reportFormatted <- reportFormatted |>
       tidyr::pivot_wider(
         id_cols = idCols,
         names_from = "databaseId",
@@ -580,7 +588,7 @@ getFeatureExtractionReportInParallel <-
       )
     
     if (!is.null(table1specifications)) {
-      report <- report |>
+      reportFormatted <- reportFormatted |>
         dplyr::arrange(labelId,
                        label,
                        periodName,
@@ -588,13 +596,16 @@ getFeatureExtractionReportInParallel <-
                        Characteristic) |>
         dplyr::filter(!is.na(labelId))
     } else {
-      report <- report |>
-        dplyr::arrange(dplyr::desc(setdiff(colnames(report),
+      reportFormatted <- reportFormatted |>
+        dplyr::arrange(dplyr::desc(setdiff(colnames(reportFormatted),
                                            idCols)[[1]])) |>
         dplyr::filter(!is.na(covariateId))
     }
     
-    return(report)
+    output <- c()
+    output$raw <- dplyr::bind_rows(reportRaw)
+    output$formatted <- reportFormatted
+    return(output)
   }
 
 
@@ -652,9 +663,7 @@ getFeatureExtractionReportNonTimeVarying <-
            covariateDataPath,
            cohortId,
            cohortDefinitionSet) {
-    
-    output <- c()
-    output$rawData <-
+    output <-
       getFeatureExtractionReportInParallel(
         cdmSources = cdmSources,
         covariateDataPath = covariateDataPath,
@@ -664,16 +673,54 @@ getFeatureExtractionReportNonTimeVarying <-
         excludedCovariateIds = NULL,
         table1specifications = NULL,
         simple = TRUE,
-        cohortId,
+        cohortId = cohortId,
         covariateDataFileNamePattern =  paste0(cohortId, "$"),
-        cohortDefinitionSet,
+        cohortDefinitionSet = cohortDefinitionSet,
         databaseId = NULL,
         cohortName = NULL,
         reportName = NULL,
         format = TRUE
       )
     
-    browser()
+    #plot calendar year trend
+    forCalendarYearTrendPlot<- output$raw |>
+      dplyr::filter(analysisName == 'DemographicsIndexYear') |>
+      dplyr::mutate(calendarDate = as.Date(paste0(as.character(conceptId), "-01-01"))) |>
+      dplyr::select(databaseId,
+                    calendarDate,
+                    sumValue,
+                    averageValue,
+                    report)
     
+    
+    if (nrow(forCalendarYearTrendPlot) > 0) {
+      databaseIds <- forPlottingTrend$databaseId |> unique()
+      
+      calendarYearTrendPlot <- c()
+      for (i in (1:length(databaseIds))) {
+        data1 <- forPlottingTrend |>
+          dplyr::filter(databaseId == databaseIds[[i]]) |>
+          dplyr::select(calendarDate,
+                        sumValue) |>
+          tidyr::uncount(sumValue) |>
+          dplyr::select(calendarDate)
+        
+        cohortName <-
+          cohortDefinitionSet |> dplyr::filter(cohortId %in% cohortId) |> dplyr::pull(cohortName)
+        
+        calendarYearTrendPlot[[i]] <-
+          OhdsiPlots::plotTrendCurve(
+            df = data,
+            dateColumn = "calendarDate",
+            plotTitle = paste0("Incidence by calendar year in ",
+                               databaseId),
+            yAxisLabel = cohortName
+          )
+      }
+      
+      output$calendarYearTrendPlot <- calendarYearTrendPlot
+    }
+    
+    browser()
     return(output)
   }

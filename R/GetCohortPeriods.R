@@ -159,7 +159,5 @@ getCohortPeriods <- function(connectionDetails = NULL,
         )
       )
   }
-
-
   return(periods)
 }
