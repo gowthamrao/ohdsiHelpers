@@ -1,5 +1,5 @@
 #' @export
-createFeatureExtractionReportByTimeWindows <-
+getFeatureExtractionReportByTimeWindows <-
   function(covariateData,
            startDays = NULL,
            endDays = NULL,
@@ -77,8 +77,7 @@ createFeatureExtractionReportByTimeWindows <-
       }
     }
     
-    if (any(!is.null(startDays),
-             !is.null(endDays))) {
+    if (any(!is.null(startDays),!is.null(endDays))) {
       reportTimeVarying1 <- covariateData$covariates |>
         dplyr::filter(cohortDefinitionId == cohortId) |>
         dplyr::inner_join(
@@ -110,7 +109,7 @@ createFeatureExtractionReportByTimeWindows <-
           averageValue
         ) |>
         dplyr::filter(averageValue > minAverageValue) |>
-        dplyr::collect() |> 
+        dplyr::collect() |>
         dplyr::mutate(continuous = 0)
       
       reportTimeVarying2a <-
@@ -224,9 +223,16 @@ createFeatureExtractionReportByTimeWindows <-
     }
     
     if (includeNonTimeVarying) {
-      reportNonTimeVarying1 <- covariateData$covariates |>
-        dplyr::filter(cohortDefinitionId == cohortId) |>
-        dplyr::filter(is.na(timeId)) |>
+      if ("timeId" %in% colnames(covariateData$covariates)) {
+        covariateData <-  covariateData$covariates |>
+          dplyr::filter(cohortDefinitionId == cohortId) |>
+          dplyr::filter(is.na(timeId))
+      } else {
+        covariateData <-  covariateData$covariates |>
+          dplyr::filter(cohortDefinitionId == cohortId)
+      }
+      
+      reportNonTimeVarying1 <- covariateData |>
         dplyr::inner_join(covariateAnalysisId,
                           by = "covariateId") |>
         dplyr::arrange(dplyr::desc(averageValue)) |>
@@ -246,10 +252,17 @@ createFeatureExtractionReportByTimeWindows <-
         dplyr::collect() |>
         dplyr::mutate(continuous = 0)
       
+      if ("timeId" %in% colnames(covariateData$covariatesContinuous)) {
+        covariatesContinuous <-  covariateData$covariatesContinuous |>
+          dplyr::filter(cohortDefinitionId == cohortId) |>
+          dplyr::filter(is.na(timeId))
+      } else {
+        covariatesContinuous <-  covariateData$covariatesContinuous |>
+          dplyr::filter(cohortDefinitionId == cohortId)
+      }
+      
       reportNonTimeVarying2a <-
-        covariateData$covariatesContinuous |>
-        dplyr::filter(cohortDefinitionId == cohortId) |>
-        dplyr::filter(is.na(timeId)) |>
+        covariatesContinuous |>
         dplyr::inner_join(covariateAnalysisId,
                           by = "covariateId") |>
         dplyr::arrange(dplyr::desc(averageValue)) |>
@@ -280,9 +293,7 @@ createFeatureExtractionReportByTimeWindows <-
         dplyr::select(-statistic)
       
       reportNonTimeVarying2b <-
-        covariateData$covariatesContinuous |>
-        dplyr::filter(cohortDefinitionId == cohortId) |>
-        dplyr::filter(is.na(timeId)) |>
+        covariatesContinuous |>
         dplyr::inner_join(covariateAnalysisId,
                           by = "covariateId") |>
         dplyr::arrange(dplyr::desc(averageValue)) |>
@@ -361,19 +372,19 @@ createFeatureExtractionReportByTimeWindows <-
         dplyr::relocate(labelId)
       reportTable1 <- c()
       for (i in (1:nrow(table1specifications))) {
-        reportTable1[[i]] <- table1specifications[i, ] |>
+        reportTable1[[i]] <- table1specifications[i,] |>
           dplyr::select(labelId,
                         label) |>
           tidyr::crossing(report |>
                             dplyr::filter(
-                              covariateId %in% commaSeparaedStringToIntArray(table1specifications[i, ]$covariateIds)
+                              covariateId %in% commaSeparaedStringToIntArray(table1specifications[i,]$covariateIds)
                             ))
         
         if (nrow(reportTable1[[i]]) > 0) {
           reportTable1[[i]] <- dplyr::bind_rows(
             reportTable1[[i]] |>
               dplyr::mutate(source = 2),
-            table1specifications[i, ] |>
+            table1specifications[i,] |>
               dplyr::mutate(
                 covariateId = 0,
                 periodName = "",
@@ -459,7 +470,7 @@ createFeatureExtractionReportByTimeWindows <-
 
 
 #' @export
-createFeatureExtractionReportInParallel <-
+getFeatureExtractionReportInParallel <-
   function(cdmSources,
            covariateDataPath,
            startDays = NULL,
@@ -506,7 +517,7 @@ createFeatureExtractionReportInParallel <-
         covariateData <-
           FeatureExtraction::loadCovariateData(file = covariateDataFile$filePath)
         reportFe <-
-          createFeatureExtractionReportByTimeWindows(
+          getFeatureExtractionReportByTimeWindows(
             covariateData = covariateData,
             startDays = startDays,
             endDays = endDays,
@@ -584,4 +595,85 @@ createFeatureExtractionReportInParallel <-
     }
     
     return(report)
+  }
+
+
+
+#' @export
+getFeatureExtractionReportCommonSequentialTimePeriods <-
+  function() {
+    # covariateData$timeRef |>
+    #   dplyr::collect() |>
+    #   dplyr::filter(endDay == -1) |>
+    #   dplyr::filter(startDay %% 2 != 0) |>
+    #   dplyr::filter(startDay > -400) |>
+    #   dplyr::filter(startDay != -365)
+    #
+    # covariateData$timeRef |>
+    #   dplyr::collect() |>
+    #   dplyr::filter(startDay == 1) |>
+    #   dplyr::filter(endDay %% 2 != 0) |>
+    #   dplyr::filter(endDay != 365) |>
+    #   dplyr::filter(endDay < 400)
+    
+    
+    priorMonthlyPeriods <- dplyr::tibble(
+      timeId = c(15, 21, 23, 25, 27, 29, 31, 33, 36, 38, 41, 44, 47),
+      startDay = c(
+        -391,-361,-331,-301,-271,-241,-211,-181,-151,-121,-91,-61,-31
+      ),
+      endDay = c(-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1)
+    )
+    
+    postMonthlyPeriods <- dplyr::tibble(
+      timeId = c(58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70),
+      startDay = c(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+      endDay = c(1, 31, 61, 91, 121, 151, 181, 211, 241, 271, 301, 331, 361)
+    )
+    
+    onDayOf <- dplyr::tibble(timeId = 53,
+                             startDay = 0,
+                             endDay = 0)
+    
+    timePeriods <- dplyr::bind_rows(priorMonthlyPeriods,
+                                    postMonthlyPeriods,
+                                    onDayOf) |>
+      dplyr::arrange(timeId)
+    
+    return(timePeriods)
+    
+  }
+
+
+
+#' @export
+getFeatureExtractionReportNonTimeVarying <-
+  function(cdmSources,
+           covariateDataPath,
+           cohortId,
+           cohortDefinitionSet) {
+    
+    output <- c()
+    output$rawData <-
+      getFeatureExtractionReportInParallel(
+        cdmSources = cdmSources,
+        covariateDataPath = covariateDataPath,
+        includeNonTimeVarying = TRUE,
+        minAverageValue = 0.01,
+        includedCovariateIds = NULL,
+        excludedCovariateIds = NULL,
+        table1specifications = NULL,
+        simple = TRUE,
+        cohortId,
+        covariateDataFileNamePattern =  paste0(cohortId, "$"),
+        cohortDefinitionSet,
+        databaseId = NULL,
+        cohortName = NULL,
+        reportName = NULL,
+        format = TRUE
+      )
+    
+    browser()
+    
+    return(output)
   }

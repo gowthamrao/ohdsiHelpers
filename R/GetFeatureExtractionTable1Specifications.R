@@ -1,9 +1,10 @@
 
+
 #' @export
-createTable1SpecificationsRow <- function(analysisId,
-                                          conceptIds = NULL,
-                                          covariateIds = NULL,
-                                          label = "Feature cohorts") {
+getTable1SpecificationsRow <- function(analysisId,
+                                       conceptIds = NULL,
+                                       covariateIds = NULL,
+                                       label = "Feature cohorts") {
   if (is.null(conceptIds) & is.null(covariateIds)) {
     stop("please provide atleast conceptIds or covariateIds")
   }
@@ -30,7 +31,7 @@ createTable1SpecificationsRow <- function(analysisId,
 
 
 #' @export
-createTable1SpecificationsFromCovariateData <-
+getTable1SpecificationsFromCovariateData <-
   function(covariateData = NULL,
            covariateRef = NULL,
            analysisRef = NULL) {
@@ -52,7 +53,7 @@ createTable1SpecificationsFromCovariateData <-
     if (nrow(analysisNames) > 0) {
       for (i in (1:nrow(analysisNames))) {
         analysisName <-
-          analysisNames[i,]
+          analysisNames[i, ]
         
         covariateIds <- covariateRef |>
           dplyr::collect() |>
@@ -64,7 +65,7 @@ createTable1SpecificationsFromCovariateData <-
           unique()
         
         table1Specifications[[i]] <-
-          createTable1SpecificationsRow(
+          getTable1SpecificationsRow(
             analysisId = analysisName$analysisId,
             conceptIds = NULL,
             covariateIds = covariateIds,

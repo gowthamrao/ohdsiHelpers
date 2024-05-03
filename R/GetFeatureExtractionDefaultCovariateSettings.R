@@ -1,6 +1,6 @@
 #' @export
-getDefaultCovariateSettings <- function(temporalStartDays = NULL,
-                                        temporalEndDays = NULL) {
+getFeatureExtractionDefaultCovariateSettings <- function(temporalStartDays = NULL,
+                                                         temporalEndDays = NULL) {
   if (is.null(temporalStartDays)) {
     temporalStartDays = c(
       # components displayed in cohort characterization-9999,
@@ -130,7 +130,7 @@ getDefaultCovariateSettings <- function(temporalStartDays = NULL,
 }
 
 
-getCovariateSettingDemographics <- function() {
+getFeatureExtractionCovariateSettingDemographics <- function() {
   covariateSettings <-
     FeatureExtraction::createCovariateSettings(
       useDemographicsGender = TRUE,

@@ -21,7 +21,7 @@
 #' @param endDayWindow3                The day to end time window 3 for feature extraction #'
 #'
 #' @export
-createFeatureExtractionNonTemporalCovariateSettings <-
+getFeatureExtractionNonTemporalCovariateSettings <-
   function(excludedCovariateConceptIds = c(),
            includedCovariateIds = c(),
            includedCovariateConceptIds = c(),
