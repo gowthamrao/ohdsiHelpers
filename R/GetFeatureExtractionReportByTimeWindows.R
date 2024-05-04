@@ -522,6 +522,11 @@ getFeatureExtractionReportInParallel <-
       if (nrow(covariateDataFile) == 1) {
         covariateData <-
           FeatureExtraction::loadCovariateData(file = covariateDataFile$filePath)
+        
+        if (is.null(table1specifications)) {
+          table1specifications <- OhdsiHelpers::getTable1SpecificationsFromCovariateData(covariateData)
+        }
+        
         reportFe <-
           getFeatureExtractionReportByTimeWindows(
             covariateData = covariateData,
@@ -657,12 +662,14 @@ getFeatureExtractionReportCommonSequentialTimePeriods <-
 
 
 
+
 #' @export
 getFeatureExtractionReportNonTimeVarying <-
   function(cdmSources,
            covariateDataPath,
            cohortId,
-           cohortDefinitionSet) {
+           cohortDefinitionSet,
+           remove = 'Visit Count|Chads 2 Vasc|Demographics Index Month|Demographics Post Observation Time|Visit Concept Count|Chads 2|Demographics Prior Observation Time|Dcsi|Demographics Time In Cohort|Demographics Index Year Month') {
     output <-
       getFeatureExtractionReportInParallel(
         cdmSources = cdmSources,
@@ -682,45 +689,17 @@ getFeatureExtractionReportNonTimeVarying <-
         format = TRUE
       )
     
-    #plot calendar year trend
-    forCalendarYearTrendPlot<- output$raw |>
-      dplyr::filter(analysisName == 'DemographicsIndexYear') |>
-      dplyr::mutate(calendarDate = as.Date(paste0(as.character(conceptId), "-01-01"))) |>
-      dplyr::select(databaseId,
-                    calendarDate,
-                    sumValue,
-                    averageValue,
-                    report)
-    
-    
-    if (nrow(forCalendarYearTrendPlot) > 0) {
-      databaseIds <- forPlottingTrend$databaseId |> unique()
-      
-      calendarYearTrendPlot <- c()
-      for (i in (1:length(databaseIds))) {
-        data1 <- forPlottingTrend |>
-          dplyr::filter(databaseId == databaseIds[[i]]) |>
-          dplyr::select(calendarDate,
-                        sumValue) |>
-          tidyr::uncount(sumValue) |>
-          dplyr::select(calendarDate)
-        
-        cohortName <-
-          cohortDefinitionSet |> dplyr::filter(cohortId %in% cohortId) |> dplyr::pull(cohortName)
-        
-        calendarYearTrendPlot[[i]] <-
-          OhdsiPlots::plotTrendCurve(
-            df = data,
-            dateColumn = "calendarDate",
-            plotTitle = paste0("Incidence by calendar year in ",
-                               databaseId),
-            yAxisLabel = cohortName
-          )
-      }
-      
-      output$calendarYearTrendPlot <- calendarYearTrendPlot
+    if (!is.null(remove)) {
+      writeLines(paste0("removing from formatted report",
+                        remove))
+      output$formattedFull <- output$formatted
+      output$formatted <- output$formatted |>
+        dplyr::filter(stringr::str_detect(
+          string = label,
+          pattern = remove,
+          negate = TRUE
+        ))
     }
     
-    browser()
     return(output)
   }
