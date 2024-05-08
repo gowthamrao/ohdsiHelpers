@@ -721,11 +721,17 @@ getFeatureExtractionStandardizedDifference <-
            cohortId2,
            includeNonTimeVarying = TRUE,
            timeRef = NULL) {
+    
+    if (all(is.null(timeRef),
+            !includeNonTimeVarying)) {
+      message("includeNonTimeVarying is FASLE and timeRef is NULL. no results.")
+      return(NULL)
+    }
+    
     if (all(is.null(covariateData1Path),
             is.null(covariateData2Path))) {
       stop("covariateData1/2 and path are all NULL")
     }
-    
     
     covariateData1 <-
       FeatureExtraction::loadCovariateData(file = covariateData1Path)
@@ -751,12 +757,10 @@ getFeatureExtractionStandardizedDifference <-
       timeRefFromCovariateData <- timeRef1
     }
     
-    if (nrow(timeRefFromCovariateData) == 0) {
-      return(NULL)
-    }
+    standardizedDifference <- c()
     
-    #filter to correct timeRef
     if (!is.null(timeRef)) {
+      
       timeRef <- timeRefFromCovariateData |>
         dplyr::inner_join(
           timeRef |>
@@ -765,48 +769,48 @@ getFeatureExtractionStandardizedDifference <-
             dplyr::distinct(),
           by = c("startDay", "endDay")
         )
-    }
-    
-    if (nrow(timeRef) == 0) {
-      message("no valid time windows")
-      return(NULL)
-    }
-    
-    standardizedDifference <- c()
-    for (i in (1:nrow(timeRef))) {
-      rowData <- timeRef[i, ]
       
-      message(paste0("working on ", rowData$startDay, " to ", rowData$endDay))
-      covariateData1 <-
-        FeatureExtraction::loadCovariateData(file = covariateData1Path)
-      covariateData1$covariates <- covariateData1$covariates |>
-        dplyr::filter(timeId == rowData$timeId,
-                      cohortDefinitionId == cohortId1)
+      if (nrow(timeRef) == 0) {
+        message("no valid time windows")
+        return(NULL)
+      }
       
-      covariateData2 <-
-        FeatureExtraction::loadCovariateData(file = covariateData2Path)
-      covariateData2$covariates <- covariateData2$covariates |>
-        dplyr::filter(timeId == rowData$timeId,
-                      cohortDefinitionId == cohortId2)
+      for (i in (1:nrow(timeRef))) {
+        rowData <- timeRef[i,]
+        
+        message(paste0("working on ", rowData$startDay, " to ", rowData$endDay))
+        covariateData1 <-
+          FeatureExtraction::loadCovariateData(file = covariateData1Path)
+        covariateData1$covariates <- covariateData1$covariates |>
+          dplyr::filter(timeId == rowData$timeId,
+                        cohortDefinitionId == cohortId1)
+        
+        covariateData2 <-
+          FeatureExtraction::loadCovariateData(file = covariateData2Path)
+        covariateData2$covariates <- covariateData2$covariates |>
+          dplyr::filter(timeId == rowData$timeId,
+                        cohortDefinitionId == cohortId2)
+        
+        standardizedDifference[[i]] <-
+          FeatureExtraction::computeStandardizedDifference(
+            covariateData1 = covariateData1,
+            covariateData2 = covariateData2,
+            cohortId1 = cohortId1,
+            cohortId2 = cohortId2
+          ) |>
+          tidyr::crossing(rowData |>
+                            dplyr::select(startDay,
+                                          endDay)) |>
+          dplyr::relocate(startDay,
+                          endDay,
+                          covariateId,
+                          covariateName)
+      }
       
-      standardizedDifference[[i]] <-
-        FeatureExtraction::computeStandardizedDifference(
-          covariateData1 = covariateData1,
-          covariateData2 = covariateData2,
-          cohortId1 = cohortId1,
-          cohortId2 = cohortId2
-        ) |>
-        tidyr::crossing(rowData |>
-                          dplyr::select(startDay,
-                                        endDay)) |>
-        dplyr::relocate(startDay,
-                        endDay,
-                        covariateId,
-                        covariateName)
+      
+      standardizedDifference <-
+        dplyr::bind_rows(standardizedDifference)
     }
-    
-    standardizedDifference <-
-      dplyr::bind_rows(standardizedDifference)
     
     if (includeNonTimeVarying) {
       #non time varying
@@ -849,6 +853,12 @@ getFeatureExtractionStandardizedDifferenceInParallel <-
            covariateDataPath,
            includeNonTimeVarying = TRUE,
            timeRef = NULL) {
+    
+    if (all(is.null(timeRef),
+            !includeNonTimeVarying)) {
+      message("includeNonTimeVarying is FASLE and timeRef is NULL. no results.")
+      return(NULL)
+    }
     sourceKeys <- cdmSources$sourceKey |> unique()
     
     covariateDataFilesCohort1 <-
@@ -893,6 +903,11 @@ getFeatureExtractionStandardizedDifferenceInParallel <-
     covariateDataFiles <- covariateDataFiles1 |>
       dplyr::inner_join(covariateDataFiles2)
     
+    if (nrow(covariateDataFiles) == 0) {
+      message("covariate data files not found. no results.")
+      return(NULL)
+    }
+    
     standardizedDifferenceRaw <- c()
     for (i in (1:nrow(covariateDataFiles))) {
       rowData <- covariateDataFiles[i,]
@@ -929,11 +944,16 @@ getFeatureExtractionStandardizedDifferenceInParallel <-
         by = "covariateId"
       ) |>
       dplyr::mutate(ratio = mean1 / mean2,
-                    difference = mean1 - mean2) |>
-      dplyr::mutate(periodName = paste0("d",
-                                        startDay |> as.integer(),
-                                        "d",
-                                        endDay |> as.integer())) 
+                    difference = mean1 - mean2,
+                    periodName = "fixd")
+    
+    if ('startDay' %in% colnames(standardizedDifferenceRaw)) {
+      standardizedDifferenceRaw <- standardizedDifferenceRaw |>
+        dplyr::mutate(periodName = paste0("d",
+                                          startDay |> as.integer(),
+                                          "d",
+                                          endDay |> as.integer()))
+    }
     
     output <- c()
     output$raw <- standardizedDifferenceRaw
@@ -971,7 +991,11 @@ getFeatureExtractionStandardizedDifferenceInParallel <-
         if (nrow(reportTable1[[i]]) > 0) {
           reportTable1[[i]] <- dplyr::bind_rows(
             reportTable1[[i]] |>
-              dplyr::mutate(source = 2),
+              dplyr::mutate(source = 2,
+                            covariateName = paste0("    ", 
+                                                   stringr::str_remove(covariateName, 
+                                                                       ".*: "))
+                            ), 
             table1Specifications[i,] |>
               dplyr::mutate(
                 covariateId = 0,

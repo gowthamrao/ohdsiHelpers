@@ -15,6 +15,27 @@ getSubsetOperatorsStandard <- function() {
                                        limitTo = "firstEver",
                                        priorTime = 365)
   
+  subsetOperators$limitValidGenderAgeMin0 <-
+    CohortGenerator::createDemographicSubset(name = "|subset demographics - valid biological sex",
+                                             gender = c(8532, 8507),
+                                             ageMin = 0)
+  
+  subsetOperators$limitValidAgeMin1 <-
+    CohortGenerator::createDemographicSubset(name = "|subset demographics - age greater than 1",
+                                             ageMin = 1)
+  
+  subsetOperators$limitValidAgeMax90 <-
+    CohortGenerator::createDemographicSubset(name = "|subset demographics - age less than 90",
+                                             ageMax = 90)
+  
+  subsetOperators$limitValidAgeMax99 <-
+    CohortGenerator::createDemographicSubset(name = "|subset demographics - age less than 99",
+                                             ageMax = 99)
+  
+  subsetOperators$limitValidAgeMax65 <-
+    CohortGenerator::createDemographicSubset(name = "|subset demographics - age less than 65",
+                                             ageMax = 65)
+  
   return(subsetOperators)
 }
 
