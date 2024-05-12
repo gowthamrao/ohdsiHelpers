@@ -13,7 +13,7 @@ createConnectionDetails <- function(cdmSources,
     )
 
   if (nrow(cdmSource) == 0) {
-    stop(paste0("database ", database, "did not match cdmSources. The expected values are: ", paste0(cdmSources$database |> unique() |> sort(),
+    stop(paste0("database ", database, " did not match cdmSources. The expected values are: ", paste0(cdmSources$database |> unique() |> sort(),
       collapse = ", "
     )))
   }
