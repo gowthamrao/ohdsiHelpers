@@ -1,86 +1,99 @@
 #' @export
-timeToFeature <- function(targetCohortId,
-                          featureCohortId,
+timeToFeature <- function(targetCohortIds,
+                          featureCohortIds,
                           allDatabaseIds,
-                          cohortTableName = cohortTableNames$cohortTable,
+                          targetCohortTableName,
+                          featureCohortTableName = targetCohortTableName,
                           cdmSources,
-                          plotTitle = NULL,
+                          plotTitle = paste0("Time to cohort ids: ",
+                                             paste0(featureCohortIds, collapse = ", ")),
                           minDays = NULL,
                           maxDays = NULL,
-                          cohortCounts,
-                          cohortDefinitionSet) {
+                          tempEmulationationSchema = getOption("sqlRenderTempEmulationSchema")) {
+  
+  sql <- 
+    "
+      with target_cohort as
+      (
+              SELECT subject_id,
+                      target_start_date,
+                      row_number() over(partition by subject_id order by target_start_date) target_sequence
+              FROM
+              (
+                  SELECT DISTINCT subject_id,
+                          cohort_start_date target_start_date
+                  FROM @cohort_database_schema.@target_cohort_table
+                  WHERE cohort_definition_id IN (@target_cohort_ids)
+              ) t1
+      )
+      SELECT target_sequence,
+              DATEDIFF(day, target_start_date, feature_start_date) AS days_to_feature,
+              COUNT(DISTINCT subject_id) subjects
+      FROM (
+              SELECT f1.subject_id,
+                        t1.target_sequence,
+                        t1.target_start_date,
+                        min(f1.cohort_start_date) feature_start_date
+              FROM @cohort_database_schema.@feature_cohort_table f1
+              INNER JOIN target_cohort t1
+              ON  t1.subject_id = f1.subject_id
+                AND t1.target_start_date <= f1.cohort_start_date
+              WHERE f1.cohort_definition_id IN (@feature_cohort_ids)
+              GROUP BY f1.subject_id,
+                        t1.target_sequence,
+                        t1.target_start_date
+            ) f
+      WHERE target_sequence > 0
+            {@min_days_is_not_null} ? {
+              AND DATEDIFF(day, target_start_date, feature_start_date) >= @min_days
+            }
+            {@max_days_is_not_null} ? {
+              AND DATEDIFF(day, target_start_date, feature_start_date) <= @max_days
+            }
+      GROUP BY target_sequence,
+              DATEDIFF(day, target_start_date, feature_start_date);
+        "
   timeToFeatureCohort <-
-    OhdsiHelpers::getTargetCohortToFeatureCohortDateDifferenceDistributionInParrallel(
+    OhdsiHelpers::renderTranslateQuerySqlInParallel(
       cdmSources = cdmSources,
-      targetCohortTableName = cohortTableNames$cohortTable,
-      targetCohortIds = targetCohortId,
-      featureCohortIds = featureCohortId,
       databaseIds = allDatabaseIds,
-      minDays = minDays,
-      maxDays = maxDays
+      sequence = 1,
+      sql = sql,
+      target_cohort_table = targetCohortTableName,
+      feature_cohort_table = featureCohortTableName,
+      target_cohort_ids = targetCohortIds,
+      feature_cohort_ids = featureCohortIds,
+      tempEmulationSchema = tempEmulationSchema,
+      min_days = minDays,
+      max_days = maxDays,
+      min_days_is_not_null = !is.null(minDays),
+      max_days_is_not_null = !is.null(maxDays)
     )
   
-  if (is.null(plotTitle)) {
-    plotTitle <- paste0(
-      "Time to first ",
-      if (!is.null(maxDays)) {
-        paste0(" ( within ", maxDays, ") ")
-      },
-      cohortDefinitionSet |>
-        dplyr::filter(cohortId == featureCohortId) |>
-        dplyr::mutate(goodName = OhdsiHelpers::createGoodCohortNames(cohortNameShort)) |>
-        dplyr::pull(goodName)
-    )
-  }
+  longData <- timeToFeatureCohort |>
+    dplyr::filter(targetSequence == 1) |>
+    dplyr::rename(value = daysToFeature,
+                  groupLabel = databaseId) |>
+    dplyr::select(value, groupLabel, subjects) |>
+    tidyr::uncount(weights = subjects) |>
+    dplyr::arrange(groupLabel, value) |>
+    dplyr::relocate(groupLabel, value)
   
-  preparedData <-
-    timeToFeatureCohort  |>
-    OhdsiHelpers::prepareTargetCohortToFeatureCohortDateDifferenceDistributionForVisualizations()
+  violinPlots <-
+    OhdsiPlots::createViolinPlot(
+      data = longData,
+      title = plotTitle)
   
   summaryStatistics <-
-    preparedData |>
-    OhdsiHelpers::calculateSummaryStatistics() |>
+    longData |>
+    OhdsiHelpers::calculateSummaryStatistics(group = 'groupLabel') |>
     dplyr::mutate(value = OhdsiHelpers::formatDecimalWithComma(number = value)) |>
     tidyr::pivot_wider(id_cols = "statistic",
                        values_from = value,
-                       names_from = group) |>
+                       names_from = groupLabel) |>
     dplyr::arrange(statistic)
   
-  violinPlots <-
-    preparedData |>
-    OhdsiPlots::createViolinPlot(title = plotTitle)
-  
-  
-  
   output <- c()
-  
-  if (length(featureCohortId) == 1) {
-    cohortCounts <- cohortCounts$cohortCounts |>
-      dplyr::filter(cohortId %in% c(featureCohortId,
-                                    targetCohortId)) |>
-      dplyr::select(cohortId,
-                    databaseId,
-                    cohortSubjects)
-    
-    output$featureProportion <- cohortCounts |>
-      dplyr::filter(cohortId == featureCohortId) |>
-      dplyr::select(databaseId,
-                    cohortSubjects) |>
-      dplyr::inner_join(
-        cohortCounts |>
-          dplyr::filter(cohortId == targetCohortId) |>
-          dplyr::select(databaseId,
-                        cohortSubjects) |>
-          dplyr::rename(targetSubjects = cohortSubjects),
-        by = "databaseId"
-      ) |>
-      dplyr::mutate(proportion = cohortSubjects / targetSubjects) |>
-      dplyr::mutate(report = OhdsiHelpers::formatCountPercent(count = cohortSubjects, percent = proportion)) |>
-      dplyr::select(databaseId,
-                    report) |>
-      tidyr::pivot_wider(names_from = databaseId,
-                         values_from = report)
-  }
   
   output$summaryStatistics <- summaryStatistics
   output$violinPlot <- violinPlots
