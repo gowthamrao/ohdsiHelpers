@@ -125,6 +125,138 @@ getSubsetOperatorEnM <- function(startDay = 0,
   return(subsetOperators)
 }
 
+
+#' @export
+getSubsetOperatorStage <- function(startDay = -14,
+                                   endDay = 90,
+                                   targetAnchor = "cohortStart",
+                                   stage0 = 16084,
+                                   stage1 = 15271,
+                                   stage1a = 16072,
+                                   stage1b = 16073,
+                                   stage1c = 16074,
+                                   stage2 = 15272,
+                                   stage2a = 16077,
+                                   stage2b = 16076,
+                                   stage2c = 16075,
+                                   stage3 = 15273,
+                                   stage3a = 16080,
+                                   stage3b = 16079,
+                                   stage3c = 16078,
+                                   stage4 = 15274,
+                                   stage4a = 16083,
+                                   stage4b = 16082,
+                                   stage4c = 16081,
+                                   anyStage = 17177) {
+  subsetOperators <-
+    getSubsetOperatorStagePattern(
+      startDay = startDay,
+      endDay = endDay,
+      targetAnchor = targetAnchor,
+      stage0 = stage0,
+      stage1 = stage1,
+      stage1a = stage1a,
+      stage1b = stage1b,
+      stage1c = stage1c,
+      stage2 = stage2,
+      stage2a = stage2a,
+      stage2b = stage2b,
+      stage2c = stage2c,
+      stage3 = stage3,
+      stage3a = stage3a,
+      stage3b = stage3b,
+      stage3c = stage3c,
+      stage4 = stage4,
+      stage4a = stage4a,
+      stage4b = stage4b,
+      stage4c = stage4c,
+      anyStage = anyStage
+    )
+  
+  return(subsetOperators)
+  
+}
+
+
+#' @export
+getSubsetOperatorStagePattern <-
+  function(startDay = -14,
+           endDay = 90,
+           targetAnchor = "cohortStart",
+           ...) {
+    stages <-
+      list(...)  # Collect all stage identifiers passed as additional arguments
+    subsetOperators <- list()
+    
+    # Function to add both regular and negated subset operators for a stage
+    addSubsetOperators <-
+      function(stageId,
+               baseName,
+               subsetOperators,
+               cohortCombinationOperator = "any") {
+        # Constructing the base names with the first letter capitalized
+        baseNameUpper <-
+          sub("^(.)", "\\U\\1", baseName, perl = TRUE)
+        
+        # Assign regular subset operator
+        subsetOperators[[paste0("subsetOperatorHas", baseNameUpper)]] <-
+          getCohortSubsetOperators(
+            subsetCohortIds = c(stageId),
+            cohortCombinationOperator = cohortCombinationOperator,
+            baseName = baseName,
+            startDay = startDay,
+            endDay = endDay
+          )
+        
+        # Assign negated subset operator
+        subsetOperators[[paste0("subsetOperatorHas", baseNameUpper, "Negate")]] <-
+          getCohortSubsetOperators(
+            subsetCohortIds = c(stageId),
+            cohortCombinationOperator = cohortCombinationOperator,
+            baseName = baseName,
+            startDay = startDay,
+            endDay = endDay,
+            negate = TRUE
+          )
+        return(subsetOperators)
+      }
+    
+    # Loop through each stage and create subset operators
+    for (stage in names(stages)) {
+      subsetOperators <-
+        addSubsetOperators(
+          stageId = stages[[stage]],
+          baseName = stage,
+          subsetOperators = subsetOperators
+        )
+    }
+    
+    subsetOperators <- addSubsetOperators(
+      stageId = c(stages$stage4a, stages$stage4b),
+      baseName = "stage4ab",
+      subsetOperators = subsetOperators
+    )
+    
+    subsetOperators <- addSubsetOperators(
+      stageId = c(stages$stage3,
+                  stages$stage4a,
+                  stages$stage4b),
+      baseName = "stage3Or4ab",
+      subsetOperators = subsetOperators
+    )
+    
+    subsetOperators <- addSubsetOperators(
+      stageId = c(stages$stage1,
+                  stages$stage2),
+      baseName = "stage1Or2",
+      subsetOperators = subsetOperators
+    )
+    
+    return(subsetOperators)
+  }
+
+
+
 #' Create Cohort Subset Operators
 #'
 #' This function generates one cohort subset operator for a specified time window,

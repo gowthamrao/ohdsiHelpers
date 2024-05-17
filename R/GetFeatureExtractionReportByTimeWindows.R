@@ -523,6 +523,14 @@ getFeatureExtractionReportInParallel <-
         covariateData <-
           FeatureExtraction::loadCovariateData(file = covariateDataFile$filePath)
         
+        if (!'covariates' %in% names(covariateData)) {
+          next()
+        }
+        
+        if (!'cohortDefinitionId' %in% colnames(covariateData$covariates)) {
+          next()
+        }
+        
         if (is.null(table1Specifications)) {
           table1Specifications <- OhdsiHelpers::getTable1SpecificationsFromCovariateData(covariateData)
         }
