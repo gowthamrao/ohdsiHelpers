@@ -1,20 +1,4 @@
 #' @export
-getTemporalDays <- function(groupingDays = 30,
-                            maxDays = 1000,
-                            minDays = NULL) {
-  sequence <- c(seq(
-    from = (-groupingDays * round(maxDays / groupingDays)),
-    to = (groupingDays * round(maxDays / groupingDays)),
-    by = groupingDays
-  ))
-  
-  if (!is.null(minDays)) {
-    sequence <- sequence[sequence >= minDays]
-  }
-  return(sequence |> sort())
-}
-
-#' @export
 convertCohortIdToCovariateId <- function(cohortIds,
                                          cohortCovariateAnalysisId = 150) {
   c((cohortIds * 1000) + cohortCovariateAnalysisId)

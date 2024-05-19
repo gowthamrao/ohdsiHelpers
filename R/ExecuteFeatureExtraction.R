@@ -32,13 +32,14 @@ executeFeatureExtraction <-
            cohortDatabaseSchema,
            cohortIds,
            cohortTable,
+           covariateSettings = NULL,
            addCohortBasedTemporalCovariateSettings = TRUE,
-           covariateCohortDatabaseSchema = NULL,
+           removeNonCohortBasedCovariateSettings = FALSE,
+           covariateCohortDatabaseSchema = cohortDatabaseSchema,
            covariateCohortIds = NULL,
            covariateCohortTable = cohortTable,
            covariateCohortDefinitionSet = NULL,
            cohortCovariateAnalysisId = 150,
-           covariateSettings = NULL,
            tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
            outputFolder = NULL,
            aggregated = TRUE,
@@ -112,11 +113,11 @@ executeFeatureExtraction <-
             includedCovariateIds = covariateCohortIds
           )
         
-        if (!is.null(covariateSettings)) {
+        if (removeNonCohortBasedCovariateSettings) {
+          covariateSettings <- cohortBasedTemporalCovariateSettings
+        } else {
           covariateSettings <- list(covariateSettings,
                                     cohortBasedTemporalCovariateSettings)
-        } else {
-          covariateSettings <- cohortBasedTemporalCovariateSettings
         }
       } else {
         stop(
@@ -238,8 +239,9 @@ executeFeatureExtractionInParallel <-
            userService = "OHDSI_USER",
            passwordService = "OHDSI_PASSWORD",
            databaseIds = getListOfDatabaseIds(),
-           covariateSettings = OhdsiHelpers::getFeatureExtractionDefaultCovariateSettings(),
+           covariateSettings = OhdsiHelpers::getFeatureExtractionDefaultTemporalCovariateSettings(),
            addCohortBasedTemporalCovariateSettings = FALSE,
+           removeNonCohortBasedCovariateSettings = FALSE,
            covariateCohortIds = NULL,
            covariateCohortTable = cohortTable,
            covariateCohortDefinitionSet = NULL,
@@ -294,6 +296,7 @@ executeFeatureExtractionInParallel <-
                tempEmulationSchema,
                covariateSettings,
                addCohortBasedTemporalCovariateSettings,
+               removeNonCohortBasedCovariateSettings,
                covariateCohortIds,
                covariateCohortTable,
                covariateCohortDefinitionSet,
@@ -322,6 +325,7 @@ executeFeatureExtractionInParallel <-
           covariateSettings = covariateSettings,
           outputFolder = outputFolder,
           addCohortBasedTemporalCovariateSettings = addCohortBasedTemporalCovariateSettings,
+          removeNonCohortBasedCovariateSettings = removeNonCohortBasedCovariateSettings,
           covariateCohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
           covariateCohortIds = covariateCohortIds,
           covariateCohortTable = covariateCohortTable,
@@ -345,6 +349,7 @@ executeFeatureExtractionInParallel <-
       tempEmulationSchema = tempEmulationSchema,
       outputFolder = outputFolder,
       addCohortBasedTemporalCovariateSettings = addCohortBasedTemporalCovariateSettings,
+      removeNonCohortBasedCovariateSettings = removeNonCohortBasedCovariateSettings,
       covariateCohortIds = covariateCohortIds,
       covariateCohortTable = covariateCohortTable,
       covariateCohortDefinitionSet = covariateCohortDefinitionSet,
