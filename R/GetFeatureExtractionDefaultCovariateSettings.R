@@ -1,57 +1,61 @@
 
+
 #' @export
 getFeatureExtractionDefaultTemporalCovariateSettings <-
-  function(timeWindows = OhdsiHelpers::getFeatureExtractionDefaultTimeWindows()) {
-    
-    feTemporalDays <- dplyr::tibble(startDay = timeWindows$startDays,
-                                    endDay = timeWindows$endDays) |>
+  function(timeWindows = OhdsiHelpers::getFeatureExtractionDefaultTimeWindows(),
+           useConditionOccurrence = TRUE,
+           useProcedureOccurrence = TRUE,
+           useDrugEraStart = TRUE,
+           useMeasurement = TRUE,
+           useConditionEraStart = TRUE,
+           useConditionEraOverlap = TRUE,
+           useVisitCount = TRUE,
+           useVisitConceptCount = TRUE,
+           useConditionEraGroupStart = FALSE,
+           # do not use because https://github.com/OHDSI/FeatureExtraction/issues/144
+           useConditionEraGroupOverlap = TRUE,
+           useDrugExposure = FALSE,
+           # leads to too many concept id
+           useDrugEraOverlap = FALSE,
+           useDrugEraGroupStart = FALSE,
+           # do not use because https://github.com/OHDSI/FeatureExtraction/issues/144
+           useDrugEraGroupOverlap = TRUE,
+           useObservation = TRUE,
+           useDeviceExposure = TRUE) {
+    feTemporalDays <- dplyr::tibble(startDay = timeWindows$startDay,
+                                    endDay = timeWindows$endDay) |>
       dplyr::tibble() |>
       dplyr::distinct() |>
       dplyr::arrange(startDay)
     
     featureExtractionSettings <-
       FeatureExtraction::createTemporalCovariateSettings(
-        useDemographicsGender = TRUE,
-        useDemographicsAge = TRUE,
-        useDemographicsAgeGroup = TRUE,
-        useDemographicsRace = TRUE,
-        useDemographicsEthnicity = TRUE,
-        useDemographicsIndexYear = TRUE,
-        useDemographicsIndexMonth = TRUE,
-        useDemographicsIndexYearMonth = TRUE,
-        useDemographicsPriorObservationTime = TRUE,
-        useDemographicsPostObservationTime = TRUE,
-        useDemographicsTimeInCohort = TRUE,
-        useConditionOccurrence = TRUE,
-        useProcedureOccurrence = TRUE,
-        useDrugEraStart = TRUE,
-        useMeasurement = TRUE,
-        useConditionEraStart = TRUE,
-        useConditionEraOverlap = TRUE,
-        useVisitCount = TRUE,
-        useVisitConceptCount = TRUE,
-        useConditionEraGroupStart = FALSE,
+        useConditionOccurrence = useConditionOccurrence,
+        useProcedureOccurrence = useProcedureOccurrence,
+        useDrugEraStart = useDrugEraStart,
+        useMeasurement = useMeasurement,
+        useConditionEraStart = useConditionEraStart,
+        useConditionEraOverlap = useConditionEraOverlap,
+        useVisitCount = useVisitCount,
+        useVisitConceptCount = useVisitConceptCount,
+        useConditionEraGroupStart = useConditionEraGroupStart,
         # do not use because https://github.com/OHDSI/FeatureExtraction/issues/144
-        useConditionEraGroupOverlap = TRUE,
-        useDrugExposure = FALSE,
+        useConditionEraGroupOverlap = useConditionEraGroupOverlap,
+        useDrugExposure = useDrugExposure,
         # leads to too many concept id
-        useDrugEraOverlap = FALSE,
-        useDrugEraGroupStart = FALSE,
+        useDrugEraOverlap = useDrugEraOverlap,
+        useDrugEraGroupStart = useDrugEraGroupStart,
         # do not use because https://github.com/OHDSI/FeatureExtraction/issues/144
-        useDrugEraGroupOverlap = TRUE,
-        useObservation = TRUE,
-        useDeviceExposure = TRUE,
-        useCharlsonIndex = TRUE,
-        useDcsi = TRUE,
-        useChads2 = TRUE,
-        useChads2Vasc = TRUE,
-        useHfrs = FALSE,
+        useDrugEraGroupOverlap = useDrugEraGroupOverlap,
+        useObservation = useObservation,
+        useDeviceExposure = useDeviceExposure,
         temporalStartDays = feTemporalDays$startDay,
         temporalEndDays = feTemporalDays$endDay
       )
     
     return(featureExtractionSettings)
   }
+
 
 
 #' @export
@@ -60,57 +64,162 @@ getFeatureExtractionDefaultTemporalCohortCovariateSettings <-
            analysisId = 150,
            covariateCohortDatabaseSchema,
            covariateCohortTable,
-           covariateCohorts,
+           covariateCohortDefinitionSet,
+           includedCovariateIds = NULL,
            valueType = "binary") {
-    feTemporalDays <- dplyr::tibble(startDay = timeWindows$startDays,
-                                    endDay = timeWindows$endDays) |>
+    feTemporalDays <- dplyr::tibble(startDay = timeWindows$startDay,
+                                    endDay = timeWindows$endDay) |>
       dplyr::tibble() |>
       dplyr::distinct() |>
       dplyr::arrange(startDay)
+    
+    if (is.null(includedCovariateIds)) {
+      includedCovariateIds <- covariateCohortDefinitionSet$cohortId
+    }
     
     featureExtractionSettings <-
       FeatureExtraction::createCohortBasedTemporalCovariateSettings(
         analysisId = analysisId,
         covariateCohortDatabaseSchema = covariateCohortDatabaseSchema,
         covariateCohortTable = covariateCohortTable,
-        covariateCohorts = covariateCohorts,
+        covariateCohorts = covariateCohortDefinitionSet |>
+          dplyr::select(cohortId,
+                        cohortName),
         valueType = valueType,
         temporalStartDays = feTemporalDays$startDay,
-        temporalEndDays = feTemporalDays$endDay
+        temporalEndDays = feTemporalDays$endDay,
+        includedCovariateIds = includedCovariateIds
       )
     
     return(featureExtractionSettings)
   }
 
-
-getFeatureExtractionCovariateSettingDemographics <- function() {
-  covariateSettings <-
-    FeatureExtraction::createCovariateSettings(
-      useDemographicsGender = TRUE,
-      useDemographicsAge = TRUE,
-      useDemographicsAgeGroup = TRUE,
-      useDemographicsRace = TRUE,
-      useDemographicsEthnicity = TRUE,
-      useDemographicsIndexYear = TRUE,
-      useDemographicsIndexMonth = TRUE,
-      useDemographicsIndexYearMonth = FALSE,
-      useDemographicsPriorObservationTime = TRUE,
-      useDemographicsPostObservationTime = TRUE,
-      useDemographicsTimeInCohort = TRUE
-    )
-  
-  return(covariateSettings)
-}
-
-
+#' @export
+getFeatureExtractionDefaultNonTimeVaryingCovariateSettings <-
+  function(useDemographicsGender = TRUE,
+           useDemographicsAge = TRUE,
+           useDemographicsAgeGroup = TRUE,
+           useDemographicsRace = TRUE,
+           useDemographicsEthnicity = TRUE,
+           useDemographicsIndexYear = TRUE,
+           useDemographicsIndexMonth = TRUE,
+           useDemographicsIndexYearMonth = FALSE,
+           useDemographicsPriorObservationTime = TRUE,
+           useDemographicsPostObservationTime = TRUE,
+           useDemographicsTimeInCohort = TRUE,
+           useCharlsonIndex = FALSE,
+           useDcsi = FALSE,
+           useChads2 = FALSE,
+           useChads2Vasc = FALSE,
+           useHfrs = FALSE) {
+    covariateSettings <-
+      FeatureExtraction::createCovariateSettings(
+        useDemographicsGender = useDemographicsGender,
+        useDemographicsAge = useDemographicsAge,
+        useDemographicsAgeGroup = useDemographicsAgeGroup,
+        useDemographicsRace = useDemographicsRace,
+        useDemographicsEthnicity = useDemographicsEthnicity,
+        useDemographicsIndexYear = useDemographicsIndexYear,
+        useDemographicsIndexMonth = useDemographicsIndexMonth,
+        useDemographicsIndexYearMonth = useDemographicsIndexYearMonth,
+        useDemographicsPriorObservationTime = useDemographicsPriorObservationTime,
+        useDemographicsPostObservationTime = useDemographicsPostObservationTime,
+        useDemographicsTimeInCohort = useDemographicsTimeInCohort,
+        useCharlsonIndex = useCharlsonIndex,
+        useDcsi = useDcsi,
+        useChads2 = useChads2,
+        useChads2Vasc = useChads2Vasc,
+        useHfrs = useHfrs
+      )
+    
+    return(covariateSettings)
+  }
 
 
 #' @export
 getCovariateSettingsTimeWindows <- function(covariateSettings) {
-  temporalStartDays <- covariateSettings$temporalStartDays
-  temporalEndDays <- covariateSettings$temporalEndDays
-  
-  timeWindows <- dplyr::tibble(startDay = temporalStartDays,
-                               endDay = temporalEndDays) |>
-    dplyr::arrange(timeWindows)
+  timeWindows <-
+    dplyr::tibble(startDay = covariateSettings$temporalStartDays,
+                  endDay = covariateSettings$temporalEndDays) |>
+    dplyr::left_join(getFeatureExtractionDefaultTimeWindows(),
+                     by = c("startDay",
+                            "endDay"))
+  return(timeWindows)
 }
+
+getFeatureExtractionCovariateSettings <-
+  function(covariateSettings = NULL,
+           useDemographics = TRUE,
+           useCovariateFeatures = TRUE,
+           useCohortFeatures = TRUE,
+           timeWindows = OhdsiHelpers::getFeatureExtractionDefaultTimeWindows(),
+           useDemographicsGender = TRUE,
+           useDemographicsAge = TRUE,
+           useDemographicsAgeGroup = TRUE,
+           useDemographicsRace = TRUE,
+           useDemographicsEthnicity = TRUE,
+           useDemographicsIndexYear = TRUE,
+           useDemographicsIndexMonth = TRUE,
+           useDemographicsIndexYearMonth = FALSE,
+           useDemographicsPriorObservationTime = TRUE,
+           useDemographicsPostObservationTime = TRUE,
+           useDemographicsTimeInCohort = TRUE,
+           useCharlsonIndex = FALSE,
+           useDcsi = FALSE,
+           useChads2 = FALSE,
+           useChads2Vasc = FALSE,
+           useHfrs = FALSE,
+           useConditionOccurrence = TRUE,
+           useProcedureOccurrence = TRUE,
+           useDrugEraStart = TRUE,
+           useMeasurement = TRUE,
+           useConditionEraStart = TRUE,
+           useConditionEraOverlap = TRUE,
+           useVisitCount = TRUE,
+           useVisitConceptCount = TRUE,
+           useConditionEraGroupStart = FALSE,
+           # do not use because https://github.com/OHDSI/FeatureExtraction/issues/144
+           useConditionEraGroupOverlap = TRUE,
+           useDrugExposure = FALSE,
+           # leads to too many concept id
+           useDrugEraOverlap = FALSE,
+           useDrugEraGroupStart = FALSE,
+           # do not use because https://github.com/OHDSI/FeatureExtraction/issues/144
+           useDrugEraGroupOverlap = TRUE,
+           useObservation = TRUE,
+           useDeviceExposure = TRUE) {
+    
+    if (is.null(covariateSettings)) {
+      covariateSettings <- list()
+    }
+    
+    if (useDemographics) {
+      covariateSettingNonTimeVarying <-
+        getFeatureExtractionDefaultNonTimeVaryingCovariateSettings(
+          useDemographicsGender = useDemographicsGender,
+          useDemographicsAge = useDemographicsAge,
+          useDemographicsAgeGroup = useDemographicsAgeGroup,
+          useDemographicsRace = useDemographicsRace,
+          useDemographicsEthnicity = useDemographicsEthnicity,
+          useDemographicsIndexYear = useDemographicsIndexYear,
+          useDemographicsIndexMonth = useDemographicsIndexMonth,
+          useDemographicsIndexYearMonth = useDemographicsIndexYearMonth,
+          useDemographicsPriorObservationTime = useDemographicsPriorObservationTime,
+          useDemographicsPostObservationTime = useDemographicsPostObservationTime,
+          useDemographicsTimeInCohort = useDemographicsTimeInCohort,
+          useCharlsonIndex = useCharlsonIndex,
+          useDcsi = useDcsi,
+          useChads2 = useChads2,
+          useChads2Vasc = useChads2Vasc,
+          useHfrs = useHfrs
+        )
+      covariateSettings <- c(covariateSettings, list(covariateSettingNonTimeVarying))
+    }
+    
+    if (useCovariateFeatures) {
+      covariateSettingsTimeVarying <- getFeatureExtractionDefaultTemporalCovariateSettings(
+        timeWindows = timeWindows, 
+      )
+    }
+    
+  }

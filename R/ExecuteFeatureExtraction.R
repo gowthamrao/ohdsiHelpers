@@ -34,9 +34,8 @@ executeFeatureExtraction <-
            cohortTable,
            covariateSettings = NULL,
            addCohortBasedTemporalCovariateSettings = TRUE,
-           removeNonCohortBasedCovariateSettings = FALSE,
            covariateCohortDatabaseSchema = cohortDatabaseSchema,
-           covariateCohortIds = NULL,
+           includeCovariateIds = NULL,
            covariateCohortTable = cohortTable,
            covariateCohortDefinitionSet = NULL,
            cohortCovariateAnalysisId = 150,
@@ -58,72 +57,63 @@ executeFeatureExtraction <-
       }
     }
     
+    cohortBasedTemporalCovariateSettings <- NULL
+    
     if (addCohortBasedTemporalCovariateSettings) {
-      if (is.null(covariateSettings$temporal)) {
-        stop(
-          "covariateSettings is not temporal. Cannot add cohort based temporal covariate settings."
-        )
-      }
-      if (covariateSettings$temporal) {
-        if (is.null(covariateCohortDefinitionSet)) {
-          stop(
-            "covariateCohortDefinitionSet is NULL. cannot run cohort temporal characterization"
-          )
-        }
-        
-        if (!is.null(covariateCohortIds)) {
-          covariateCohortDefinitionSet <- covariateCohortDefinitionSet |>
-            dplyr::filter(.data$cohortId %in% covariateCohortIds)
-        }
-        
-        if (is.null(covariateCohortTable)) {
-          stop("covariateCohortTable is NULL. cannot run cohort temporal characterization")
-        }
-        if (is.null(covariateCohortDatabaseSchema)) {
-          stop(
-            "covariateCohortDatabaseSchema is NULL. cannot run cohort temporal characterization"
-          )
-        }
-        if (is.null(cohortCovariateAnalysisId)) {
-          stop(
-            "cohortCovariateAnalysisId is NULL. cannot run cohort temporal characterization"
-          )
-        }
-        
-        temporalStartDays <- covariateSettings$temporalStartDays
-        temporalEndDays <- covariateSettings$temporalEndDays
-        
-        if (is.null(covariateCohortIds)) {
-          covariateCohortIds <-
-            covariateCohortDefinitionSet$cohortId |>
-            unique() |>
-            sort()
-        }
-        
-        cohortBasedTemporalCovariateSettings <-
-          FeatureExtraction::createCohortBasedTemporalCovariateSettings(
-            analysisId = cohortCovariateAnalysisId,
-            covariateCohortDatabaseSchema = covariateCohortDatabaseSchema,
-            covariateCohortTable = covariateCohortTable,
-            covariateCohorts = covariateCohortDefinitionSet |>
-              dplyr::filter(.data$cohortId %in% c(covariateCohortIds)),
-            valueType = "binary",
-            temporalStartDays = temporalStartDays,
-            temporalEndDays = temporalEndDays,
-            includedCovariateIds = covariateCohortIds
-          )
-        
-        if (removeNonCohortBasedCovariateSettings) {
-          covariateSettings <- cohortBasedTemporalCovariateSettings
-        } else {
-          covariateSettings <- list(covariateSettings,
-                                    cohortBasedTemporalCovariateSettings)
-        }
+      if (!is.null(covariateSettings)) {
+        timeWindows <-
+          getCovariateSettingsTimeWindows(covariateSettings = covariateSettings)
       } else {
+        timeWindows <- getFeatureExtractionDefaultTimeWindows()
+      }
+      
+      if (is.null(covariateCohortDefinitionSet)) {
         stop(
-          "Cant run cohort based temporal characterization because covariate setting is not temporal"
+          "covariateCohortDefinitionSet is NULL. cannot run cohort temporal characterization"
         )
       }
+      if (is.null(covariateCohortTable)) {
+        stop("covariateCohortTable is NULL. cannot run cohort temporal characterization")
+      }
+      if (is.null(covariateCohortDatabaseSchema)) {
+        stop(
+          "covariateCohortDatabaseSchema is NULL. cannot run cohort temporal characterization"
+        )
+      }
+      if (is.null(cohortCovariateAnalysisId)) {
+        stop(
+          "cohortCovariateAnalysisId is NULL. cannot run cohort temporal characterization"
+        )
+      }
+      
+      if (!is.null(includeCovariateIds)) {
+        covariateCohortDefinitionSet <- covariateCohortDefinitionSet |>
+          dplyr::mutate(
+            covariateId = OhdsiHelpers::convertCohortIdToCovariateId(
+              cohortIds = cohortId,
+              cohortCovariateAnalysisId = cohortCovariateAnalysisId
+            )
+          ) |>
+          dplyr::filter(.data$covariateId %in% includeCovariateIds)
+      }
+      
+      cohortBasedTemporalCovariateSettings <-
+        getFeatureExtractionDefaultTemporalCohortCovariateSettings(
+          timeWindows = getCovariateSettingsTimeWindows(covariateSettings = covariateSettings),
+          analysisId = cohortCovariateAnalysisId,
+          covariateCohortDatabaseSchema = cohortCovariateAnalysisId,
+          covariateCohortTable = covariateCohortTable,
+          covariateCohortDefinitionSet = covariateCohortDefinitionSet,
+          valueType = valueType,
+          includedCovariateIds = covariateCohortIds
+        )
+    }
+    
+    if (is.null(covariateSettings)) {
+      covariateSettings <- cohortBasedTemporalCovariateSettings
+    } else {
+      covariateSettings <- list(covariateSettings,
+                                cohortBasedTemporalCovariateSettings)
     }
     
     if (!is.null(outputFolder)) {
@@ -180,7 +170,7 @@ executeFeatureExtraction <-
       if (incremental) {
         if (file.exists(file.path(outputFolder, cohortId))) {
           skipCohort <- TRUE
-        } 
+        }
       }
       
       if (!skipCohort) {
@@ -241,7 +231,6 @@ executeFeatureExtractionInParallel <-
            databaseIds = getListOfDatabaseIds(),
            covariateSettings = OhdsiHelpers::getFeatureExtractionDefaultTemporalCovariateSettings(),
            addCohortBasedTemporalCovariateSettings = FALSE,
-           removeNonCohortBasedCovariateSettings = FALSE,
            covariateCohortIds = NULL,
            covariateCohortTable = cohortTable,
            covariateCohortDefinitionSet = NULL,
@@ -254,7 +243,6 @@ executeFeatureExtractionInParallel <-
            rowIdField = "subject_id",
            aggregated = TRUE,
            incremental = TRUE) {
-
     cdmSources <-
       getCdmSource(cdmSources = cdmSources,
                    database = databaseIds,
@@ -262,7 +250,7 @@ executeFeatureExtractionInParallel <-
     
     x <- list()
     for (i in 1:nrow(cdmSources)) {
-      x[[i]] <- cdmSources[i,]
+      x[[i]] <- cdmSources[i, ]
     }
     
     # use Parallel Logger to run in parallel
@@ -296,7 +284,6 @@ executeFeatureExtractionInParallel <-
                tempEmulationSchema,
                covariateSettings,
                addCohortBasedTemporalCovariateSettings,
-               removeNonCohortBasedCovariateSettings,
                covariateCohortIds,
                covariateCohortTable,
                covariateCohortDefinitionSet,
@@ -325,7 +312,6 @@ executeFeatureExtractionInParallel <-
           covariateSettings = covariateSettings,
           outputFolder = outputFolder,
           addCohortBasedTemporalCovariateSettings = addCohortBasedTemporalCovariateSettings,
-          removeNonCohortBasedCovariateSettings = removeNonCohortBasedCovariateSettings,
           covariateCohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
           covariateCohortIds = covariateCohortIds,
           covariateCohortTable = covariateCohortTable,
@@ -349,7 +335,6 @@ executeFeatureExtractionInParallel <-
       tempEmulationSchema = tempEmulationSchema,
       outputFolder = outputFolder,
       addCohortBasedTemporalCovariateSettings = addCohortBasedTemporalCovariateSettings,
-      removeNonCohortBasedCovariateSettings = removeNonCohortBasedCovariateSettings,
       covariateCohortIds = covariateCohortIds,
       covariateCohortTable = covariateCohortTable,
       covariateCohortDefinitionSet = covariateCohortDefinitionSet,
