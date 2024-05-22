@@ -86,26 +86,31 @@ executeFeatureExtraction <-
         )
       }
       
-      if (!is.null(includeCovariateIds)) {
+      covariateCohortDefinitionSet <- covariateCohortDefinitionSet |>
+        dplyr::mutate(
+          covariateId = OhdsiHelpers::convertCohortIdToCovariateId(
+            cohortIds = cohortId,
+            cohortCovariateAnalysisId = cohortCovariateAnalysisId
+          )
+        )
+      
+      if (any(is.null(includeCovariateIds),
+              length(includeCovariateIds) > 0)) {
         covariateCohortDefinitionSet <- covariateCohortDefinitionSet |>
-          dplyr::mutate(
-            covariateId = OhdsiHelpers::convertCohortIdToCovariateId(
-              cohortIds = cohortId,
-              cohortCovariateAnalysisId = cohortCovariateAnalysisId
-            )
-          ) |>
-          dplyr::filter(.data$covariateId %in% includeCovariateIds)
+          dplyr::filter(.data$covariateId %in% c(includeCovariateIds))
       }
+      
+      includeCovariateIds <- covariateCohortDefinitionSet$covariateId
       
       cohortBasedTemporalCovariateSettings <-
         getFeatureExtractionDefaultTemporalCohortCovariateSettings(
           timeWindows = getCovariateSettingsTimeWindows(covariateSettings = covariateSettings),
           analysisId = cohortCovariateAnalysisId,
-          covariateCohortDatabaseSchema = cohortCovariateAnalysisId,
+          covariateCohortDatabaseSchema = covariateCohortDatabaseSchema,
           covariateCohortTable = covariateCohortTable,
           covariateCohortDefinitionSet = covariateCohortDefinitionSet,
-          valueType = valueType,
-          includedCovariateIds = covariateCohortIds
+          valueType = 'binary',
+          includedCovariateIds = includeCovariateIds
         )
     }
     
@@ -303,24 +308,30 @@ executeFeatureExtractionInParallel <-
         outputFolder <-
           file.path(outputFolder, x$sourceKey)
         
-        executeFeatureExtraction(
-          connectionDetails = connectionDetails,
-          cdmDatabaseSchema = x$cdmDatabaseSchemaFinal,
-          cohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
-          cohortIds = cohortIds,
-          cohortTable = cohortTable,
-          covariateSettings = covariateSettings,
-          outputFolder = outputFolder,
-          addCohortBasedTemporalCovariateSettings = addCohortBasedTemporalCovariateSettings,
-          covariateCohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
-          covariateCohortIds = covariateCohortIds,
-          covariateCohortTable = covariateCohortTable,
-          covariateCohortDefinitionSet = covariateCohortDefinitionSet,
-          cohortCovariateAnalysisId = cohortCovariateAnalysisId,
-          rowIdField = rowIdField,
-          aggregated = aggregated,
-          incremental = incremental
-        )
+        includeCovariateIds <- OhdsiHelpers::convertCohortIdToCovariateId(cohortIds = covariateCohortIds, 
+                                                                         cohortCovariateAnalysisId = cohortCovariateAnalysisId)
+        
+        for (i in (1:length(cohortIds))) {
+          cohortId <- cohortIds[[i]]
+          executeFeatureExtraction(
+            connectionDetails = connectionDetails,
+            cdmDatabaseSchema = x$cdmDatabaseSchemaFinal,
+            cohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
+            cohortIds = cohortId,
+            cohortTable = cohortTable,
+            covariateSettings = covariateSettings,
+            includeCovariateIds = includeCovariateIds,
+            outputFolder = outputFolder,
+            addCohortBasedTemporalCovariateSettings = addCohortBasedTemporalCovariateSettings,
+            covariateCohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
+            covariateCohortTable = covariateCohortTable,
+            covariateCohortDefinitionSet = covariateCohortDefinitionSet,
+            cohortCovariateAnalysisId = cohortCovariateAnalysisId,
+            rowIdField = rowIdField,
+            aggregated = aggregated,
+            incremental = incremental
+          )
+        }
       }
     
     ParallelLogger::clusterApply(
