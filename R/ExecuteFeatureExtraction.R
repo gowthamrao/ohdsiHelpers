@@ -221,7 +221,9 @@ executeFeatureExtraction <-
     
     DatabaseConnector::disconnect(connection = connection)
     
-    return(covariateData)
+    if (!skipCohort) {
+      return(covariateData)
+    }
   }
 
 
@@ -252,6 +254,10 @@ executeFeatureExtractionInParallel <-
       getCdmSource(cdmSources = cdmSources,
                    database = databaseIds,
                    sequence = sequence)
+    
+    if (nrow(cdmSources) == 0) {
+      writeLines("cdmSources filtered to databaseIds is emtpy.")
+    }
     
     x <- list()
     for (i in 1:nrow(cdmSources)) {

@@ -62,19 +62,12 @@ getFeatureExtractionReportByTimeWindows <-
     reportNonTimeVarying <- dplyr::tibble()
     
     if (all(is.null(startDays),
-            is.null(endDays))) {
-      if (covariateData$covariates |>
-          dplyr::select(covariateId) |>
-          dplyr::distinct() |>
-          dplyr::inner_join(covariateAnalysisId |>
-                            dplyr::select(covariateId) |>
-                            dplyr::distinct()) |>
-          dplyr::collect() |>
-          nrow() > 1) {
-        message(
-          "startDays and endDays is NULL, but covariateId is time varying. Report may be incomplete"
-        )
-      }
+            is.null(endDays),
+            "timeRef" %in% (names(covariateData)))) {
+      startDays <-
+        covariateData$timeRef |> dplyr::collect() |> dplyr::pull(startDay)
+      endDays <-
+        covariateData$timeRef |> dplyr::collect() |> dplyr::pull(endDay)
     }
     
     if (any(!is.null(startDays),!is.null(endDays))) {
@@ -112,79 +105,84 @@ getFeatureExtractionReportByTimeWindows <-
         dplyr::collect() |>
         dplyr::mutate(continuous = 0)
       
-      reportTimeVarying2a <-
-        covariateData$covariatesContinuous |>
-        dplyr::filter(cohortDefinitionId == cohortId) |>
-        dplyr::inner_join(
-          covariateData$timeRef |>
-            dplyr::filter(startDay %in% startDays,
-                          endDay %in% endDays) |>
-            dplyr::mutate(
-              periodName = paste0("d",
-                                  startDay |> as.integer(),
-                                  "d",
-                                  endDay |> as.integer())
-            ),
-          by = "timeId"
-        ) |>
-        dplyr::inner_join(covariateAnalysisId,
-                          by = "covariateId") |>
-        dplyr::arrange(startDay,
-                       endDay,
-                       dplyr::desc(averageValue)) |>
-        dplyr::select(
-          "covariateId",
-          "covariateName",
-          "conceptId",
-          "analysisId",
-          "analysisName",
-          "domainId",
-          "periodName",
-          distributionStatistic
-        ) |>
-        dplyr::filter(averageValue > minAverageValue) |>
-        dplyr::collect() |>
-        tidyr::pivot_longer(
-          cols = c(distributionStatistic),
-          names_to = "statistic",
-          values_to = "averageValue"
-        ) |>
-        dplyr::mutate(statistic = stringr::str_replace(
-          string = statistic,
-          pattern = "Value",
-          replacement = ""
-        )) |>
-        dplyr::mutate(covariateName = paste0(covariateName, " (", statistic, ")")) |>
-        dplyr::select(-statistic)
-      
-      reportTimeVarying2b <-
-        covariateData$covariatesContinuous |>
-        dplyr::filter(cohortDefinitionId == cohortId)  |>
-        dplyr::inner_join(
-          covariateData$timeRef |>
-            dplyr::filter(startDay %in% startDays,
-                          endDay %in% endDays) |>
-            dplyr::mutate(
-              periodName = paste0("d",
-                                  startDay |> as.integer(),
-                                  "d",
-                                  endDay |> as.integer())
-            ),
-          by = "timeId"
-        ) |>
-        dplyr::inner_join(covariateAnalysisId,
-                          by = "covariateId") |>
-        dplyr::select(covariateId,
-                      periodName,
-                      countValue) |>
-        dplyr::rename(sumValue = countValue) |>
-        dplyr::collect()
-      
-      reportTimeVarying2 <- reportTimeVarying2a |>
-        dplyr::inner_join(reportTimeVarying2b,
-                          by = c("covariateId",
-                                 "periodName")) |>
-        dplyr::mutate(continuous = 1)
+      if (!is.null(covariateData$covariatesContinuous)) {
+        reportTimeVarying2a <-
+          covariateData$covariatesContinuous |>
+          dplyr::filter(cohortDefinitionId == cohortId) |>
+          dplyr::inner_join(
+            covariateData$timeRef |>
+              dplyr::filter(startDay %in% startDays,
+                            endDay %in% endDays) |>
+              dplyr::mutate(
+                periodName = paste0("d",
+                                    startDay |> as.integer(),
+                                    "d",
+                                    endDay |> as.integer())
+              ),
+            by = "timeId"
+          ) |>
+          dplyr::inner_join(covariateAnalysisId,
+                            by = "covariateId") |>
+          dplyr::arrange(startDay,
+                         endDay,
+                         dplyr::desc(averageValue)) |>
+          dplyr::select(
+            "covariateId",
+            "covariateName",
+            "conceptId",
+            "analysisId",
+            "analysisName",
+            "domainId",
+            "periodName",
+            distributionStatistic
+          ) |>
+          dplyr::filter(averageValue > minAverageValue) |>
+          dplyr::collect() |>
+          tidyr::pivot_longer(
+            cols = c(distributionStatistic),
+            names_to = "statistic",
+            values_to = "averageValue"
+          ) |>
+          dplyr::mutate(statistic = stringr::str_replace(
+            string = statistic,
+            pattern = "Value",
+            replacement = ""
+          )) |>
+          dplyr::mutate(covariateName = paste0(covariateName, " (", statistic, ")")) |>
+          dplyr::select(-statistic)
+        
+        
+        reportTimeVarying2b <-
+          covariateData$covariatesContinuous |>
+          dplyr::filter(cohortDefinitionId == cohortId)  |>
+          dplyr::inner_join(
+            covariateData$timeRef |>
+              dplyr::filter(startDay %in% startDays,
+                            endDay %in% endDays) |>
+              dplyr::mutate(
+                periodName = paste0("d",
+                                    startDay |> as.integer(),
+                                    "d",
+                                    endDay |> as.integer())
+              ),
+            by = "timeId"
+          ) |>
+          dplyr::inner_join(covariateAnalysisId,
+                            by = "covariateId") |>
+          dplyr::select(covariateId,
+                        periodName,
+                        countValue) |>
+          dplyr::rename(sumValue = countValue) |>
+          dplyr::collect()
+        
+        reportTimeVarying2 <- reportTimeVarying2a |>
+          dplyr::inner_join(reportTimeVarying2b,
+                            by = c("covariateId",
+                                   "periodName")) |>
+          dplyr::mutate(continuous = 1)
+      } else {
+        reportTimeVarying2 <- dplyr::tibble()
+      }
       
       reportTimeVarying <- dplyr::tibble()
       if (nrow(reportTimeVarying1) > 0) {
@@ -675,7 +673,6 @@ getFeatureExtractionReportCommonSequentialTimePeriods <-
 
 
 
-
 #' @export
 getFeatureExtractionReportNonTimeVarying <-
   function(cdmSources,
@@ -729,9 +726,7 @@ getFeatureExtractionStandardizedDifference <-
            cohortId2,
            includeNonTimeVarying = TRUE,
            timeRef = NULL) {
-    
-    if (all(is.null(timeRef),
-            !includeNonTimeVarying)) {
+    if (all(is.null(timeRef),!includeNonTimeVarying)) {
       message("includeNonTimeVarying is FASLE and timeRef is NULL. no results.")
       return(NULL)
     }
@@ -746,7 +741,6 @@ getFeatureExtractionStandardizedDifference <-
     
     covariateData2 <-
       FeatureExtraction::loadCovariateData(file = covariateData2Path)
-    
     
     timeRef1 <- covariateData1$timeRef |> dplyr::collect()
     timeRef2 <- covariateData2$timeRef |> dplyr::collect()
@@ -768,7 +762,13 @@ getFeatureExtractionStandardizedDifference <-
     standardizedDifference <- c()
     
     if (!is.null(timeRef)) {
-      
+      checkmate::assertDataFrame(timeRef)
+      if (!'startDay' %in% colnames(timeRef)) {
+        stop("please check timeRef")
+      }
+      if (!'endDay' %in% colnames(timeRef)) {
+        stop("please check timeRef")
+      }
       timeRef <- timeRefFromCovariateData |>
         dplyr::inner_join(
           timeRef |>
@@ -777,48 +777,48 @@ getFeatureExtractionStandardizedDifference <-
             dplyr::distinct(),
           by = c("startDay", "endDay")
         )
-      
-      if (nrow(timeRef) == 0) {
-        message("no valid time windows")
-        return(NULL)
-      }
-      
-      for (i in (1:nrow(timeRef))) {
-        rowData <- timeRef[i,]
-        
-        message(paste0("working on ", rowData$startDay, " to ", rowData$endDay))
-        covariateData1 <-
-          FeatureExtraction::loadCovariateData(file = covariateData1Path)
-        covariateData1$covariates <- covariateData1$covariates |>
-          dplyr::filter(timeId == rowData$timeId,
-                        cohortDefinitionId == cohortId1)
-        
-        covariateData2 <-
-          FeatureExtraction::loadCovariateData(file = covariateData2Path)
-        covariateData2$covariates <- covariateData2$covariates |>
-          dplyr::filter(timeId == rowData$timeId,
-                        cohortDefinitionId == cohortId2)
-        
-        standardizedDifference[[i]] <-
-          FeatureExtraction::computeStandardizedDifference(
-            covariateData1 = covariateData1,
-            covariateData2 = covariateData2,
-            cohortId1 = cohortId1,
-            cohortId2 = cohortId2
-          ) |>
-          tidyr::crossing(rowData |>
-                            dplyr::select(startDay,
-                                          endDay)) |>
-          dplyr::relocate(startDay,
-                          endDay,
-                          covariateId,
-                          covariateName)
-      }
-      
-      
-      standardizedDifference <-
-        dplyr::bind_rows(standardizedDifference)
+    } else {
+      timeRef <- timeRefFromCovariateData
     }
+    
+    if (nrow(timeRef) == 0) {
+      message("no valid time windows")
+    }
+    
+    for (i in (1:nrow(timeRef))) {
+      rowData <- timeRef[i,]
+      
+      message(paste0("working on ", rowData$startDay, " to ", rowData$endDay))
+      covariateData1 <-
+        FeatureExtraction::loadCovariateData(file = covariateData1Path)
+      covariateData1$covariates <- covariateData1$covariates |>
+        dplyr::filter(timeId == rowData$timeId,
+                      cohortDefinitionId == cohortId1)
+      
+      covariateData2 <-
+        FeatureExtraction::loadCovariateData(file = covariateData2Path)
+      covariateData2$covariates <- covariateData2$covariates |>
+        dplyr::filter(timeId == rowData$timeId,
+                      cohortDefinitionId == cohortId2)
+      
+      standardizedDifference[[i]] <-
+        FeatureExtraction::computeStandardizedDifference(
+          covariateData1 = covariateData1,
+          covariateData2 = covariateData2,
+          cohortId1 = cohortId1,
+          cohortId2 = cohortId2
+        ) |>
+        tidyr::crossing(rowData |>
+                          dplyr::select(startDay,
+                                        endDay)) |>
+        dplyr::relocate(startDay,
+                        endDay,
+                        covariateId,
+                        covariateName)
+    }
+    
+    standardizedDifference <-
+      dplyr::bind_rows(standardizedDifference)
     
     if (includeNonTimeVarying) {
       #non time varying
