@@ -11,14 +11,12 @@ getFeatureExtractionDefaultTemporalCovariateSettings <-
            useConditionEraOverlap = TRUE,
            useVisitCount = TRUE,
            useVisitConceptCount = TRUE,
-           useConditionEraGroupStart = FALSE,
-           # do not use because https://github.com/OHDSI/FeatureExtraction/issues/144
+           useConditionEraGroupStart = TRUE,
            useConditionEraGroupOverlap = TRUE,
            useDrugExposure = FALSE,
            # leads to too many concept id
-           useDrugEraOverlap = FALSE,
-           useDrugEraGroupStart = FALSE,
-           # do not use because https://github.com/OHDSI/FeatureExtraction/issues/144
+           useDrugEraOverlap = TRUE,
+           useDrugEraGroupStart = TRUE,
            useDrugEraGroupOverlap = TRUE,
            useObservation = TRUE,
            useDeviceExposure = TRUE) {
@@ -39,13 +37,11 @@ getFeatureExtractionDefaultTemporalCovariateSettings <-
         useVisitCount = useVisitCount,
         useVisitConceptCount = useVisitConceptCount,
         useConditionEraGroupStart = useConditionEraGroupStart,
-        # do not use because https://github.com/OHDSI/FeatureExtraction/issues/144
         useConditionEraGroupOverlap = useConditionEraGroupOverlap,
         useDrugExposure = useDrugExposure,
         # leads to too many concept id
         useDrugEraOverlap = useDrugEraOverlap,
         useDrugEraGroupStart = useDrugEraGroupStart,
-        # do not use because https://github.com/OHDSI/FeatureExtraction/issues/144
         useDrugEraGroupOverlap = useDrugEraGroupOverlap,
         useObservation = useObservation,
         useDeviceExposure = useDeviceExposure,
