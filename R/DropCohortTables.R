@@ -15,7 +15,7 @@ dropCohortTablesInParallel <- function(cdmSources,
 
 
   OhdsiHelpers::renderTranslateExecuteSqlInParallel(
-    cdmSources = OhdsiHelpers::getCdmSource(cdmSources = cdmSources),
+    cdmSources = cdmSources,
     sql = sql,
     cohort_table = cohortTableNames$cohortTable,
     cohort_inclusion_table = cohortTableNames$cohortInclusionTable,

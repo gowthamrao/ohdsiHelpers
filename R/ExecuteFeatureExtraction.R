@@ -219,8 +219,6 @@ executeFeatureExtraction <-
       )
     }
     
-    DatabaseConnector::disconnect(connection = connection)
-    
     if (!skipCohort) {
       return(covariateData)
     }
