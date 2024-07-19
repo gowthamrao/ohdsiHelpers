@@ -40,15 +40,12 @@ executeFeatureExtraction <-
            covariateCohortDefinitionSet = NULL,
            cohortCovariateAnalysisId = 150,
            tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
-           outputFolder = NULL,
+           outputFolder,
            aggregated = TRUE,
            rowIdField = "subject_id",
            incremental = TRUE) {
-    
-    if (!is.null(outputFolder)) {
-      if (!file.exists(outputFolder)) {
-        dir.create(outputFolder, recursive = TRUE)
-      }
+    if (!file.exists(outputFolder)) {
+      dir.create(outputFolder, recursive = TRUE)
     }
     
     if (!aggregated) {
@@ -86,7 +83,8 @@ executeFeatureExtraction <-
         )
       }
       
-      covariateCohortDefinitionSet <- covariateCohortDefinitionSet |>
+      covariateCohortDefinitionSet <-
+        covariateCohortDefinitionSet |>
         dplyr::mutate(
           covariateId = OhdsiHelpers::convertCohortIdToCovariateId(
             cohortIds = cohortId,
@@ -94,13 +92,14 @@ executeFeatureExtraction <-
           )
         )
       
-      if (any(is.null(includeCovariateIds),
+      if (any(!is.null(includeCovariateIds),
               length(includeCovariateIds) > 0)) {
         covariateCohortDefinitionSet <- covariateCohortDefinitionSet |>
           dplyr::filter(.data$covariateId %in% c(includeCovariateIds))
       }
       
-      includeCovariateIds <- covariateCohortDefinitionSet$covariateId
+      includeCovariateIds <-
+        covariateCohortDefinitionSet$covariateId
       
       cohortBasedTemporalCovariateSettings <-
         getFeatureExtractionDefaultTemporalCohortCovariateSettings(
@@ -194,15 +193,13 @@ executeFeatureExtraction <-
             rowIdField = rowIdField
           )
         
-        if (!is.null(outputFolder)) {
-          dir.create(
-            path = file.path(outputFolder),
-            showWarnings = FALSE,
-            recursive = TRUE
-          )
-          FeatureExtraction::saveCovariateData(covariateData = covariateData,
-                                               file = file.path(outputFolder, cohortId))
-        }
+        dir.create(
+          path = file.path(outputFolder),
+          showWarnings = FALSE,
+          recursive = TRUE
+        )
+        FeatureExtraction::saveCovariateData(covariateData = covariateData,
+                                             file = file.path(outputFolder, cohortId))
       } else {
         ParallelLogger::logInfo(paste0("    - skipping cohort id: ", cohortId))
       }
@@ -217,10 +214,6 @@ executeFeatureExtraction <-
         progressBar = FALSE,
         reportOverallTime = FALSE
       )
-    }
-    
-    if (!skipCohort) {
-      return(covariateData)
     }
   }
 
@@ -259,7 +252,7 @@ executeFeatureExtractionInParallel <-
     
     x <- list()
     for (i in 1:nrow(cdmSources)) {
-      x[[i]] <- cdmSources[i, ]
+      x[[i]] <- cdmSources[i,]
     }
     
     # use Parallel Logger to run in parallel
@@ -312,8 +305,9 @@ executeFeatureExtractionInParallel <-
         outputFolder <-
           file.path(outputFolder, x$sourceKey)
         
-        includeCovariateIds <- OhdsiHelpers::convertCohortIdToCovariateId(cohortIds = covariateCohortIds, 
-                                                                         cohortCovariateAnalysisId = cohortCovariateAnalysisId)
+        includeCovariateIds <-
+          OhdsiHelpers::convertCohortIdToCovariateId(cohortIds = covariateCohortIds,
+                                                     cohortCovariateAnalysisId = cohortCovariateAnalysisId)
         
         for (i in (1:length(cohortIds))) {
           cohortId <- cohortIds[[i]]

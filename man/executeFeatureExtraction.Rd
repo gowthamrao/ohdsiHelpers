@@ -20,7 +20,7 @@ executeFeatureExtraction(
   covariateCohortDefinitionSet = NULL,
   cohortCovariateAnalysisId = 150,
   tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
-  outputFolder = NULL,
+  outputFolder,
   aggregated = TRUE,
   rowIdField = "subject_id",
   incremental = TRUE
