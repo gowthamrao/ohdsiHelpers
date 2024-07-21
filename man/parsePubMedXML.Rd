@@ -4,16 +4,74 @@
 \alias{parsePubMedXML}
 \title{Parse XML Data from PubMed}
 \usage{
-parsePubMedXML(xml_data)
+parsePubMedXML(xmlData)
 }
 \arguments{
-\item{xml_data}{XML document containing PubMed article data.}
+\item{xmlData}{An XML document containing PubMed article data. The XML document
+should have a structure similar to the one provided by PubMed.}
 }
 \value{
-A tibble with columns for Title, Publication Date, Authors, and PMID of each article.
+A tibble with columns for various details of each article. The tibble includes,
+but is not limited to, the following columns:
+\item{pubmedArticle}{The entire PubmedArticle node content.}
+\item{medlineCitationStatus}{The status of the MedlineCitation.}
+\item{medlineCitationOwner}{The owner of the MedlineCitation.}
+\item{indexingMethod}{The indexing method of the MedlineCitation.}
+\item{pmid}{The PubMed ID of the article.}
+\item{dateRevisedYear}{The year the article was revised.}
+\item{dateRevisedMonth}{The month the article was revised.}
+\item{dateRevisedDay}{The day the article was revised.}
+\item{articlePubModel}{The publication model of the article.}
+\item{journalIssn}{The ISSN of the journal.}
+\item{journalIssnType}{The type of ISSN of the journal.}
+\item{journalIssueVolume}{The volume number of the journal issue.}
+\item{journalIssueIssue}{The issue number of the journal issue.}
+\item{journalIssueCitedMedium}{The cited medium of the journal issue.}
+\item{journalIssuePubDateYear}{The year of publication of the journal issue.}
+\item{journalIssuePubDateMonth}{The month of publication of the journal issue.}
+\item{journalTitle}{The title of the journal.}
+\item{journalISOAbbreviation}{The ISO abbreviation of the journal.}
+\item{articleTitle}{The title of the article.}
+\item{paginationStartPage}{The starting page number of the article.}
+\item{paginationEndPage}{The ending page number of the article.}
+\item{paginationMedlinePgn}{The Medline page number of the article.}
+\item{eLocationId}{The electronic location ID of the article.}
+\item{eLocationIdType}{The type of electronic location ID of the article.}
+\item{eLocationIdValidYN}{The validity of the electronic location ID of the article.}
+\item{abstractText}{The abstract text of the article.}
+\item{abstractCopyrightInformation}{The copyright information of the abstract.}
+\item{authorListCompleteYN}{Indicates if the author list is complete.}
+\item{authorValidYN}{Validity of each author.}
+\item{authorLastName}{The last names of the authors.}
+\item{authorForeName}{The fore names of the authors.}
+\item{authorInitials}{The initials of the authors.}
+\item{authorAffiliation}{The affiliations of the authors.}
+\item{language}{The language of the article.}
+\item{publicationType}{The type of publication.}
+\item{publicationTypeUI}{The UI of the publication type.}
+\item{articleDateType}{The type of article date.}
+\item{articleDateYear}{The year of the article date.}
+\item{articleDateMonth}{The month of the article date.}
+\item{articleDateDay}{The day of the article date.}
+\item{medlineJournalInfoCountry}{The country of the Medline journal.}
+\item{medlineJournalInfoMedlineTA}{The Medline TA of the journal.}
+\item{medlineJournalInfoNlmUniqueID}{The NLM unique ID of the journal.}
+\item{medlineJournalInfoISSNLinking}{The ISSN linking of the journal.}
+\item{coiStatement}{The conflict of interest statement of the article.}
+\item{pubmedDataHistoryPubStatus}{The publication status history.}
+\item{pubmedDataHistoryPubDateYear}{The publication date years.}
+\item{pubmedDataHistoryPubDateMonth}{The publication date months.}
+\item{pubmedDataHistoryPubDateDay}{The publication date days.}
+\item{pubmedDataHistoryPubDateHour}{The publication date hours.}
+\item{pubmedDataHistoryPubDateMinute}{The publication date minutes.}
+\item{publicationStatus}{The publication status.}
+\item{articleIdType}{The types of article IDs.}
+\item{articleId}{The article IDs.}
+\item{referenceCitation}{The reference citations.}
 }
 \description{
-This function parses XML data obtained from PubMed to extract information
+This function parses XML data obtained from PubMed to extract detailed information
 about articles. The expected XML format should include specific nodes such as
-PubmedArticle, ArticleTitle, PubDate, Author, LastName, Initials, and PMID.
+PubmedArticle, MedlineCitation, Article, Journal, and others. It retrieves various
+details such as article titles, publication dates, author information, and more.
 }
