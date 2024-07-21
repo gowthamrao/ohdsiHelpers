@@ -85,5 +85,29 @@ assignParentId <- function(df) {
                     id,
                     subsetName)
   
+  # Function to find the root ID
+  findRootId <- function(id, data) {
+    parent <- data$parentId[data$id == id]
+    if (is.na(parent) | parent == id) {
+      return(id)
+    } else {
+      return(findRootId(parent, data))
+    }
+  }
+  
+  # Vectorize the function to apply over a vector of ids
+  findRootIdVectorized <-
+    Vectorize(findRootId, vectorize.args = "id")
+  
+  # Add rootId column
+  df$rootId <- findRootIdVectorized(df$id, df)
+  
+  df <- df |>
+    dplyr::mutate(parentId = dplyr::if_else(
+      condition = (id == parentId),
+      true = NA,
+      false = parentId
+    ))
+  
   return(df)
 }
