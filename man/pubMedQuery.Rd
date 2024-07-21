@@ -13,8 +13,7 @@ pubMedQuery(searchText, affiliatedJnJ = FALSE)
 filtering out certain publication types (e.g., clinical trials).}
 }
 \value{
-A list of fetched article summaries if any are found; otherwise returns a message
-"No results found."
+An XML document.
 }
 \description{
 This function queries the PubMed database using specified search criteria. It supports

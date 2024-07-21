@@ -6,8 +6,7 @@
 #' @param searchText Character string, the main term to include in the search.
 #' @param affiliatedJnJ Logical, set to TRUE to include Johnson & Johnson affiliated articles,
 #'        filtering out certain publication types (e.g., clinical trials).
-#' @return A list of fetched article summaries if any are found; otherwise returns a message
-#'         "No results found."
+#' @return An XML document.
 #' @export
 pubMedQuery <- function(searchText, affiliatedJnJ = FALSE) {
   # Check input types
@@ -71,11 +70,16 @@ pubMedQuery <- function(searchText, affiliatedJnJ = FALSE) {
   searchResults <-
     rentrez::entrez_search(db = "pubmed", term = completeQuery)
   
-  # Fetch details of the search results if any are found
+  # Fetch detailed information if results exist
   if (searchResults$count > 0) {
-    fetchedArticles <-
-      rentrez::entrez_summary(db = "pubmed", id = searchResults$ids)
-    return(fetchedArticles)
+    fetchedDetails <- rentrez::entrez_fetch(
+      db = "pubmed",
+      id = searchResults$ids,
+      rettype = "xml",
+      # Use XML to fetch detailed fields
+      parsed = TRUE
+    )
+    return(fetchedDetails)
   } else {
     return("No results found.")
   }
