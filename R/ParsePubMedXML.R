@@ -14,6 +14,7 @@
 #' \item{medlineCitationOwner}{The owner of the MedlineCitation.}
 #' \item{indexingMethod}{The indexing method of the MedlineCitation.}
 #' \item{pmid}{The PubMed ID of the article.}
+#' \item{pmcid}{The PubMed Central ID of the article.}
 #' \item{dateRevisedYear}{The year the article was revised.}
 #' \item{dateRevisedMonth}{The month the article was revised.}
 #' \item{dateRevisedDay}{The day the article was revised.}
@@ -101,6 +102,11 @@ parsePubMedXML <- function(xmlData) {
       safeExtract(article, ".//MedlineCitation", "IndexingMethod")),
     pmid = sapply(articles, function(article)
       safeExtract(article, ".//PMID")),
+    pmcid = sapply(articles, function(article)
+      safeExtract(
+        article,
+        ".//PubmedData/ArticleIdList/ArticleId[@IdType='pmc']"
+      )),
     dateRevisedYear = sapply(articles, function(article)
       safeExtract(article, ".//DateRevised/Year")),
     dateRevisedMonth = sapply(articles, function(article)
@@ -139,9 +145,7 @@ parsePubMedXML <- function(xmlData) {
       safeExtract(article, ".//ELocationID")),
     eLocationIdType = sapply(articles, function(article)
       safeExtract(article, ".//ELocationID", "EIdType")),
-    eLocationIdValidYN
-    
-    = sapply(articles, function(article)
+    eLocationIdValidYN = sapply(articles, function(article)
       safeExtract(article, ".//ELocationID", "ValidYN")),
     abstractText = sapply(articles, function(article)
       safeExtract(article, ".//Abstract/AbstractText")),

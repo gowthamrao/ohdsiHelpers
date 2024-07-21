@@ -18,6 +18,7 @@ but is not limited to, the following columns:
 \item{medlineCitationOwner}{The owner of the MedlineCitation.}
 \item{indexingMethod}{The indexing method of the MedlineCitation.}
 \item{pmid}{The PubMed ID of the article.}
+\item{pmcid}{The PubMed Central ID of the article.}
 \item{dateRevisedYear}{The year the article was revised.}
 \item{dateRevisedMonth}{The month the article was revised.}
 \item{dateRevisedDay}{The day the article was revised.}
