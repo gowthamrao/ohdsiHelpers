@@ -1,28 +1,3 @@
-#' #' Retrieve the PMCID for a given PubMed ID (PMID)
-#' #'
-#' #' This function queries the PubMed database using the NCBI's E-utilities API to fetch the corresponding
-#' #' PMCID for a given PMID. The result is extracted from the XML response.
-#' #' @param pmid A character string specifying the PubMed ID for which the PMCID is sought.
-#' #' @return A character string representing the PMCID associated with the given PMID.
-#' #' @export
-#' getPubMedPmcIdFromPmId <- function(pmid) {
-#'   base_url <-
-#'     "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
-#'   query_list <- list(db = "pubmed", id = pmid, retmode = "xml")
-#'   response <- httr::GET(url = base_url, query = query_list)
-#'   
-#'   # Parse XML response
-#'   content <- httr::content(response, "text")
-#'   xml_content <- xml2::read_xml(content)
-#'   
-#'   # Extract PMCID
-#'   pmcid <-
-#'     xml2::xml_find_first(xml_content, "//ArticleId[@IdType='pmc']")
-#'   pmcid_value <- xml2::xml_text(pmcid)
-#'   return(pmcid_value)
-#' }
-
-
 #' Retrieve PMCIDs for a vector of PubMed IDs (PMIDs)
 #'
 #' This function queries the PubMed database using the NCBI's E-utilities API to fetch the corresponding

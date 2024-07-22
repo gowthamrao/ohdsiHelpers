@@ -10,7 +10,7 @@ getPubMedArticleSummaries(pmids)
 \item{pmids}{A vector of character strings representing the PubMed IDs for which summaries are required.}
 }
 \value{
-A tibble containing detailed article summaries including publication URLs, PMC IDs, and other metadata.
+A tibble containing detailed article summaries including publication URLs, PMC IDs, abstracts, and other metadata.
 }
 \description{
 This function uses the NCBI E-utilities API to fetch detailed summaries for a list of PubMed IDs (PMIDs).
