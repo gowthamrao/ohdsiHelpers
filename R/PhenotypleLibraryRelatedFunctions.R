@@ -238,21 +238,6 @@ areCohortEventsRestrictedByVisit <-
   }
 
 #' @export
-stringPresentInCohortDefinitionText <-
-  function(cohortDefinition,
-           textToSearch) {
-    cohortDefinition |>
-      RJSONIO::toJSON(digits = 23) |>
-      tolower() |>
-      stringr::str_trim() |>
-      stringr::str_squish() |>
-      stringr::str_detect(pattern = textToSearch |>
-        tolower() |>
-        stringr::str_trim() |>
-        stringr::str_squish())
-  }
-
-#' @export
 getDomainsInEntryEvents <- function(cohortDefinition) {
   cohortEntryEvents <-
     getNumberOfCohortEntryEvents(cohortDefinition = cohortDefinition)
