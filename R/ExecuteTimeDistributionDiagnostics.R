@@ -311,8 +311,8 @@
 #'         connectionDetails = connectionDetails,
 #'         cohortIds = cohortIds,
 #'         cohortTableName = cohortTableName,
-#'         cdmDatabaseSchema = x$cdmDatabaseSchemaFinal,
-#'         cohortDatabaseSchema = x$cohortDatabaseSchemaFinal
+#'         cdmDatabaseSchema = x$cdmDatabaseSchema,
+#'         cohortDatabaseSchema = x$cohortDatabaseSchema
 #'       )
 #'     }
 #'

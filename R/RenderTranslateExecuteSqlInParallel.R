@@ -59,9 +59,9 @@ renderTranslateExecuteSqlInParallel <- function(cdmSources,
         profile = FALSE,
         progressBar = FALSE,
         reportOverallTime = FALSE,
-        cohort_database_schema = x$cohortDatabaseSchemaFinal,
+        cohort_database_schema = x$cohortDatabaseSchema,
         vocabulary_databaseS_schema = x$vocabularyDatabaseSchemaFinal,
-        cdm_database_schema = x$cdmDatabaseSchemaFinal,
+        cdm_database_schema = x$cdmDatabaseSchema,
         ...
       )
     }

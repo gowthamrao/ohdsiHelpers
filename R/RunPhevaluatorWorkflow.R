@@ -42,8 +42,8 @@
 #'   #     phenotypeName = phenotypeName
 #'   #   )
 #'
-#'   cohortDatabaseSchema = x$cdmSource$cohortDatabaseSchemaFinal
-#'   cdmDatabaseSchema <- x$cdmSource$cdmDatabaseSchemaFinal
+#'   cohortDatabaseSchema = x$cdmSource$cohortDatabaseSchema
+#'   cdmDatabaseSchema <- x$cdmSource$cdmDatabaseSchema
 #'   databaseId <- x$cdmSource$sourceKey
 #'   sourceName <- x$cdmSource$sourceName
 #'

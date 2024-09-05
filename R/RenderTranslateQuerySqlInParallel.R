@@ -71,9 +71,9 @@ renderTranslateQuerySqlInParallel <- function(cdmSources,
       output <- DatabaseConnector::renderTranslateQuerySql(
         connection = connection,
         sql = sql,
-        cohort_database_schema = x$cohortDatabaseSchemaFinal,
+        cohort_database_schema = x$cohortDatabaseSchema,
         vocabulary_databaseS_schema = x$vocabularyDatabaseSchemaFinal,
-        cdm_database_schema = x$cdmDatabaseSchemaFinal,
+        cdm_database_schema = x$cdmDatabaseSchema,
         snakeCaseToCamelCase = TRUE,
         ...
       ) |>

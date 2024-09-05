@@ -1,3 +1,4 @@
+#' @export
 createRProject <- function(targetFolderPath, projectName) {
   # Check if the target folder exists
   if (!dir.exists(targetFolderPath)) {

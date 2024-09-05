@@ -53,12 +53,12 @@
 #'       databaseDetails <-
 #'         PatientLevelPrediction::createDatabaseDetails(
 #'           connectionDetails = connectionDetails,
-#'           cdmDatabaseSchema = x$cdmDatabaseSchemaFinal,
+#'           cdmDatabaseSchema = x$cdmDatabaseSchema,
 #'           cdmDatabaseId = x$sourceKey,
 #'           cdmDatabaseName = x$sourceName,
-#'           cohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
+#'           cohortDatabaseSchema = x$cohortDatabaseSchema,
 #'           cohortTable = targetCohortTableName,
-#'           outcomeDatabaseSchema = x$cohortDatabaseSchemaFinal,
+#'           outcomeDatabaseSchema = x$cohortDatabaseSchema,
 #'           outcomeTable = outcomeCohortTableName,
 #'           targetId = targetCohortId,
 #'           outcomeIds = outcomeCohortId,

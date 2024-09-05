@@ -313,15 +313,15 @@ executeFeatureExtractionInParallel <-
           cohortId <- cohortIds[[i]]
           executeFeatureExtraction(
             connectionDetails = connectionDetails,
-            cdmDatabaseSchema = x$cdmDatabaseSchemaFinal,
-            cohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
+            cdmDatabaseSchema = x$cdmDatabaseSchema,
+            cohortDatabaseSchema = x$cohortDatabaseSchema,
             cohortIds = cohortId,
             cohortTable = cohortTable,
             covariateSettings = covariateSettings,
             includeCovariateIds = includeCovariateIds,
             outputFolder = outputFolder,
             addCohortBasedTemporalCovariateSettings = addCohortBasedTemporalCovariateSettings,
-            covariateCohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
+            covariateCohortDatabaseSchema = x$cohortDatabaseSchema,
             covariateCohortTable = covariateCohortTable,
             covariateCohortDefinitionSet = covariateCohortDefinitionSet,
             cohortCovariateAnalysisId = cohortCovariateAnalysisId,

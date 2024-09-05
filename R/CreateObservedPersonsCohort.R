@@ -60,9 +60,9 @@ createObservedPersonsCohortInParallel <-
 
       createObservedPersonsCohort(
         connection = connection,
-        cohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
+        cohortDatabaseSchema = x$cohortDatabaseSchema,
         cohortTableName = cohortTableName,
-        cdmdatabaseSchema = x$cdmDatabaseSchemaFinal,
+        cdmdatabaseSchema = x$cdmDatabaseSchema,
         startYear = startYear,
         endYear = endYear,
         cohortIdStart = cohortIdStart,

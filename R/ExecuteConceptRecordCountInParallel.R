@@ -79,8 +79,8 @@ executeConceptRecordCountInParallel <-
       output <- ConceptSetDiagnostics::getConceptRecordCount(
         conceptIds = conceptIds,
         connectionDetails = connectionDetails,
-        cdmDatabaseSchema = x$cdmDatabaseSchemaFinal,
-        vocabularyDatabaseSchema = x$vocabDatabaseSchemaFinal,
+        cdmDatabaseSchema = x$cdmDatabaseSchema,
+        vocabularyDatabaseSchema = x$vocabDatabaseSchema,
         tempEmulationSchema = tempEmulationSchema,
         domainTableName = domainTableName
       ) |>

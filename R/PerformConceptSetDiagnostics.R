@@ -23,7 +23,7 @@ performConceptSetDiagnostics <-
           ConceptSetDiagnostics::resolveConceptSetExpression(
             conceptSetExpression = RJSONIO::fromJSON(conceptSetDefinition$conceptSetDefinition, digits = 23),
             connection = connection,
-            vocabularyDatabaseSchema = cdmSource$vocabDatabaseSchemaFinal
+            vocabularyDatabaseSchema = cdmSource$vocabDatabaseSchema
           ) |>
           dplyr::mutate(conceptSetId = conceptSetDefinition$conceptSetId)
 
@@ -31,7 +31,7 @@ performConceptSetDiagnostics <-
           ConceptSetDiagnostics::getMappedSourceConcepts(
             conceptIds = resolvedConcepts$conceptId,
             connection = connection,
-            vocabularyDatabaseSchema = cdmSource$vocabDatabaseSchemaFinal
+            vocabularyDatabaseSchema = cdmSource$vocabDatabaseSchema
           ) |>
           dplyr::mutate(conceptSetId = conceptSetDefinition$conceptSetId)
 
@@ -70,7 +70,7 @@ performConceptSetDiagnostics <-
       conceptIds = unique(c(
         resolvedConcepts$conceptId, mappedConcepts$conceptId
       )),
-      vocabularyDatabaseSchema = cdmSourceSelected$vocabDatabaseSchemaFinal
+      vocabularyDatabaseSchema = cdmSourceSelected$vocabDatabaseSchema
     ) |>
       dplyr::arrange(conceptId)
 

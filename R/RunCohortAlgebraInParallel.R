@@ -49,8 +49,8 @@ runCohortAlgebraUnionInParallel <- function(cdmSources,
       
       CohortAlgebra::unionCohorts(
         connection = connection,
-        sourceCohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
-        targetCohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
+        sourceCohortDatabaseSchema = x$cohortDatabaseSchema,
+        targetCohortDatabaseSchema = x$cohortDatabaseSchema,
         sourceCohortTable = sourceCohortTable,
         targetCohortTable = targetCohortTable,
         oldToNewCohortId = oldToNewCohortId, 

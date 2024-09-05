@@ -261,8 +261,8 @@ getCohortDiagnosticsIncidenceRateInParallel <-
         
         cohortIncidence <- getCohortDiagnosticsIncidenceRate(
           connectionDetails = connectionDetails,
-          cdmDatabaseSchema = x$cdmDatabaseSchemaFinal,
-          cohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
+          cdmDatabaseSchema = x$cdmDatabaseSchema,
+          cohortDatabaseSchema = x$cohortDatabaseSchema,
           cohortDefinitionId = cohortDefinitionId,
           cohortTableName = cohortTableName
         ) |>
