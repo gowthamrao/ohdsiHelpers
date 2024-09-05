@@ -156,40 +156,35 @@ executeCohortGeneration <- function(connectionDetails,
 }
 
 
+
 #' @export
 executeCohortGenerationInParallel <- function(cdmSources,
                                               outputFolder,
                                               cohortDefinitionSet,
-                                              cohortTableNames = CohortGenerator::getCohortTableNames(cohortTable = "cohort"),
-                                              userService = "OHDSI_USER",
-                                              passwordService = "OHDSI_PASSWORD",
+                                              cohortTableBaseName = "cohort",
                                               tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
                                               databaseIds = getListOfDatabaseIds(),
                                               sequence = 1,
                                               createCohortTableIncremental = TRUE,
                                               generateCohortIncremental = TRUE,
                                               cohortIds = NULL) {
-
   cdmSources <-
     getCdmSource(cdmSources = cdmSources,
                  database = databaseIds,
                  sequence = sequence)
-
+  
   x <- list()
   for (i in 1:nrow(cdmSources)) {
     x[[i]] <- cdmSources[i, ]
   }
-
+  
   # use Parallel Logger to run in parallel
   cluster <-
-    ParallelLogger::makeCluster(numberOfThreads = min(
-      as.integer(trunc(
-        parallel::detectCores() /
-          2
-      )),
-      length(x)
-    ))
-
+    ParallelLogger::makeCluster(numberOfThreads = min(as.integer(trunc(
+      parallel::detectCores() /
+        2
+    )), length(x)))
+  
   ## file logger
   loggerName <-
     paste0(
@@ -200,25 +195,25 @@ executeCohortGenerationInParallel <- function(cdmSources,
         replacement = ""
       )
     )
-
+  
   ParallelLogger::addDefaultFileLogger(fileName = file.path(outputFolder, paste0(loggerName, ".txt")))
-
+  
   executeCohortGenerationX <- function(x,
                                        cohortDefinitionSet,
                                        cohortIds,
-                                       cohortTableNames,
+                                       cohortTableBaseName,
                                        outputFolder,
                                        tempEmulationSchema,
                                        createCohortTableIncremental,
                                        generateCohortIncremental) {
-    connectionDetails <- DatabaseConnector::createConnectionDetails(
-      dbms = x$dbms,
-      user = keyring::key_get(userService),
-      password = keyring::key_get(passwordService),
-      server = x$serverFinal,
-      port = x$port
-    )
-
+    connectionDetails = createConnectionDetails()
+    
+    cohortTableName <- paste0(cohortTableBaseName,
+                              "_",
+                              stringr::str_squish(x$sourceKey))
+    cohortTableNames <-
+      CohortGenerator::getCohortTableNames(cohortTable = cohortTableName)
+    
     executeCohortGeneration(
       connectionDetails = connectionDetails,
       cohortDefinitionSet = cohortDefinitionSet,
@@ -234,20 +229,20 @@ executeCohortGenerationInParallel <- function(cdmSources,
       generateCohortIncremental = generateCohortIncremental
     )
   }
-
+  
   ParallelLogger::clusterApply(
     cluster = cluster,
     x = x,
     cohortDefinitionSet = cohortDefinitionSet,
     cohortIds = cohortIds,
     outputFolder = outputFolder,
-    cohortTableNames = cohortTableNames,
+    cohortTableBaseName = cohortTableBaseName,
     tempEmulationSchema = tempEmulationSchema,
     createCohortTableIncremental = createCohortTableIncremental,
     generateCohortIncremental = generateCohortIncremental,
     fun = executeCohortGenerationX
   )
-
+  
   ParallelLogger::stopCluster(cluster = cluster)
   ParallelLogger::clearLoggers()
 }

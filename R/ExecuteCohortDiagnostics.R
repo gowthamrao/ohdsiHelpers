@@ -75,8 +75,6 @@ executeCohortDiagnosticsInParallel <-
            cohortDefinitionSet,
            cohortTableBaseName = 'cohort',
            usePhenotypeLibrarySettings = FALSE,
-           userService = "OHDSI_USER",
-           passwordService = "OHDSI_PASSWORD",
            tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
            databaseIds = getListOfDatabaseIds(),
            sequence = 1,
