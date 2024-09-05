@@ -168,6 +168,9 @@ executeCohortGenerationInParallel <- function(cdmSources,
                                               createCohortTableIncremental = TRUE,
                                               generateCohortIncremental = TRUE,
                                               cohortIds = NULL) {
+  
+  dir.create(path = outputFolder, showWarnings = FALSE, recursive = TRUE)
+  
   cdmSources <-
     getCdmSource(cdmSources = cdmSources,
                  database = databaseIds,
