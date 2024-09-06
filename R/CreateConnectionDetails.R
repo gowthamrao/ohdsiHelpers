@@ -2,9 +2,9 @@
 createConnectionDetails <- function(cdmSources,
                                     database = "optum_extended_dod",
                                     sequence = 1,
-                                    userName = keyring::key_get("OHDSI_USER"),
-                                    password = keyring::key_get("OHDSI_PASSWORD"),
-                                    ohda = FALSE) {
+                                    userName = keyring::key_get("redShiftUserName", keyring = "OHDA"),
+                                    password = keyring::key_get("redshiftPassword", keyring = "OHDA"),
+                                    ohda = TRUE) {
   cdmSource <-
     getCdmSource(
       cdmSources = cdmSources,
