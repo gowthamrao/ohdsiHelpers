@@ -12,7 +12,7 @@ getListOfDatabaseIds <- function(
       "ims_australia_lpd",
       "ims_germany",
       "ims_france",
-      "health_verity",
+      # "healthverity_cc",
       # 'iqvia_amb_emr',
       "iqvia_pharmetrics_plus"
       # ,
@@ -32,7 +32,7 @@ getListOfDatabaseIds <- function(
     "ims_australia_lpd",
     "ims_germany",
     "ims_france",
-    "health_verity",
+    # "healthverity_cc",
     "iqvia_amb_emr",
     "iqvia_pharmetrics_plus",
     "premier"
@@ -46,7 +46,7 @@ getListOfDatabaseIds <- function(
     "optum_ehr",
     "truven_mdcr",
     "iqvia_amb_emr",
-    "health_verity",
+    "healthverity_cc",
     "iqvia_pharmetrics_plus",
     "premier"
   )
@@ -57,7 +57,7 @@ getListOfDatabaseIds <- function(
     "jmdc",
     "optum_extended_dod",
     "optum_extended_ses",
-    "health_verity",
+    # "healthverity_cc",
     "truven_mdcr",
     "iqvia_pharmetrics_plus"
   )
