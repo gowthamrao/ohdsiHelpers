@@ -52,13 +52,7 @@ executeCohortExplorerInParallel <-
                                        outputFolder,
                                        sampleSize,
                                        tempEmulationSchema) {
-      connectionDetails <- DatabaseConnector::createConnectionDetails(
-        dbms = x$dbms,
-        user = keyring::key_get(userService),
-        password = keyring::key_get(passwordService),
-        server = x$serverFinal,
-        port = x$port
-      )
+      connectionDetails <- createConnectionDetails(cdmSources = x, database = x$database)
 
       featureCohortDefinitionSet <- cohortDefinitionSet
 
