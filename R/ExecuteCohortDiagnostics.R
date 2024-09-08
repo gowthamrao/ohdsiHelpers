@@ -239,6 +239,14 @@ executeCohortDiagnosticsInParallel <-
           )
       }
       
+      connection <- DatabaseConnector::connect(connectionDetails = connectionDetails)
+      dropTempTablesFromScratchDataBricks(
+        connection = connection,
+        schema = "scratch.scratch_grao9",
+        string = "epi",
+        exclude = TRUE
+      )
+      
       CohortDiagnostics::executeDiagnostics(
         cohortDefinitionSet = cohortDefinitionSet,
         exportFolder = outputFolder,
@@ -246,8 +254,7 @@ executeCohortDiagnosticsInParallel <-
         databaseName = x$sourceKey,
         databaseDescription = x$sourceKey,
         cohortDatabaseSchema = x$cohortDatabaseSchema,
-        connectionDetails = connectionDetails,
-        connection = NULL,
+        connection = connection,
         cdmDatabaseSchema = x$cdmDatabaseSchema,
         tempEmulationSchema = tempEmulationSchema,
         cohortTable = NULL,
@@ -269,6 +276,17 @@ executeCohortDiagnosticsInParallel <-
         incremental = TRUE,
         incrementalFolder = file.path(outputFolder, "incrementalFolder")
       )
+      
+      connection <- DatabaseConnector::connect(connectionDetails = connectionDetails)
+      
+      dropTempTablesFromScratchDataBricks(
+        connection = connection,
+        schema = "scratch.scratch_grao9",
+        string = "epi",
+        exclude = TRUE
+      )
+      
+      DatabaseConnector::disconnect(connection)
     }
     
     ParallelLogger::clusterApply(

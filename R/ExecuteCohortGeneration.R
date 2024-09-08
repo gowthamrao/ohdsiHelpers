@@ -66,10 +66,19 @@ executeCohortGeneration <- function(connectionDetails,
   )
 
   ParallelLogger::logInfo("Creating cohorts")
+  
+  connection <- DatabaseConnector::connect(connectionDetails = connectionDetails)
+  
+  dropTempTablesFromScratchDataBricks(
+    connection = connection,
+    schema = "scratch.scratch_grao9",
+    string = "epi",
+    exclude = TRUE
+  )
 
   # Next create the tables on the database
   CohortGenerator::createCohortTables(
-    connectionDetails = connectionDetails,
+    connection = connection,
     cohortTableNames = cohortTableNames,
     cohortDatabaseSchema = cohortDatabaseSchema,
     incremental = createCohortTableIncremental
@@ -82,7 +91,7 @@ executeCohortGeneration <- function(connectionDetails,
 
   # Generate the cohort set
   CohortGenerator::generateCohortSet(
-    connectionDetails = connectionDetails,
+    connection = connection,
     cdmDatabaseSchema = cdmDatabaseSchema,
     cohortDatabaseSchema = cohortDatabaseSchema,
     cohortTableNames = cohortTableNames,
@@ -120,6 +129,16 @@ executeCohortGeneration <- function(connectionDetails,
     cohortIds = cohortDefinitionSet$cohortId,
     databaseId = databaseId
   )
+  
+  dropTempTablesFromScratchDataBricks(
+    connection = connection,
+    schema = "scratch.scratch_grao9",
+    string = "epi",
+    exclude = TRUE
+  )
+  
+  DatabaseConnector::disconnect(connection)
+  
   readr::write_excel_csv(
     x = cohortCount |>
       dplyr::select(
