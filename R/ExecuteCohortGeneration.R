@@ -15,10 +15,6 @@
 #'                                            will need to have write privileges in this schema. Note
 #'                                            that for SQL Server, this should include both the
 #'                                            database and schema name, for example 'cdm_data.dbo'.
-#' @param vocabularyDatabaseSchema            Schema name where your OMOP vocabulary data resides. This
-#'                                            is commonly the same as cdmDatabaseSchema. Note that for
-#'                                            SQL Server, this should include both the database and
-#'                                            schema name, for example 'vocabulary.dbo'.
 #' @param cohortTableNames                    cohortTableNames
 #' @param tempEmulationSchema                 Some database platforms like Oracle and Impala do not
 #'                                            truly support temp tables. To emulate temp tables,
@@ -43,7 +39,6 @@
 executeCohortGeneration <- function(connectionDetails,
                                     cohortDefinitionSet,
                                     cdmDatabaseSchema,
-                                    vocabularyDatabaseSchema = cdmDatabaseSchema,
                                     cohortDatabaseSchema = cdmDatabaseSchema,
                                     cohortTableNames = CohortGenerator::getCohortTableNames(cohortTable = "cohort"),
                                     tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
@@ -218,7 +213,6 @@ executeCohortGenerationInParallel <- function(cdmSources,
       connectionDetails = connectionDetails,
       cohortDefinitionSet = cohortDefinitionSet,
       cdmDatabaseSchema = x$cdmDatabaseSchemaFinal,
-      vocabularyDatabaseSchema = x$vocabDatabaseSchemaFinal,
       cohortDatabaseSchema = x$cohortDatabaseSchemaFinal,
       cohortTableNames = cohortTableNames,
       databaseId = x$sourceKey,

@@ -261,7 +261,7 @@ executeCohortDiagnosticsInParallel <-
         tempEmulationSchema = tempEmulationSchema,
         cohortTable = NULL,
         cohortTableNames = cohortTableNames,
-        vocabularyDatabaseSchema = x$vocabDatabaseSchemaFinal,
+        vocabularyDatabaseSchema = x$vocabularyDatabaseSchemaFinal,
         cohortIds = cohortIds,
         cdmVersion = 5,
         runInclusionStatistics = runInclusionStatistics,

@@ -8,7 +8,6 @@ executeCohortGeneration(
   connectionDetails,
   cohortDefinitionSet,
   cdmDatabaseSchema,
-  vocabularyDatabaseSchema = cdmDatabaseSchema,
   cohortDatabaseSchema = cdmDatabaseSchema,
   cohortTableNames = CohortGenerator::getCohortTableNames(cohortTable = "cohort"),
   tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
@@ -32,11 +31,6 @@ function in the DatabaseConnector package.}
 format resides. Note that for SQL Server, this should
 include both the database and schema name, for example
 'cdm_data.dbo'.}
-
-\item{vocabularyDatabaseSchema}{Schema name where your OMOP vocabulary data resides. This
-is commonly the same as cdmDatabaseSchema. Note that for
-SQL Server, this should include both the database and
-schema name, for example 'vocabulary.dbo'.}
 
 \item{cohortDatabaseSchema}{Schema name where intermediate data can be stored. You
 will need to have write privileges in this schema. Note
